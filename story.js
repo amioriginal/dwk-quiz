@@ -32,3 +32,5 @@ const go = url => setTimeout(() => { location.href = url; }, 900);
 $('#toComment').onclick = async () => { if (await copy()) { toast('복사했어! 최신 영상 댓글창에 붙여 넣어 줘'); go((EPS[0] && EPS[0].reel) || PROFILE); } };
 $('#toDm').onclick = async () => { if (await copy()) { toast('복사했어! DM창에 붙여 넣어 줘'); go(DM_URL); } };
 render();
+// 쓰기 전에 팔로우 부탁 한 번(확인은 못 하고 고르게만 한다)
+window.followGate({ lead: '사연 쓰기 전 팔로우는\n주인장에게 큰 힘이 돼!!', yes: '팔로우하고 쓰기', no: '그냥 쓰기ㅠㅠ' }, () => {}, null);

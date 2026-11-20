@@ -86,6 +86,14 @@ textarea{resize:none;height:84px;line-height:1.4}
 .ch.cm{border-color:rgba(255,212,71,.55);background:rgba(255,212,71,.10)}
 .ch.dm{border-color:rgba(160,140,255,.55);background:rgba(140,120,255,.12)}
 .opt-lab{color:var(--sub);font-size:13px}
+.fg{position:fixed;inset:0;z-index:20;background:rgba(5,6,13,.8);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:16px;animation:fgin .25s ease-out}
+.fg .card{width:100%;max-width:400px;text-align:center;background:rgba(24,18,58,.96);border-color:rgba(255,212,71,.35);padding:26px 20px 20px}
+.fg .hi{font-family:Gal;color:var(--y);font-size:34px;line-height:1}
+.fg h3{font-size:27px;line-height:1.25;margin-top:10px;white-space:pre-line;word-break:keep-all;text-shadow:0 3px 0 #000}
+.fg .sub{font-family:Gal;color:var(--sub);font-size:15px;margin-top:8px}
+.fg a.btn{text-decoration:none;text-align:center;margin-top:18px}
+.fg small{display:block;color:var(--sub);font-size:13px;margin-top:12px;word-break:keep-all}
+@keyframes fgin{from{opacity:0}to{opacity:1}}
 </style>
 </head>
 <body>
@@ -119,6 +127,7 @@ textarea{resize:none;height:84px;line-height:1.4}
 </div>
 <div class="toast" id="toast"></div>
 <script src="data.js"></script>
+<script src="follow.js"></script>
 <script src="story.js"></script>
 </body>
 </html>

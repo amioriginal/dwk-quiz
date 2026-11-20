@@ -8,6 +8,7 @@ const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.f
 const buzz = p => { if (navigator.vibrate && navigator.userActivation && navigator.userActivation.isActive) navigator.vibrate(p); };
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 
+const ASK = { lead: '퀴즈 시작 전 팔로우는\n주인장에게 큰 힘이 돼!!', yes: '팔로우하고 풀기', no: '그냥 풀기ㅠㅠ' };
 let mode = null;   // 고른 편(EPS의 한 묶음) 또는 'all'
 let qs = [], i = 0, score = 0;
 
@@ -18,7 +19,7 @@ EPS.forEach((ep, k) => {
   const cap = el('span'); cap.append(el('b', null, ep.no), el('i', null, ep.title));
   b.append(im, cap);
   if (k === 0) b.append(el('em', null, 'NEW'));
-  b.onclick = () => start(ep);
+  b.onclick = () => window.followGate(ASK, () => start(ep), ep.no);
   $('#eps').append(b);
 });
 
@@ -114,7 +115,9 @@ async function copy() {
 // 댓글 갈 곳: 고른 편의 릴스. 전체 도전이면 가장 최신 편.
 const target = () => (mode && mode !== 'all' && mode.reel) || (EPS[0] && EPS[0].reel) || PROFILE;
 
-$('#all').onclick = () => start('all');
+$('#all').onclick = () => window.followGate(ASK, () => start('all'), 'all');
+// 프로필로 넘어갔다 같은 창으로 돌아온 경우 고른 편부터 이어서
+{ const k = window.followGate.pending(); const ep = k === 'all' ? 'all' : EPS.find(e => e.no === k); if (ep) start(ep); }
 $('#next').onclick = next;
 $('#again').onclick = () => { opener = OPENERS[Math.floor(Math.random() * OPENERS.length)]; start(mode); };
 $('#home').onclick = () => { $('#result').classList.add('hide'); $('#quiz').classList.add('hide'); $('#start').classList.remove('hide'); window.scrollTo({ top: 0 }); };
