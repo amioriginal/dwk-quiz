@@ -5,7 +5,7 @@
 //   정답은 영상 자막에 실제로 나온 문장만 쓴다(스포 = 그 편을 본 사람만 아는 것).
 window.QUIZ_DATA = [
   {
-    no: '6편', title: '드림코어 행성', cover: 'ep06', reel: 'https://www.instagram.com/dontwannaknow.kr/',
+    no: '6편', title: '드림코어 행성', cover: 'ep06', reel: 'https://www.instagram.com/reel/Df9yVdSqsjV/',
     qs: [
       { img: 'p06_1', q: '미러볼 행성 생존 규칙은?', a: '노크하는 문은 절대 열지 마', w: ['거울 조각을 만지지 마', '바다로 가는 문은 열지 마'] },
       { img: 'p06_1', q: '미러볼 행성. 노크하는 문을 열어 주면?', a: '그게 네 얼굴로 여기 살아', w: ['문이 전부 사라져', '어릴 적 방으로 돌아가'] },
