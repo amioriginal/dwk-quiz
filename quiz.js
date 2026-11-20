@@ -1,78 +1,103 @@
 'use strict';
-// 댓글을 달 게시물 — 새 편이 올라오면 이 주소만 바꾼다
-const COMMENT_URL = 'https://www.instagram.com/reel/Df8jHbHlaqL/'; // 행성 #5
-const TOTAL = 10;
-// 정답 = 실제 게시 영상 자막의 생존 규칙 원문
-const BANK = [
-  { ep:'1편', img:'p01_1', q:'해바라기 행성에서 절대 하면 안 되는 건?', a:'불 켜 두기', w:['코 골기','단 거 먹기'] },
-  { ep:'1편', img:'p01_2', q:'온천 행성. 당장 나와야 하는 순간은?', a:'물이 빠지면', w:['물이 뜨거워지면','눈이 그치면'] },
-  { ep:'1편', img:'p01_3', q:'쇼핑몰 행성 생존 규칙은?', a:'9시 전에 가게 안으로 들어가', w:['밤엔 침대에서 나오지 마','계산대엔 절대 가지 마'] },
-  { ep:'1편', img:'p01_4', q:'반딧불 호수 행성의 함정은?', a:'함정이 없어. 진짜로.', w:['반딧불을 세면 안 돼','밤에 물에 들어가면 안 돼'] },
-  { ep:'2편', img:'p02_1', q:'호수 행성에서 절대 하면 안 되는 건?', a:'호수랑 눈 마주치기', w:['호수에서 수영하기','호수 물 마시기'] },
-  { ep:'2편', img:'p02_3', q:'하얀 숲이 손을 흔들면?', a:'절대 흔들어 주지 마', w:['같이 흔들어 줘','박수 쳐 줘'] },
-  { ep:'3편', img:'p03_1', q:'디저트 행성 생존 규칙은?', a:'단 건 한 입도 먹지 마', w:['해가 지면 집에 들어가','물은 마시지 마'] },
-  { ep:'3편', img:'p03_2', q:'물방울 행성. 보름달이 뜨면?', a:'숨을 크게 들이마셔', w:['눈을 꼭 감아','물 밖으로 나와'] },
-  { ep:'3편', img:'p03_3', q:'잠든 양 위 구름 행성에서 절대 하면 안 되는 건?', a:'코 골기', w:['큰 소리로 노래하기','뛰어다니기'] },
-  { ep:'수능 특별편', img:'sn_1', q:'수능 없는 행성. 여기선 절대…', a:'아프지 마', w:['공부하지 마','바다에 들어가지 마'] },
-  { ep:'수능 특별편', img:'sn_2', q:'매일 수능 행성. 듣기 시간엔?', a:'재채기도 참아', w:['귀를 막아','창문을 닫아'] },
-  { ep:'수능 특별편', img:'sn_3', q:'수능 한 번 행성의 정체는?', a:'지구', w:['달','화성'] },
-  { ep:'5편', img:'p05_1', q:'카피바라 행성 생존 규칙은?', a:'유자는 절대 다 먹지 마', w:['온천에 들어가지 마','다른 동물을 태우지 마'] },
-  { ep:'5편', img:'p05_2', q:'뚱냥이 행성. 고양이가 깨어 있으면?', a:'절대 움직이지 마', w:['바로 엎드려','이름을 불러 줘'] },
-  { ep:'5편', img:'p05_3', q:'푸바오가 대나무를 먹다가도 고개를 드는 건?', a:'자기를 불러 주던 목소리', w:['대나무 쪼개지는 소리','천둥소리'] },
-  { ep:'5편', img:'p05_4', q:'부캉이는 네가 어디 있는지 어떻게 알아?', a:'심장이 뛸 때 나는 작은 전기', w:['냄새','발소리'] },
-];
-const RANKS = [[10,'1년 생존 확정 · 행성 마스터'],[8,'생존 고수 · 거의 다 봤네'],[5,'반쯤 살아남음'],[0,'첫날 탈락… 영상 다시 보고 와']];
+// 행성 생존 퀴즈 — 문제·편 목록은 data.js(window.QUIZ_DATA). 이 파일은 고칠 일이 없다.
+const EPS = window.QUIZ_DATA || [];
+const PROFILE = 'https://www.instagram.com/dontwannaknow.kr/';
+const ALL_N = 10;
 const $ = s => document.querySelector(s);
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const buzz = p => { if (navigator.vibrate && navigator.userActivation && navigator.userActivation.isActive) navigator.vibrate(p); };
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+let mode = null;   // 고른 편(EPS의 한 묶음) 또는 'all'
 let qs = [], i = 0, score = 0;
 
-// 시작 화면 행성 10개(편마다 고르게)
-['p01_1','p01_3','p02_1','p02_3','p03_2','p03_3','sn_1','sn_3','p05_1','p05_4'].forEach(k => { const im = new Image(); im.src = `img/${k}.jpg`; im.alt = ''; $('#startGrid').append(im); });
-BANK.forEach(b => { const im = new Image(); im.src = `img/${b.img}.jpg`; }); // 미리 받아 두기
+// ── 편 고르기 화면 ──
+EPS.forEach((ep, k) => {
+  const b = el('button', 'epc'); b.type = 'button';
+  const im = new Image(); im.src = `img/${ep.cover}.jpg`; im.alt = ''; im.loading = 'lazy';
+  const cap = el('span'); cap.append(el('b', null, ep.no), el('i', null, ep.title));
+  b.append(im, cap);
+  if (k === 0) b.append(el('em', null, 'NEW'));
+  b.onclick = () => start(ep);
+  $('#eps').append(b);
+});
 
-function setFb(ok,ans){const f=$('#fb');f.replaceChildren();const b=document.createElement('b');if(ok){b.textContent='정답!';f.append(b,' 살아남았어.');}else{b.textContent=ans;f.append('땡. 정답은 ',b);}}
-function start() {
-  // 편마다 최소 1문제가 들어가게 고른 뒤 나머지는 무작위
-  const byEp = {}; BANK.forEach(b => (byEp[b.ep] ||= []).push(b));
-  const pick = Object.values(byEp).map(list => shuffle([...list])[0]);
-  const rest = shuffle(BANK.filter(b => !pick.includes(b))).slice(0, TOTAL - pick.length);
-  const order = ['1편','2편','3편','수능 특별편','5편'];
-  qs = [...pick, ...rest].sort((a, b) => order.indexOf(a.ep) - order.indexOf(b.ep));
+function start(m) {
+  mode = m;
+  if (m === 'all') {
+    // 편마다 최소 1문제 + 나머지 무작위, 편 순서대로
+    const pool = EPS.map(ep => shuffle(ep.qs.map(q => ({ ...q, ep: ep.no }))));
+    const pick = pool.map(list => list[0]).slice(0, ALL_N);
+    const rest = shuffle(pool.flatMap(list => list.slice(1))).slice(0, Math.max(0, ALL_N - pick.length));
+    const order = EPS.map(ep => ep.no).reverse();
+    qs = [...pick, ...rest].sort((a, b) => order.indexOf(a.ep) - order.indexOf(b.ep));
+  } else {
+    qs = shuffle(m.qs.map(q => ({ ...q, ep: m.no })));
+  }
   i = 0; score = 0;
   $('#start').classList.add('hide'); $('#result').classList.add('hide'); $('#quiz').classList.remove('hide');
   show();
 }
+
 function show() {
-  const b = qs[i];
-  $('#qno').textContent = `${i + 1}/${TOTAL}`; $('#barFill').style.width = `${i / TOTAL * 100}%`;
-  $('#ep').textContent = b.ep; $('#qimg').src = `img/${b.img}.jpg`; $('#qtext').textContent = b.q;
+  const b = qs[i], n = qs.length;
+  $('#qno').textContent = `${i + 1}/${n}`; $('#barFill').style.width = `${i / n * 100}%`;
+  $('#ep').textContent = b.ep;
+  const im = $('#qimg');
+  if (b.img) { im.src = `img/${b.img}.jpg`; im.classList.remove('hide'); } else im.classList.add('hide');
+  $('#qtext').textContent = b.q;
   $('#fb').replaceChildren(); $('#next').classList.add('hide');
   const box = $('#opts'); box.replaceChildren();
   shuffle([b.a, ...b.w]).forEach(t => {
-    const o = document.createElement('button'); o.className = 'opt'; o.textContent = t;
+    const o = el('button', 'opt', t); o.type = 'button';
     o.onclick = () => pick(o, t === b.a); box.append(o);
   });
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-function pick(el, ok) {
+
+function setFb(ok, ans) {
+  const f = $('#fb'); f.replaceChildren(); const b = el('b');
+  if (ok) { b.textContent = '정답!'; f.append(b, ' 살아남았어.'); }
+  else { b.textContent = ans; f.append('땡. 정답은 ', b); }
+}
+
+function pick(btn, ok) {
   const b = qs[i];
   document.querySelectorAll('.opt').forEach(o => { o.disabled = true; if (o.textContent === b.a) o.classList.add('ok'); });
-  if (ok) { score++; setFb(true); if (navigator.vibrate) navigator.vibrate(18); }
-  else { el.classList.add('no'); setFb(false, b.a); if (navigator.vibrate) navigator.vibrate([30, 40, 30]); }
-  $('#barFill').style.width = `${(i + 1) / TOTAL * 100}%`;
-  $('#next').textContent = i + 1 < TOTAL ? '다음 문제' : '결과 보기';
+  if (ok) { score++; setFb(true); buzz(18); }
+  else { btn.classList.add('no'); setFb(false, b.a); buzz([30, 40, 30]); }
+  $('#barFill').style.width = `${(i + 1) / qs.length * 100}%`;
+  $('#next').textContent = i + 1 < qs.length ? '다음 문제' : '결과 보기';
   $('#next').classList.remove('hide');
 }
-function next() { i++; if (i < TOTAL) show(); else result(); }
+
+function next() { i++; if (i < qs.length) show(); else result(); }
+
+function rank(r) {
+  if (r === 1) return '1년 생존 확정';
+  if (r >= 0.7) return '생존 고수 · 거의 다 봤네';
+  if (r >= 0.4) return '반쯤 살아남음';
+  return '첫날 탈락… 영상 다시 보고 와';
+}
+
 function result() {
+  const n = qs.length, perfect = score === n;
   $('#quiz').classList.add('hide'); $('#result').classList.remove('hide');
-  { const s = $('#score'), sm = document.createElement('small'); sm.textContent = `/${TOTAL}`; s.replaceChildren(String(score), sm); }
-  $('#rank').textContent = RANKS.find(([n]) => score >= n)[1];
+  const s = $('#score'), sm = el('small', null, `/${n}`); s.replaceChildren(String(score), sm);
+  $('#rank').textContent = rank(score / n);
+  $('#fan').classList.toggle('hide', !perfect);
+  if (perfect) buzz([40, 60, 40, 60, 120]);
   render(); window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
+// 댓글 문구: 사람마다 문장이 조금씩 달라지게(같은 글이 한꺼번에 달리지 않게) 첫 줄을 여러 개 중에서 고른다
+const OPENERS = ['🪐 행성 퀴즈', '🪐 생존 퀴즈 결과', '🌏 행성 퀴즈 풀고 옴', '🪐 퀴즈 해 봤는데'];
+let opener = OPENERS[Math.floor(Math.random() * OPENERS.length)];
 function comment() {
   const n = $('#pname').value.trim(), d = $('#pdesc').value.trim().replace(/\s+/g, ' ');
-  let t = `🪐 행성 생존 퀴즈 ${score}/${TOTAL}점`;
+  const where = mode === 'all' ? '전체' : mode.no;
+  let t = `${opener} (${where}) ${score}/${qs.length}`;
+  if (score === qs.length) t += ' 🏅 주인장 공인 광팬';
   t += `\n내가 살고 싶은 행성: ${n || '(행성 이름)'}`;
   if (d) t += `\n${d}`;
   return t;
@@ -83,10 +108,16 @@ async function copy() {
   if (!$('#pname').value.trim()) { toast('행성 이름부터 써 줘'); $('#pname').focus(); return false; }
   const text = comment();
   try { await navigator.clipboard.writeText(text); }
-  catch { const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.append(ta); ta.select(); try { document.execCommand('copy'); } catch {} ta.remove(); }
+  catch { const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.append(ta); ta.select(); try { document.execCommand('copy'); } catch { /* 복사 실패는 아래 안내로 알린다 */ } ta.remove(); }
   return true;
 }
-$('#go').onclick = start; $('#next').onclick = next; $('#again').onclick = start;
+// 댓글 갈 곳: 고른 편의 릴스. 전체 도전이면 가장 최신 편.
+const target = () => (mode && mode !== 'all' && mode.reel) || (EPS[0] && EPS[0].reel) || PROFILE;
+
+$('#all').onclick = () => start('all');
+$('#next').onclick = next;
+$('#again').onclick = () => { opener = OPENERS[Math.floor(Math.random() * OPENERS.length)]; start(mode); };
+$('#home').onclick = () => { $('#result').classList.add('hide'); $('#quiz').classList.add('hide'); $('#start').classList.remove('hide'); window.scrollTo({ top: 0 }); };
 $('#pname').oninput = render; $('#pdesc').oninput = render;
 $('#copyOnly').onclick = async () => { if (await copy()) toast('복사했어! 인스타 댓글창에 붙여 넣어 줘'); };
-$('#copyGo').onclick = async () => { if (await copy()) { toast('복사했어! 댓글창에 붙여 넣어 줘'); setTimeout(() => { location.href = COMMENT_URL; }, 900); } };
+$('#copyGo').onclick = async () => { if (await copy()) { toast('복사했어! 댓글창에 붙여 넣어 줘'); setTimeout(() => { location.href = target(); }, 900); } };
