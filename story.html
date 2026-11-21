@@ -2,8 +2,11 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; connect-src https://yvjhsqbymgomicjqmuok.supabase.co; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
+<meta name="dwk-page" content="story">
+<meta name="dwk-ingest" content="https://yvjhsqbymgomicjqmuok.supabase.co/rest/v1/site_events">
+<meta name="dwk-key" content="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2amhzcWJ5bWdvbWljanFtdW9rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUwNzY0MzMsImV4cCI6MjExMDY1MjQzM30.vFTsfve_lyaU2gXoKkwonTH1cqLiQOeRlNTfHf1Okss">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cut">
 <title>행성 하나 만들어 줘 · @dontwannaknow.kr</title>
 <meta name="description" content="네가 상상한 행성을 보내 줘. 뽑히면 영상 속에 네 아이디가 남아.">
@@ -94,6 +97,7 @@ textarea{resize:none;height:84px;line-height:1.4}
 .fg a.btn{text-decoration:none;text-align:center;margin-top:18px}
 .fg small{display:block;color:var(--sub);font-size:13px;margin-top:12px;word-break:keep-all}
 @keyframes fgin{from{opacity:0}to{opacity:1}}
+.foot .note{display:block;margin-top:8px;font-size:11px;opacity:.6;word-break:keep-all}
 </style>
 </head>
 <body>
@@ -123,9 +127,10 @@ textarea{resize:none;height:84px;line-height:1.4}
     </div>
     <p class="warn">누르면 글이 복사되고 인스타가 열려. 댓글창이나 DM창에 붙여 넣기만 하면 끝.</p>
   </div>
-  <p class="foot">돈워너노우 · <a href="https://www.instagram.com/dontwannaknow.kr/" rel="noopener noreferrer">인스타그램</a> · <a href="./">행성 생존 퀴즈</a></p>
+  <p class="foot">돈워너노우 · <a href="https://www.instagram.com/dontwannaknow.kr/" rel="noopener noreferrer">인스타그램</a> · <a href="./">행성 생존 퀴즈</a><span class="note">더 재밌게 고치려고, 이름 없이 누른 버튼·머문 시간만 세. 쓴 글·아이디는 안 보내. <a href="privacy.html">자세히</a></span></p>
 </div>
 <div class="toast" id="toast"></div>
+<script src="track.js"></script>
 <script src="data.js"></script>
 <script src="follow.js"></script>
 <script src="story.js"></script>
