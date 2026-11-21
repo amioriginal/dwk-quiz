@@ -22,14 +22,17 @@
     const wrap = el('div', 'fg'); wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true');
     const card = el('div', 'card');
     const yes = el('a', 'btn y', txt.yes); yes.href = PROFILE; yes.target = '_blank'; yes.rel = 'noopener noreferrer';
+    // 이미 팔로우한 사람: 인스타로 안 보내고 바로 시작(팔로우 여부는 웹에서 확인할 수 없어 본인이 고른다) — 대표 「이미 팔로우한 사람은 … 바로 풀어도 되게」 11-21
+    const already = el('button', 'btn o', txt.already || ('이미 팔로우 중! 바로 ' + String(txt.yes).replace(/^팔로우하고\s*/, ''))); already.type = 'button';
     const no = el('button', 'btn g', txt.no); no.type = 'button';
-    yes.dataset.t = 'fg_yes'; no.dataset.t = 'fg_no';
-    card.append(el('p', 'hi', '아!'), el('h3', null, txt.lead), el('p', 'sub', '@dontwannaknow.kr'), yes, no,
+    yes.dataset.t = 'fg_yes'; already.dataset.t = 'fg_already'; no.dataset.t = 'fg_no';
+    card.append(el('p', 'hi', '아!'), el('h3', null, txt.lead), el('p', 'sub', '@dontwannaknow.kr'), yes, already, no,
       el('small', null, '팔로우하고 이 화면으로 돌아오면 바로 이어서 할 수 있어'));
     wrap.append(card); document.body.append(wrap);
     T().screen('gate'); T().ev('fg_show', { el: key || 'story' });
     const close = () => wrap.remove();
     yes.onclick = () => { put('localStorage', 'dwk_follow', 'went'); if (key) put('sessionStorage', 'dwk_pending', key); close(); go(); };
+    already.onclick = () => { put('localStorage', 'dwk_follow', 'went'); close(); go(); }; // 이 폰에선 다시 안 묻는다
     no.onclick = () => { put('sessionStorage', 'dwk_follow_skip', '1'); close(); go(); };
     yes.focus();
   };
