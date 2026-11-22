@@ -14,7 +14,7 @@
   // 주소·키가 비었거나 배포 전 자리표시(__…__)면 아무것도 보내지 않는다
   const okUrl = /^https:\/\/[a-z]{20}\.supabase\.co\/rest\/v1\/site_events$/.test(URL_) ||
     (location.hostname === '127.0.0.1' && /^http:\/\/127\.0\.0\.1:\d+\/rest\/v1\/site_events$/.test(URL_)); // 로컬 시험은 로컬 화면에서만
-  if (!okUrl || !KEY || KEY.startsWith('__') || !/^(quiz|story|go)$/.test(PAGE)) return;
+  if (!okUrl || !KEY || KEY.startsWith('__') || !/^(quiz|story|go|pul)$/.test(PAGE)) return;
 
   const ss = k => { try { return sessionStorage.getItem(k); } catch { return null; } };
   const ssSet = (k, v) => { try { sessionStorage.setItem(k, v); } catch { /* 저장이 막혀도 기록만 조금 덜 정확해진다 */ } };
