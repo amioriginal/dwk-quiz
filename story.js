@@ -29,7 +29,7 @@ async function copy(which) {
   catch { const ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.append(ta); ta.select(); try { document.execCommand('copy'); } catch { /* 실패해도 아래 안내 문구로 직접 복사하게 한다 */ } ta.remove(); }
   return true;
 }
-const go = url => setTimeout(() => { location.href = url; }, 900);
+const go = url => setTimeout(() => { if (!(window.openIG && window.openIG(url))) location.href = url; }, 900); // 인스타 앱으로 바로(applink.js)
 ['#pname', '#pdesc', '#prule'].forEach(s => { $(s).oninput = render; });
 $('#toComment').onclick = async () => { if (await copy('toComment')) { toast('복사했어! 최신 영상 댓글창에 붙여 넣어 줘'); go((EPS[0] && EPS[0].reel) || PROFILE); } };
 $('#toDm').onclick = async () => { if (await copy('toDm')) { toast('복사했어! DM창에 붙여 넣어 줘'); go(DM_URL); } };

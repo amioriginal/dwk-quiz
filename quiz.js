@@ -131,4 +131,4 @@ $('#again').onclick = () => { opener = OPENERS[Math.floor(Math.random() * OPENER
 $('#home').onclick = () => { T.ctx = {}; T.screen('start'); $('#result').classList.add('hide'); $('#quiz').classList.add('hide'); $('#start').classList.remove('hide'); window.scrollTo({ top: 0 }); };
 $('#pname').oninput = render; $('#pdesc').oninput = render;
 $('#copyOnly').onclick = async () => { if (await copy('copyOnly')) toast('복사했어! 인스타 댓글창에 붙여 넣어 줘'); };
-$('#copyGo').onclick = async () => { if (await copy('copyGo')) { toast('복사했어! 댓글창에 붙여 넣어 줘'); setTimeout(() => { location.href = target(); }, 900); } };
+$('#copyGo').onclick = async () => { if (await copy('copyGo')) { toast('복사했어! 댓글창에 붙여 넣어 줘'); setTimeout(() => { const u = target(); if (!(window.openIG && window.openIG(u))) location.href = u; }, 900); } };
