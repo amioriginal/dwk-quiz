@@ -46,9 +46,13 @@
   const iosIgApp = ios && igApp;
   // ※아이폰 인스타 앱 안: 스크립트로 instagram://user 로 넘기면 프로필이 앱으로 열림(11-21 대표 「열린다」 · ig.html).
   //   손가락으로 누르는 <a href="instagram://…"> 는 무반응(11-23 시험 화면) · instagram.com/reel/… 은 웹 → 앱스토어(11-23).
-  //   영상 직행 앱 주소는 시험 중(t_open.html) — 그때까진 영상 링크도 스크립트로 프로필을 연다.
-  const shouldTry = () => android || (ios && inApp);
-  const PROFILE_APP = 'instagram://user?username=dontwannaknow.kr';
+  //   11-23 시험 3판(DM 링크로 연 화면): 스크립트 instagram://media·user 전부 무반응 · instagram.com/p/… 는 웹으로만 열림.
+  //   그런데 11-22 사연 「뽐내고 싶다」(인포크 = 프로필 링크로 연 화면)는 같은 스크립트 instagram://media 로 앱이 열렸다(대표 11-23 「누르면 바로 프로필로 연결되잖았어?」).
+  //   ⇒ [추론] 갈림길은 「어디서 연 창이냐」. DM에서 연 창(?from=dm, 같은 창 안 이동 포함) = 안내만 · 그 밖 = 스크립트로 앱 시도, 안 열리면 안내.
+  let fromDm = /[?&]from=dm(&|$)/.test(location.search);
+  try { if (fromDm) sessionStorage.setItem('dwk_from_dm', '1'); else fromDm = sessionStorage.getItem('dwk_from_dm') === '1'; } catch { /* 저장 막힘 — 이 화면 주소로만 판단 */ }
+  const guideOnly = iosIgApp && fromDm;
+  const shouldTry = () => !guideOnly && (android || (ios && inApp));
 
   let bar = null;
   const fallback = web => {
@@ -73,7 +77,7 @@
     if (bar) bar.remove();
     bar = document.createElement('div'); bar.className = 'applink-bar'; bar.setAttribute('role', 'status');
     const p = document.createElement('span');
-    p.textContent = what === '영상' ? '프로필로 넘어가요! 맨 위 영상을 눌러 주세요!'
+    p.textContent = what === '영상' ? '인스타 앱 안에선 바로 못 넘어가요! 왼쪽 위 ✕로 창 닫고 프로필 맨 위 영상을 눌러 주세요!'
       : what === 'DM' ? '왼쪽 위 ✕로 창 닫고 돈워너노우 프로필의 「메시지」를 눌러 주세요!' : '왼쪽 위 ✕로 창 닫으면 돈워너노우 프로필이에요!';
     const x = document.createElement('button'); x.type = 'button'; x.textContent = '닫기'; x.dataset.t = 'ig_guide_close'; x.onclick = () => { bar.remove(); bar = null; };
     bar.append(p, x);
@@ -87,7 +91,8 @@
 
   // 인스타 웹 주소를 앱으로 연다. 바꿀 필요가 없는 기기면 false를 돌려준다(그땐 원래 링크대로 둔다).
   window.openIG = (web, opts = {}) => {
-    if (iosIgApp) { location.href = PROFILE_APP; return true; } // 프로필·영상·DM 모두 스크립트로 앱 프로필(검증된 길)
+    const what = /instagram\.com\/(reel|reels|p)\//.test(web) ? '영상' : /ig\.me\//.test(web) ? 'DM' : '프로필';
+    if (guideOnly) { guide(what); return true; } // DM에서 연 창: 넘기지 않고 안내만
     const app = shouldTry() ? appUrl(web) : null;
     if (!app) {
       if (opts.navigate) { if (opts.newTab) window.open(web, '_blank', 'noopener'); else location.href = web; }
@@ -96,10 +101,11 @@
     let gone = false; const mark = () => { gone = true; };
     document.addEventListener('visibilitychange', mark, { once: true }); window.addEventListener('pagehide', mark, { once: true });
     location.href = app;
-    setTimeout(() => { if (!gone && document.visibilityState === 'visible') fallback(web); }, 1600);
+    setTimeout(() => { if (!gone && document.visibilityState === 'visible') { if (iosIgApp) guide(what); else fallback(web); } }, 1600); // 아이폰 인스타 앱 안은 웹으로 보내면 앱스토어로 샌다 → 안내
     return true;
   };
   window.openIG.iosIgApp = iosIgApp;
+  window.openIG.guideOnly = guideOnly;
   window.openIG.appUrl = appUrl; // 시험용
   window.openIG.env = { ios, android, inApp };
 
@@ -109,7 +115,7 @@
     if (!a || a.dataset.noapp != null || a.classList.contains('applink-skip')) return;
     if (!/^https:\/\/(www\.)?(instagram\.com|ig\.me)\//.test(a.href)) return;
     if (bar && bar.contains(a)) return;
-    if (iosIgApp && /\/(reel|reels|p)\//.test(a.href)) { e.preventDefault(); guide('영상'); setTimeout(() => window.openIG(a.href), 1500); return; } // 「맨 위 영상」 안내를 보여 주고 프로필로
+    if (guideOnly) { e.preventDefault(); window.openIG(a.href); return; } // DM에서 연 창: 안내만
     if (window.openIG(a.href)) e.preventDefault();
   });
 })();

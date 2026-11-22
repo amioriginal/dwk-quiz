@@ -132,6 +132,6 @@ $('#home').onclick = () => { T.ctx = {}; T.screen('start'); $('#result').classLi
 $('#pname').oninput = render; $('#pdesc').oninput = render;
 $('#copyOnly').onclick = async () => { if (await copy('copyOnly')) toast('복사했어! 인스타 댓글창에 붙여 넣어 줘'); };
 $('#copyGo').onclick = async () => { if (await copy('copyGo')) {
-  // 아이폰 인스타 앱 안에선 영상으로 못 넘긴다(웹 → 앱스토어로 샘 · 11-23 실측) — 창 닫고 붙여 넣으라고만 안내
-  if (window.openIG && window.openIG.iosIgApp) { toast('복사했어! 프로필로 넘어가니 그 영상 댓글창에 붙여 넣어 줘'); setTimeout(() => window.openIG(target()), 1600); return; }
+  // DM에서 연 창(아이폰 인스타 앱)에선 앱으로 못 넘긴다(11-23 실측) — 창 닫고 붙여 넣으라고만 안내. 그 밖은 applink.js가 앱으로 시도
+  if (window.openIG && window.openIG.guideOnly) { toast('복사했어! 왼쪽 위 ✕로 창 닫고 그 영상 댓글창에 붙여 넣어 줘'); return; }
   toast('복사했어! 댓글창에 붙여 넣어 줘'); setTimeout(() => { const u = target(); if (!(window.openIG && window.openIG(u))) location.href = u; }, 900); } };
