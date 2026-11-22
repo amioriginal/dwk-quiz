@@ -27,7 +27,6 @@
     let m;
     if (host === 'instagram.com' && (m = path.match(/^\/(reel|reels|p)\/([A-Za-z0-9_-]+)\/?$/))) {
       if (android) return intent(`www.instagram.com/${m[1] === 'p' ? 'p' : 'reel'}/${m[2]}/`, web);
-      if (iosIgApp) return 'instagram://user?username=dontwannaknow.kr'; // 영상 주소가 안 먹는 곳 — 되는 프로필로(영상은 프로필 맨 위에 있다)
       const id = mediaId(m[2]); return id ? `instagram://media?id=${id}` : null;
     }
     if (host === 'instagram.com' && (m = path.match(/^\/([A-Za-z0-9._]{1,30})\/?$/))) {
@@ -45,8 +44,10 @@
   const igApp = /Instagram/i.test(ua);
   // 아이폰 인스타 앱 안: instagram:// 도 instagram.com 도 안 됨(11-23 대표 폰 실측 — 앞은 무반응, 뒤는 웹을 거쳐 앱스토어). 넘기지 않고 안내만 한다.
   const iosIgApp = ios && igApp;
-  // ※11-23 대표 폰: 프로필(instagram://user)은 앱으로 바로 열림 · 영상(instagram://media?id=)은 무반응 → 아이폰 인스타 앱 안에선 영상 링크도 프로필로 보낸다
-  const shouldTry = () => android || (ios && inApp);
+  // ※11-23 대표 폰(인스타 앱 안): instagram://… 앱 주소는 전부 무반응(시험 화면 A~E) · instagram.com/reel/… 은 웹 → 앱스토어 ·
+  //   instagram.com/아이디/ 프로필 일반 주소는 앱 화면으로 열림(인포크 인스타 아이콘) → 아이폰 인스타 앱 안에선 앱 주소를 쓰지 않고, 영상 링크는 프로필 일반 주소로 바꾼다
+  const shouldTry = () => !iosIgApp && (android || (ios && inApp));
+  const PROFILE_WEB = 'https://www.instagram.com/dontwannaknow.kr/';
 
   let bar = null;
   const fallback = web => {
@@ -85,6 +86,10 @@
 
   // 인스타 웹 주소를 앱으로 연다. 바꿀 필요가 없는 기기면 false를 돌려준다(그땐 원래 링크대로 둔다).
   window.openIG = (web, opts = {}) => {
+    if (iosIgApp) { // 영상·DM 주소는 프로필 일반 주소로(앱 화면으로 열림), 프로필은 그대로
+      location.href = /instagram\.com\/(reel|reels|p)\/|ig\.me\//.test(web) ? PROFILE_WEB : web;
+      return true;
+    }
     const app = shouldTry() ? appUrl(web) : null;
     if (!app) {
       if (opts.navigate) { if (opts.newTab) window.open(web, '_blank', 'noopener'); else location.href = web; }
@@ -106,7 +111,7 @@
     if (!a || a.dataset.noapp != null || a.classList.contains('applink-skip')) return;
     if (!/^https:\/\/(www\.)?(instagram\.com|ig\.me)\//.test(a.href)) return;
     if (bar && bar.contains(a)) return;
-    if (iosIgApp && /\/(reel|reels|p)\//.test(a.href)) setTimeout(() => guide('영상'), 50); // 프로필로 보내며 「맨 위 영상」 안내
+    if (iosIgApp && /\/(reel|reels|p)\//.test(a.href)) { e.preventDefault(); guide('영상'); setTimeout(() => window.openIG(a.href), 1500); return; } // 「맨 위 영상」 안내를 보여 주고 프로필로
     if (window.openIG(a.href)) e.preventDefault();
   });
 })();
