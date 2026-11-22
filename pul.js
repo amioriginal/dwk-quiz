@@ -56,7 +56,17 @@ function how(n) {
     <p class="fb" id="fb"></p></div>`;
   $('backPl').onclick = gate;
   $('goCmt').onclick = async () => {
-    try { await navigator.clipboard.writeText(`${n}번`); $('fb').textContent = '복사했어요! 댓글창에 붙여 넣어 주세요!'; } catch { $('fb').textContent = `댓글창에 「${n}번」이라고 남겨 주세요!`; }
+    let copied = false;
+    try { await navigator.clipboard.writeText(`${n}번`); copied = true; } catch { /* 복사 막힘 — 아래 안내에 번호를 크게 보여 준다 */ }
+    // 아이폰 인스타 앱 안: 영상 주소가 안 먹어 프로필로 연다 — 어느 영상인지 표지와 함께 먼저 보여 주고 넘긴다
+    if (window.openIG && window.openIG.iosIgApp) {
+      const cv = coverOf(EP);
+      $('fb').innerHTML = `<span class="guide">${copied ? `「${n}번」 복사했어요!` : `댓글에 「${n}번」이라고 남겨 주세요!`}<br>프로필로 넘어가요! 이 영상을 눌러 댓글에 붙여 넣어 주세요!${cv.img ? `<img src="img/${esc(cv.img)}.jpg" alt="">` : ''}</span>`;
+      T.ev('click', { ep: EP, el: 'ig_inapp_profile' });
+      setTimeout(() => window.openIG(D.reel), 1800);
+      return;
+    }
+    $('fb').textContent = copied ? '복사했어요! 댓글창에 붙여 넣어 주세요!' : `댓글창에 「${n}번」이라고 남겨 주세요!`;
     setTimeout(() => { if (!(window.openIG && window.openIG(D.reel))) location.href = D.reel; }, 700);
   };
   T.screen('quiz', { ep: EP });

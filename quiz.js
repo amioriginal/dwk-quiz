@@ -111,7 +111,7 @@ function comment() {
   return t;
 }
 function render() { $('#c1').textContent = $('#pname').value.length; $('#c2').textContent = $('#pdesc').value.length; $('#preview').textContent = comment(); }
-function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), 2600); }
+function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), Math.max(2600, m.length * 110)); }
 async function copy(which) {
   if (!$('#pname').value.trim()) { T.ev('copy_fail', { el: which }); toast('행성 이름부터 써 줘'); $('#pname').focus(); return false; }
   T.ev('copy', { el: which, num: $('#pname').value.length, num2: $('#pdesc').value.length });
@@ -131,4 +131,7 @@ $('#again').onclick = () => { opener = OPENERS[Math.floor(Math.random() * OPENER
 $('#home').onclick = () => { T.ctx = {}; T.screen('start'); $('#result').classList.add('hide'); $('#quiz').classList.add('hide'); $('#start').classList.remove('hide'); window.scrollTo({ top: 0 }); };
 $('#pname').oninput = render; $('#pdesc').oninput = render;
 $('#copyOnly').onclick = async () => { if (await copy('copyOnly')) toast('복사했어! 인스타 댓글창에 붙여 넣어 줘'); };
-$('#copyGo').onclick = async () => { if (await copy('copyGo')) { toast('복사했어! 댓글창에 붙여 넣어 줘'); setTimeout(() => { const u = target(); if (!(window.openIG && window.openIG(u))) location.href = u; }, 900); } };
+$('#copyGo').onclick = async () => { if (await copy('copyGo')) {
+  // 아이폰 인스타 앱 안에선 영상으로 못 넘긴다(웹 → 앱스토어로 샘 · 11-23 실측) — 창 닫고 붙여 넣으라고만 안내
+  if (window.openIG && window.openIG.iosIgApp) { toast('복사했어! 프로필로 넘어가니 그 영상 댓글창에 붙여 넣어 줘'); setTimeout(() => window.openIG(target()), 1600); return; }
+  toast('복사했어! 댓글창에 붙여 넣어 줘'); setTimeout(() => { const u = target(); if (!(window.openIG && window.openIG(u))) location.href = u; }, 900); } };

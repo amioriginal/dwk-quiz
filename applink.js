@@ -27,6 +27,7 @@
     let m;
     if (host === 'instagram.com' && (m = path.match(/^\/(reel|reels|p)\/([A-Za-z0-9_-]+)\/?$/))) {
       if (android) return intent(`www.instagram.com/${m[1] === 'p' ? 'p' : 'reel'}/${m[2]}/`, web);
+      if (iosIgApp) return 'instagram://user?username=dontwannaknow.kr'; // 영상 주소가 안 먹는 곳 — 되는 프로필로(영상은 프로필 맨 위에 있다)
       const id = mediaId(m[2]); return id ? `instagram://media?id=${id}` : null;
     }
     if (host === 'instagram.com' && (m = path.match(/^\/([A-Za-z0-9._]{1,30})\/?$/))) {
@@ -42,7 +43,10 @@
   // 인스타 앱 자기 브라우저 안에서는 instagram://·intent:// 가 안 먹는다(11-23 대표 폰 실측: 아이폰 인스타 앱 안에서 누를 때마다 「앱이 안 열렸어?」 띠).
   // 거기선 바꾸지 않고 instagram.com 주소로 그냥 이동한다 — 인스타 앱이 자기 주소를 앱 화면으로 연다.
   const igApp = /Instagram/i.test(ua);
-  const shouldTry = () => !igApp && (android || (ios && inApp));
+  // 아이폰 인스타 앱 안: instagram:// 도 instagram.com 도 안 됨(11-23 대표 폰 실측 — 앞은 무반응, 뒤는 웹을 거쳐 앱스토어). 넘기지 않고 안내만 한다.
+  const iosIgApp = ios && igApp;
+  // ※11-23 대표 폰: 프로필(instagram://user)은 앱으로 바로 열림 · 영상(instagram://media?id=)은 무반응 → 아이폰 인스타 앱 안에선 영상 링크도 프로필로 보낸다
+  const shouldTry = () => android || (ios && inApp);
 
   let bar = null;
   const fallback = web => {
@@ -62,6 +66,23 @@
     T().ev('click', { el: 'app_fb_show' });
   };
 
+  // 아이폰 인스타 앱 안: 넘기지 않고 「창 닫고 찾기」 안내 띠(웹으로 넘기면 앱스토어로 샌다 · 11-23 실측)
+  const guide = what => {
+    if (bar) bar.remove();
+    bar = document.createElement('div'); bar.className = 'applink-bar'; bar.setAttribute('role', 'status');
+    const p = document.createElement('span');
+    p.textContent = what === '영상' ? '프로필로 넘어가요! 맨 위 영상을 눌러 주세요!'
+      : what === 'DM' ? '왼쪽 위 ✕로 창 닫고 돈워너노우 프로필의 「메시지」를 눌러 주세요!' : '왼쪽 위 ✕로 창 닫으면 돈워너노우 프로필이에요!';
+    const x = document.createElement('button'); x.type = 'button'; x.textContent = '닫기'; x.dataset.t = 'ig_guide_close'; x.onclick = () => { bar.remove(); bar = null; };
+    bar.append(p, x);
+    Object.assign(bar.style, { position: 'fixed', left: '12px', right: '12px', bottom: 'calc(12px + env(safe-area-inset-bottom, 0px))', zIndex: '9999',
+      display: 'flex', gap: '10px', alignItems: 'center', justifyContent: 'space-between', padding: '14px', borderRadius: '14px',
+      background: 'rgba(16,16,32,.97)', color: '#fff', font: '15px/1.45 -apple-system,"Apple SD Gothic Neo",sans-serif', boxShadow: '0 6px 24px rgba(0,0,0,.35)', wordBreak: 'keep-all' });
+    Object.assign(x.style, { background: 'none', border: '0', color: 'rgba(255,255,255,.7)', font: 'inherit', padding: '4px', flex: 'none' });
+    document.body.append(bar);
+    T().ev('click', { el: 'ig_guide_' + what });
+  };
+
   // 인스타 웹 주소를 앱으로 연다. 바꿀 필요가 없는 기기면 false를 돌려준다(그땐 원래 링크대로 둔다).
   window.openIG = (web, opts = {}) => {
     const app = shouldTry() ? appUrl(web) : null;
@@ -75,6 +96,7 @@
     setTimeout(() => { if (!gone && document.visibilityState === 'visible') fallback(web); }, 1600);
     return true;
   };
+  window.openIG.iosIgApp = iosIgApp;
   window.openIG.appUrl = appUrl; // 시험용
   window.openIG.env = { ios, android, inApp };
 
@@ -84,6 +106,7 @@
     if (!a || a.dataset.noapp != null || a.classList.contains('applink-skip')) return;
     if (!/^https:\/\/(www\.)?(instagram\.com|ig\.me)\//.test(a.href)) return;
     if (bar && bar.contains(a)) return;
+    if (iosIgApp && /\/(reel|reels|p)\//.test(a.href)) setTimeout(() => guide('영상'), 50); // 프로필로 보내며 「맨 위 영상」 안내
     if (window.openIG(a.href)) e.preventDefault();
   });
 })();

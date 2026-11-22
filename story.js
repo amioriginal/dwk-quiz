@@ -19,7 +19,7 @@ function render() {
   $('#c1').textContent = $('#pname').value.length; $('#c2').textContent = $('#pdesc').value.length; $('#c3').textContent = $('#prule').value.length;
   $('#preview').textContent = text();
 }
-function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), 2600); }
+function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), Math.max(2600, m.length * 110)); }
 async function copy(which) {
   if (!$('#pname').value.trim()) { T.ev('copy_fail', { el: which, num: 1 }); toast('행성 이름부터 써 줘'); $('#pname').focus(); return false; }
   if (!$('#pdesc').value.trim()) { T.ev('copy_fail', { el: which, num: 2 }); toast('어떤 행성인지 한 줄만 써 줘'); $('#pdesc').focus(); return false; }
@@ -29,7 +29,10 @@ async function copy(which) {
   catch { const ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.append(ta); ta.select(); try { document.execCommand('copy'); } catch { /* 실패해도 아래 안내 문구로 직접 복사하게 한다 */ } ta.remove(); }
   return true;
 }
-const go = url => setTimeout(() => { if (!(window.openIG && window.openIG(url))) location.href = url; }, 900); // 인스타 앱으로 바로(applink.js)
+const go = url => { // 인스타 앱으로 바로(applink.js) — 아이폰 인스타 앱 안에선 못 넘긴다(웹 → 앱스토어 · 11-23 실측): 창 닫으라고만 안내
+  if (window.openIG && window.openIG.iosIgApp && url !== DM_URL) { toast('복사했어! 프로필로 넘어가니 맨 위 영상 댓글창에 붙여 넣어 줘'); setTimeout(() => window.openIG(url), 1600); return; }
+  setTimeout(() => { if (!(window.openIG && window.openIG(url))) location.href = url; }, 900);
+};
 ['#pname', '#pdesc', '#prule'].forEach(s => { $(s).oninput = render; });
 $('#toComment').onclick = async () => { if (await copy('toComment')) { toast('복사했어! 최신 영상 댓글창에 붙여 넣어 줘'); go((EPS[0] && EPS[0].reel) || PROFILE); } };
 $('#toDm').onclick = async () => { if (await copy('toDm')) { toast('복사했어! DM창에 붙여 넣어 줘'); go(DM_URL); } };
