@@ -9,7 +9,7 @@ const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.f
 const buzz = p => { if (navigator.vibrate && navigator.userActivation && navigator.userActivation.isActive) navigator.vibrate(p); };
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 
-const ASK = { lead: '퀴즈 시작 전 팔로우는\n주인장에게 큰 힘이 돼!!', yes: '팔로우하고 풀기', no: '그냥 풀기ㅠㅠ' };
+const ASK = { lead: '퀴즈 시작 전 팔로우는\n주인장에게 큰 힘이 돼!!', yes: '팔로우하고 풀기', no: '그냥 풀기ㅠㅠ', perk: '🪐 팔로워가 보낸 행성은 진짜 영상이 돼\n뽑히면 네 아이디도 나와!' };
 let mode = null;   // 고른 편(EPS의 한 묶음) 또는 'all'
 let qs = [], i = 0, score = 0, qT0 = 0;
 

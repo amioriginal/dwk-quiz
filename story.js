@@ -35,4 +35,4 @@ $('#toComment').onclick = async () => { if (await copy('toComment')) { toast('�
 $('#toDm').onclick = async () => { if (await copy('toDm')) { toast('복사했어! DM창에 붙여 넣어 줘'); go(DM_URL); } };
 render();
 // 쓰기 전에 팔로우 부탁 한 번(확인은 못 하고 고르게만 한다)
-window.followGate({ lead: '사연 쓰기 전 팔로우는\n주인장에게 큰 힘이 돼!!', yes: '팔로우하고 쓰기', no: '그냥 쓰기ㅠㅠ' }, () => T.screen('story'), null);
+window.followGate({ lead: '사연 쓰기 전 팔로우는\n주인장에게 큰 힘이 돼!!', yes: '팔로우하고 쓰기', no: '그냥 쓰기ㅠㅠ', perk: '🪐 영상은 팔로워 행성 중에서만 골라\n뽑히면 네 아이디도 나와!' }, () => T.screen('story'), null);

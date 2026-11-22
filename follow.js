@@ -26,7 +26,8 @@
     const already = el('button', 'btn o', txt.already || ('이미 팔로우 중! 바로 ' + String(txt.yes).replace(/^팔로우하고\s*/, ''))); already.type = 'button';
     const no = el('button', 'btn g', txt.no); no.type = 'button';
     yes.dataset.t = 'fg_yes'; already.dataset.t = 'fg_already'; no.dataset.t = 'fg_no';
-    card.append(el('p', 'hi', '아!'), el('h3', null, txt.lead), el('p', 'sub', '@dontwannaknow.kr'), yes, already, no,
+    // 보상 한 줄(txt.perk) — 팔로워 행성 출연: 팔로우할 이유를 창에 보여 준다
+    card.append(el('p', 'hi', '아!'), el('h3', null, txt.lead), el('p', 'sub', '@dontwannaknow.kr'), ...(txt.perk ? [el('p', 'perk', txt.perk)] : []), yes, already, no,
       el('small', null, '팔로우하고 이 화면으로 돌아오면 바로 이어서 할 수 있어'));
     wrap.append(card); document.body.append(wrap);
     T().screen('gate'); T().ev('fg_show', { el: key || 'story' });
