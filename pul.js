@@ -19,7 +19,7 @@ function dogam(here) {
   const got = ORDER.filter(k => DG[k]).length;
   return `<div class="card more"><h3 class="h3">내 행성 도감 ${got} / ${ORDER.length}</h3>
     <div class="dg">${ORDER.map(k => { const cv = coverOf(k); const g = DG[k]; return g
-      ? `<a class="dgc on${k === here ? ' me' : ''}" href="?ep=${esc(k)}&n=${esc(g.n)}" data-t="dogam_open:${esc(k)}"><b>${esc(cv.no)}</b><span>${esc(g.n)}번 「${esc(g.t)}」</span></a>`
+      ? `<a class="dgc on${k === here ? ' me' : ''}" href="?ep=${esc(k)}&n=${esc(g.n)}" data-t="dogam_open:${esc(k)}"><b>${esc(cv.no)}</b><span class="fit">${esc(g.n)}번 「${esc(g.t)}」</span></a>`
       : `<a class="dgc" href="?ep=${esc(k)}" data-t="dogam_empty:${esc(k)}"><b>${esc(cv.no)}</b><span>아직 비었어요!</span></a>`; }).join('')}</div>
     <p class="desc">편마다 번호 댓글을 남기면 도감이 채워져요!</p></div>`;
 }
@@ -39,7 +39,7 @@ function gate() {
   $('app').innerHTML = `<div class="card hero"><p class="ep">${esc(D.no)}</p>
     <h2 class="h">어느 행성이 궁금해?</h2>
     <p class="desc">행성을 누르면 풀이 받는 법이 나와요!</p>
-    <div class="four">${Object.keys(D.p).map(k => `<button class="pl" data-k="${k}" data-t="gate_pl${k}"><img src="img/${esc(D.p[k].img)}.jpg" alt=""><span>${k}번</span><small>「${esc(D.p[k].t)}」</small></button>`).join('')}</div>
+    <div class="four">${Object.keys(D.p).map(k => `<button class="pl" data-k="${k}" data-t="gate_pl${k}"><img src="img/${esc(D.p[k].img)}.jpg" alt=""><span>${k}번</span><small class="fit">「${esc(D.p[k].t)}」</small></button>`).join('')}</div>
     <a class="btn g" href="pul.html" data-t="back_eps">다른 편 고르기</a></div>`;
   document.querySelectorAll('.pl').forEach(b => b.onclick = () => how(b.dataset.k));
   T.screen('gate', { ep: EP });
@@ -105,6 +105,18 @@ function show(n) {
     }
   };
 }
+
+// 한 줄 칸(.fit): 넘치면 글자를 조금씩 줄여 한 줄에 맞춘다(최소 10px)
+function fitAll() {
+  document.querySelectorAll('.fit').forEach(el => {
+    el.style.fontSize = '';
+    let fs = parseFloat(getComputedStyle(el).fontSize);
+    while (el.scrollWidth > el.clientWidth + 1 && fs > 10) { fs -= 0.5; el.style.fontSize = fs + 'px'; }
+  });
+}
+new MutationObserver(() => requestAnimationFrame(fitAll)).observe(document.getElementById('app'), { childList: true, subtree: true });
+addEventListener('resize', fitAll);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitAll);
 
 if (!D) pickEp();
 else if (qs.get('n') && D.p[qs.get('n')]) show(qs.get('n'));
