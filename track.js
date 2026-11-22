@@ -100,7 +100,7 @@
       : /youtube\.com$|youtu\.be$/.test(h) ? 'youtube' : /tiktok\.com$/.test(h) ? 'tiktok' : h === location.hostname ? 'self' : /google\./.test(h) ? 'google'
       : /naver\.com$/.test(h) ? 'naver' : 'other';
   } catch { ref = 'other'; }
-  const SRC_OK = /^(inpock|ig|igstory|igbio|yt|tt|fb|blog\d{0,2}|qr|test)$/; // 링크 꼬리표 ?from= 은 허용 목록만
+  const SRC_OK = /^(inpock|ig|igstory|igbio|yt|tt|fb|blog\d{0,2}|cm\d{0,2}|qr|test)$/; // 링크 꼬리표 ?from= 은 허용 목록만
   const src = SRC_OK.test(qs.get('from') || '') ? qs.get('from') : null;
   // 다시 온 사람: 첫 방문 날짜·방문 횟수만 이 기기에 둔다(번호 없음)
   const today = new Date().toISOString().slice(0, 10);
