@@ -2,26 +2,26 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
 <meta name="robots" content="noindex">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>앱 열기 시험 2</title>
+<title>앱 열기 시험 3</title>
 <style>
 body{margin:0;background:#07071a;color:#fff;font:17px/1.5 -apple-system,"Apple SD Gothic Neo",sans-serif;padding:22px 16px}
 h1{font-size:22px;margin:0 0 6px}p{color:rgba(255,255,255,.75);margin:0 0 16px;word-break:keep-all}
-a{display:block;margin:12px 0;padding:16px;border-radius:14px;background:#FFD447;color:#1a1300;text-decoration:none;font-weight:700;word-break:keep-all}
-a small{display:block;font-weight:400;font-size:13px;opacity:.7;word-break:break-all}
-a.ctl{background:rgba(255,255,255,.12);color:#fff}
+button{display:block;width:100%;text-align:left;margin:12px 0;padding:16px;border:0;border-radius:14px;background:#FFD447;color:#1a1300;font:700 17px/1.4 -apple-system,"Apple SD Gothic Neo",sans-serif;word-break:keep-all}
+button small{display:block;font-weight:400;font-size:13px;opacity:.7;word-break:break-all}
+button.ctl{background:rgba(255,255,255,.12);color:#fff}
 </style>
 </head>
 <body>
-<h1>인스타 앱 열기 시험 2</h1>
-<p>인스타 DM 안에서 열고 하나씩 눌러 주세요! 누를 때마다 왼쪽 위 ✕나 뒤로 가기로 이 화면에 돌아와 다음 걸 눌러 주세요! 「만약에」 영상이 앱 화면으로 열리는 번호를 알려 주세요!</p>
-<a href="https://www.instagram.com/p/DgCzHrdCZV0/">1 게시물 주소(/p/)<small>https://www.instagram.com/p/DgCzHrdCZV0/</small></a>
-<a href="https://instagram.com/p/DgCzHrdCZV0/">2 게시물 주소(www 없이)<small>https://instagram.com/p/DgCzHrdCZV0/</small></a>
-<a href="https://www.instagram.com/reels/DgCzHrdCZV0/">3 릴스 주소(/reels/)<small>https://www.instagram.com/reels/DgCzHrdCZV0/</small></a>
-<a href="https://www.instagram.com/dontwannaknow.kr/reel/DgCzHrdCZV0/">4 아이디/reel 주소<small>https://www.instagram.com/dontwannaknow.kr/reel/DgCzHrdCZV0/</small></a>
-<a class="ctl" href="https://www.instagram.com/dontwannaknow.kr/">5 대조: 프로필 주소<small>https://www.instagram.com/dontwannaknow.kr/</small></a>
-<a class="ctl" href="https://www.instagram.com/reel/DgCzHrdCZV0/">6 대조: 지금 쓰는 릴스 주소(앱스토어로 감)<small>https://www.instagram.com/reel/DgCzHrdCZV0/</small></a>
+<h1>인스타 앱 열기 시험 3</h1>
+<p>인스타 DM 안에서 열고 하나씩 눌러 주세요! 「만약에」 영상이 앱에서 바로 열리는 번호를 알려 주세요! 이번엔 11-21에 프로필이 열렸던 방식 그대로예요!</p>
+<button data-u="instagram://media?id=4036013044143854964">1 영상 번호<small>instagram://media?id=4036013044143854964</small></button>
+<button data-u="instagram://media?id=4036013044143854964_74235886777">2 영상 번호_계정 번호<small>instagram://media?id=4036013044143854964_74235886777</small></button>
+<button data-u="instagram://reels?id=4036013044143854964">3 릴스 번호<small>instagram://reels?id=4036013044143854964</small></button>
+<button data-u="https://www.instagram.com/p/DgCzHrdCZV0/">4 게시물 일반 주소(/p/)<small>https://www.instagram.com/p/DgCzHrdCZV0/</small></button>
+<button class="ctl" data-u="instagram://user?username=dontwannaknow.kr">5 대조: 프로필(11-21 열렸던 주소)<small>instagram://user?username=dontwannaknow.kr</small></button>
+<script src="t_open.js"></script>
 </body>
 </html>

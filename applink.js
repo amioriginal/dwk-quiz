@@ -44,10 +44,11 @@
   const igApp = /Instagram/i.test(ua);
   // 아이폰 인스타 앱 안: instagram:// 도 instagram.com 도 안 됨(11-23 대표 폰 실측 — 앞은 무반응, 뒤는 웹을 거쳐 앱스토어). 넘기지 않고 안내만 한다.
   const iosIgApp = ios && igApp;
-  // ※11-23 대표 폰(인스타 앱 안): instagram://… 앱 주소는 전부 무반응(시험 화면 A~E) · instagram.com/reel/… 은 웹 → 앱스토어 ·
-  //   instagram.com/아이디/ 프로필 일반 주소는 앱 화면으로 열림(인포크 인스타 아이콘) → 아이폰 인스타 앱 안에선 앱 주소를 쓰지 않고, 영상 링크는 프로필 일반 주소로 바꾼다
-  const shouldTry = () => !iosIgApp && (android || (ios && inApp));
-  const PROFILE_WEB = 'https://www.instagram.com/dontwannaknow.kr/';
+  // ※아이폰 인스타 앱 안: 스크립트로 instagram://user 로 넘기면 프로필이 앱으로 열림(11-21 대표 「열린다」 · ig.html).
+  //   손가락으로 누르는 <a href="instagram://…"> 는 무반응(11-23 시험 화면) · instagram.com/reel/… 은 웹 → 앱스토어(11-23).
+  //   영상 직행 앱 주소는 시험 중(t_open.html) — 그때까진 영상 링크도 스크립트로 프로필을 연다.
+  const shouldTry = () => android || (ios && inApp);
+  const PROFILE_APP = 'instagram://user?username=dontwannaknow.kr';
 
   let bar = null;
   const fallback = web => {
@@ -86,10 +87,7 @@
 
   // 인스타 웹 주소를 앱으로 연다. 바꿀 필요가 없는 기기면 false를 돌려준다(그땐 원래 링크대로 둔다).
   window.openIG = (web, opts = {}) => {
-    if (iosIgApp) { // 영상·DM 주소는 프로필 일반 주소로(앱 화면으로 열림), 프로필은 그대로
-      location.href = /instagram\.com\/(reel|reels|p)\/|ig\.me\//.test(web) ? PROFILE_WEB : web;
-      return true;
-    }
+    if (iosIgApp) { location.href = PROFILE_APP; return true; } // 프로필·영상·DM 모두 스크립트로 앱 프로필(검증된 길)
     const app = shouldTry() ? appUrl(web) : null;
     if (!app) {
       if (opts.navigate) { if (opts.newTab) window.open(web, '_blank', 'noopener'); else location.href = web; }
