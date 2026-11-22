@@ -39,7 +39,10 @@
     return null;
   };
   // 이 기기에서 앱 주소로 바꿔 열어야 하나
-  const shouldTry = () => android || (ios && inApp);
+  // 인스타 앱 자기 브라우저 안에서는 instagram://·intent:// 가 안 먹는다(11-23 대표 폰 실측: 아이폰 인스타 앱 안에서 누를 때마다 「앱이 안 열렸어?」 띠).
+  // 거기선 바꾸지 않고 instagram.com 주소로 그냥 이동한다 — 인스타 앱이 자기 주소를 앱 화면으로 연다.
+  const igApp = /Instagram/i.test(ua);
+  const shouldTry = () => !igApp && (android || (ios && inApp));
 
   let bar = null;
   const fallback = web => {
