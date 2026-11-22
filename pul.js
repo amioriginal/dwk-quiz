@@ -55,9 +55,8 @@ function how(n) {
     <button class="btn g" id="backPl" data-t="back_planets">다른 행성 보기</button>
     <p class="fb" id="fb"></p></div>`;
   $('backPl').onclick = gate;
-  $('goCmt').onclick = async () => {
-    let copied = false;
-    try { await navigator.clipboard.writeText(`${n}번`); copied = true; } catch { /* 복사 막힘 — 아래 안내에 번호를 크게 보여 준다 */ }
+  $('goCmt').onclick = () => { // 누른 그 순간에 복사하고 바로 넘긴다(기다리면 인스타 앱 안에서 앱 열기가 막힌다 · 웹 조사 11-23)
+    const copied = window.openIG ? window.openIG.copyNow(`${n}번`) : false;
     if (window.openIG && window.openIG.guideOnly) { // DM에서 연 창(아이폰 인스타 앱): 앱으로 못 넘긴다 — 표지와 함께 찾는 법만
       const cv = coverOf(EP);
       $('fb').innerHTML = `<span class="guide">${copied ? `「${n}번」 복사했어요!` : `댓글에 「${n}번」이라고 남겨 주세요!`}<br>왼쪽 위 ✕로 창 닫고, 프로필 맨 위 이 영상에 붙여 넣어 주세요!${cv.img ? `<img src="img/${esc(cv.img)}.jpg" alt="">` : ''}</span>`;
@@ -65,7 +64,7 @@ function how(n) {
       return;
     }
     $('fb').textContent = copied ? '복사했어요! 댓글창에 붙여 넣어 주세요!' : `댓글창에 「${n}번」이라고 남겨 주세요!`;
-    setTimeout(() => { if (!(window.openIG && window.openIG(D.reel))) location.href = D.reel; }, 700);
+    if (!(window.openIG && window.openIG(D.reel))) location.href = D.reel;
   };
   T.screen('quiz', { ep: EP });
 }

@@ -104,6 +104,16 @@
     setTimeout(() => { if (!gone && document.visibilityState === 'visible') { if (iosIgApp) guide(what); else fallback(web); } }, 1600); // 아이폰 인스타 앱 안은 웹으로 보내면 앱스토어로 샌다 → 안내
     return true;
   };
+  // 누른 그 순간에 바로 복사(기다리지 않음) — 기다렸다 넘기면 인스타 앱 안 브라우저가 앱 열기를 막는다(웹 조사 11-23: WarpLink·Airbridge 「사용자가 누른 순간의 이동만 앱을 연다」)
+  window.openIG.copyNow = t => {
+    let ok = false;
+    const ta = document.createElement('textarea'); ta.value = t; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.append(ta);
+    ta.select(); ta.setSelectionRange(0, t.length);
+    try { ok = document.execCommand('copy'); } catch { ok = false; } // 실패하면 안내 문구로 직접 쓰게 한다
+    ta.remove();
+    try { if (navigator.clipboard) navigator.clipboard.writeText(t).catch(() => {}); } catch { /* 위 복사로 충분 */ }
+    return ok;
+  };
   window.openIG.iosIgApp = iosIgApp;
   window.openIG.guideOnly = guideOnly;
   window.openIG.appUrl = appUrl; // 시험용

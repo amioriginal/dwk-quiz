@@ -112,12 +112,11 @@ function comment() {
 }
 function render() { $('#c1').textContent = $('#pname').value.length; $('#c2').textContent = $('#pdesc').value.length; $('#preview').textContent = comment(); }
 function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), Math.max(2600, m.length * 110)); }
-async function copy(which) {
+function copy(which) { // 누른 그 순간에 복사(기다리면 인스타 앱 안에서 앱 열기가 막힌다 · 웹 조사 11-23)
   if (!$('#pname').value.trim()) { T.ev('copy_fail', { el: which }); toast('행성 이름부터 써 줘'); $('#pname').focus(); return false; }
   T.ev('copy', { el: which, num: $('#pname').value.length, num2: $('#pdesc').value.length });
-  const text = comment();
-  try { await navigator.clipboard.writeText(text); }
-  catch { const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.append(ta); ta.select(); try { document.execCommand('copy'); } catch { /* 복사 실패는 아래 안내로 알린다 */ } ta.remove(); }
+  if (window.openIG) window.openIG.copyNow(comment());
+  else { try { navigator.clipboard.writeText(comment()).catch(() => {}); } catch { /* 복사 실패는 아래 안내로 알린다 */ } }
   return true;
 }
 // 댓글 갈 곳: 고른 편의 릴스. 전체 도전이면 가장 최신 편.
@@ -131,7 +130,7 @@ $('#again').onclick = () => { opener = OPENERS[Math.floor(Math.random() * OPENER
 $('#home').onclick = () => { T.ctx = {}; T.screen('start'); $('#result').classList.add('hide'); $('#quiz').classList.add('hide'); $('#start').classList.remove('hide'); window.scrollTo({ top: 0 }); };
 $('#pname').oninput = render; $('#pdesc').oninput = render;
 $('#copyOnly').onclick = async () => { if (await copy('copyOnly')) toast('복사했어! 인스타 댓글창에 붙여 넣어 줘'); };
-$('#copyGo').onclick = async () => { if (await copy('copyGo')) {
+$('#copyGo').onclick = () => { if (copy('copyGo')) {
   // DM에서 연 창(아이폰 인스타 앱)에선 앱으로 못 넘긴다(11-23 실측) — 창 닫고 붙여 넣으라고만 안내. 그 밖은 applink.js가 앱으로 시도
   if (window.openIG && window.openIG.guideOnly) { toast('복사했어! 왼쪽 위 ✕로 창 닫고 그 영상 댓글창에 붙여 넣어 줘'); return; }
-  toast('복사했어! 댓글창에 붙여 넣어 줘'); setTimeout(() => { const u = target(); if (!(window.openIG && window.openIG(u))) location.href = u; }, 900); } };
+  toast('복사했어! 댓글창에 붙여 넣어 줘'); const u = target(); if (!(window.openIG && window.openIG(u))) location.href = u; } };
