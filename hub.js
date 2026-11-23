@@ -38,7 +38,7 @@ document.addEventListener('click', e => {
 function renderNow() {
   const e = EPLIST[0]; if (!e) return;
   $('now').innerHTML = `<a class="nowc" href="${esc(e.reel)}" data-ig data-t="now_reel:${esc(e.pk || e.no)}"><img src="img/${esc(e.cover)}.jpg" alt=""><span><b>${esc(e.no)}</b><i>${esc(dot(e.title))}</i></span></a>
-    <div class="steps"><p><b>1</b>영상 보고 마음에 드는 행성 고르기</p><p><b>2</b>그 번호를 댓글로 남기기</p><p><b>3</b>DM으로 내 성향 풀이가 와!</p></div>
+    <div class="steps"><p><b>1</b>영상에서 마음이 가는 행성 고르기</p><p><b>2</b>댓글에서 다른 사람은 왜 골랐는지 보기</p><p><b>3</b>위에서 내 선택을 일상의 질문으로 돌아보기</p></div>
     <a class="btn y" href="${esc(e.reel)}" data-ig data-t="now_go">영상 보러 가기</a>`;
 }
 
@@ -65,7 +65,7 @@ async function rpc(fn, body) {
 }
 async function loadCounts() {
   try { const rows = await rpc('hub_counts'); COUNTS = Object.fromEntries(rows.map(r => [r.cand, Number(r.n) || 0])); }
-  catch (err) { T.ev('jserr', { el: 'hub_counts' }); $('candNote').textContent = '지금은 하트 수를 못 불러왔어! 누른 하트는 그대로 들어가!'; }
+  catch (err) { T.ev('jserr', { el: 'hub_counts' }); $('candNote').textContent = '지금은 실시간 하트 수를 불러올 수 없습니다.'; }
   renderCands();
 }
 const score = c => (COUNTS[c.id] || 0) + (c.likes || 0) + (VOTED.has(c.id) && !COUNTS[c.id] ? 1 : 0);
@@ -104,7 +104,7 @@ function renderEps() {
 // 공유 — 친구에게 이 허브를
 $('share').onclick = async () => {
   const url = location.origin + location.pathname;
-  const text = '행성 골라서 내 성향 보는 곳! 너는 어느 행성이야?';
+  const text = '어떤 행성을 골랐나요? 영상 속 선택을 일상의 질문으로 돌아보세요.';
   try {
     if (navigator.share) { await navigator.share({ text, url }); T.ev('click', { el: 'share_native' }); return; }
     await navigator.clipboard.writeText(`${text}\n${url}`); toast('주소를 복사했어! 친구한테 붙여 넣어 줘!');
