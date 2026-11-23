@@ -8,6 +8,7 @@ const CANDS = window.HUB_CANDS || [];
 const T = window.T || { ev() {}, screen() {} };
 const PROFILE = 'https://www.instagram.com/dontwannaknow.kr/';
 const $ = id => document.getElementById(id);
+const dot = s => String(s).replace(/ · /g, '\u00a0· '); // 「·」가 줄 맨 앞에 오지 않게
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const meta = n => (document.querySelector(`meta[name="${n}"]`) || {}).content || '';
 const KEY = meta('dwk-key');
@@ -36,9 +37,9 @@ document.addEventListener('click', e => {
 // ① 이번 행성 — 가장 최근 편
 function renderNow() {
   const e = EPLIST[0]; if (!e) return;
-  $('now').innerHTML = `<a class="nowc" href="${esc(e.reel)}" data-ig data-t="now_reel:${esc(e.pk || e.no)}"><img src="img/${esc(e.cover)}.jpg" alt=""><span><b>${esc(e.no)}</b><i>${esc(e.title)}</i></span><em>▶ 영상 보기</em></a>
-    <div class="steps"><p><b>1</b>영상 보고 행성 하나 고르기</p><p><b>2</b>고른 번호 하나만 댓글로</p><p><b>3</b>DM으로 내 성향 풀이 도착!</p></div>
-    <a class="btn y" href="${esc(e.reel)}" data-ig data-t="now_go">행성 고르러 가기</a>`;
+  $('now').innerHTML = `<a class="nowc" href="${esc(e.reel)}" data-ig data-t="now_reel:${esc(e.pk || e.no)}"><img src="img/${esc(e.cover)}.jpg" alt=""><span><b>${esc(e.no)}</b><i>${esc(dot(e.title))}</i></span></a>
+    <div class="steps"><p><b>1</b>영상 보고 마음에 드는 행성 고르기</p><p><b>2</b>그 번호를 댓글로 남기기</p><p><b>3</b>DM으로 내 성향 풀이가 와!</p></div>
+    <a class="btn y" href="${esc(e.reel)}" data-ig data-t="now_go">영상 보러 가기</a>`;
 }
 
 // ② 행성 도감 — 편마다 내가 받은 풀이 행성 하나
@@ -52,7 +53,7 @@ function renderDex() {
     if (p) return `<a class="dx on" href="pul.html?ep=${esc(e.pk)}&n=${esc(d.n)}" data-t="dex_open:${esc(e.pk)}"><img src="img/${esc(p.img)}.jpg" alt=""><b>${esc(p.name.replace(/ 행성$/, ''))}</b><i>${esc(e.no)}</i></a>`;
     return `<a class="dx" href="${esc(e.reel)}" data-ig data-t="dex_lock:${esc(e.pk)}"><span>?</span><b>잠김</b><i>${esc(e.no)}</i></a>`;
   }).join('');
-  $('dexHint').textContent = got === eps.length && eps.length ? '도감을 다 채웠어! 다음 행성이 열리면 또 모아 봐!' : '잠긴 칸을 누르면 그 편 영상으로 가! 번호 댓글을 남기면 열려!';
+  $('dexHint').textContent = got === eps.length && eps.length ? '도감을 다 채웠어! 다음 행성이 열리면 또 모아 봐!' : '? 칸을 누르면 그 편 영상으로 가!';
 }
 
 // ③ 다음 행성 후보 — 하트(사이트) + 댓글 좋아요
@@ -68,10 +69,14 @@ async function loadCounts() {
   renderCands();
 }
 const score = c => (COUNTS[c.id] || 0) + (c.likes || 0) + (VOTED.has(c.id) && !COUNTS[c.id] ? 1 : 0);
+let CAND_OPEN = false;
 const FROM = { ig: '인스타', yt: '유튜브', tt: '틱톡' };
 function renderCands() {
   const list = CANDS.filter(c => !c.made).slice().sort((a, b) => score(b) - score(a));
-  $('cands').innerHTML = list.map((c, i) => `<div class="cd">
+  const shown = CAND_OPEN ? list : list.slice(0, 3);
+  $('candMore').hidden = list.length <= 3;
+  $('candMore').textContent = CAND_OPEN ? '접기' : `후보 ${list.length - 3}개 더 보기`;
+  $('cands').innerHTML = shown.map((c, i) => `<div class="cd">
       <span class="rk">${i + 1}</span>
       <div class="cm"><b>${esc(c.e)} ${esc(c.name)}</b><p>${esc(c.line)}</p><i>${esc(FROM[c.from] || '')} ${esc(c.by)}*** 님 제안</i></div>
       <button class="ht${VOTED.has(c.id) ? ' on' : ''}" type="button" data-c="${esc(c.id)}" data-t="vote:${esc(c.id)}" aria-label="${esc(c.name)} 응원하기"><span>${VOTED.has(c.id) ? '♥' : '♡'}</span>${score(c)}</button>
@@ -80,6 +85,7 @@ function renderCands() {
   $('madeBox').hidden = !made.length;
   $('made').innerHTML = made.map(c => `<p>${esc(c.e)} ${esc(c.name)} → ${esc(c.made)} <i>${esc(c.by)}*** 님 제안</i></p>`).join('');
 }
+$('candMore').onclick = () => { CAND_OPEN = !CAND_OPEN; renderCands(); };
 $('cands').addEventListener('click', async e => {
   const b = e.target.closest('button[data-c]'); if (!b) return;
   const id = b.dataset.c;
@@ -92,7 +98,7 @@ $('cands').addEventListener('click', async e => {
 
 // ④ 모든 편
 function renderEps() {
-  $('eps').innerHTML = EPLIST.map(e => `<a class="epc" href="${esc(e.reel)}" data-ig data-t="ep_reel:${esc(e.pk || e.no)}"><img src="img/${esc(e.cover)}.jpg" alt=""><span><b>${esc(e.no)}</b><i>${esc(e.title)}</i></span>${e.pk ? '<em>DM 풀이</em>' : ''}</a>`).join('');
+  $('eps').innerHTML = EPLIST.map(e => `<a class="epc" href="${esc(e.reel)}" data-ig data-t="ep_reel:${esc(e.pk || e.no)}"><img src="img/${esc(e.cover)}.jpg" alt=""><span><b>${esc(e.no)}</b><i>${esc(dot(e.title))}</i></span><em>보기 ›</em></a>`).join('');
 }
 
 // 공유 — 친구에게 이 허브를
