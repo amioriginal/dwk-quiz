@@ -132,5 +132,5 @@ $('#pname').oninput = render; $('#pdesc').oninput = render;
 $('#copyOnly').onclick = async () => { if (await copy('copyOnly')) toast('복사했어! 인스타 댓글창에 붙여 넣어 줘'); };
 $('#copyGo').onclick = () => { if (copy('copyGo')) {
   // DM에서 연 창(아이폰 인스타 앱)에선 앱으로 못 넘긴다(11-23 실측) — 창 닫고 붙여 넣으라고만 안내. 그 밖은 applink.js가 앱으로 시도
-  if (window.openIG && window.openIG.guideOnly) { toast('복사했어! 왼쪽 위 ✕로 창 닫고 그 영상 댓글창에 붙여 넣어 줘'); return; }
+  if (window.openIG && window.openIG.guideOnly) { const ce = (mode && mode !== 'all' && mode.cover) ? mode : EPS[0]; window.openIG(target(), { img: ce && ce.cover ? `img/${ce.cover}.jpg` : '', copied: '복사한 글을 그 영상 댓글창에 붙여 넣으면 끝!' }); return; }
   toast('복사했어! 댓글창에 붙여 넣어 줘'); const u = target(); if (!(window.openIG && window.openIG(u))) location.href = u; } };

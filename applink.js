@@ -49,9 +49,12 @@
   //   11-23 시험 3판(DM 링크로 연 화면): 스크립트 instagram://media·user 전부 무반응 · instagram.com/p/… 는 웹으로만 열림.
   //   그런데 11-22 사연 「뽐내고 싶다」(인포크 = 프로필 링크로 연 화면)는 같은 스크립트 instagram://media 로 앱이 열렸다(대표 11-23 「누르면 바로 프로필로 연결되잖았어?」).
   //   ⇒ [추론] 갈림길은 「어디서 연 창이냐」. DM에서 연 창(?from=dm, 같은 창 안 이동 포함) = 안내만 · 그 밖 = 스크립트로 앱 시도, 안 열리면 안내.
+  // 11-23 대표 폰 실측: 인포크에서 연 창도 누르는 즉시 instagram:// 로 넘겨도 무반응 → 1.6초 멈췄다 안내가 떠서 「안 눌린다」.
+  //   웹 조사(WarpLink·Airbridge·inapp-debugger #16, 조회 11-23)도 아이폰 인스타 앱 안에서 앱 화면으로 넘기는 확실한 방법은 없다고 함.
+  //   ⇒ 아이폰 인스타 앱 안에선 앱 주소를 시도하지 않고, 누르는 즉시 「여기서 찾는 법」 시트를 띄운다(멈춤 0초).
   let fromDm = /[?&]from=dm(&|$)/.test(location.search);
   try { if (fromDm) sessionStorage.setItem('dwk_from_dm', '1'); else fromDm = sessionStorage.getItem('dwk_from_dm') === '1'; } catch { /* 저장 막힘 — 이 화면 주소로만 판단 */ }
-  const guideOnly = iosIgApp && fromDm;
+  const guideOnly = iosIgApp;
   const shouldTry = () => !guideOnly && (android || (ios && inApp));
 
   let bar = null;
@@ -72,27 +75,45 @@
     T().ev('click', { el: 'app_fb_show' });
   };
 
-  // 아이폰 인스타 앱 안: 넘기지 않고 「창 닫고 찾기」 안내 띠(웹으로 넘기면 앱스토어로 샌다 · 11-23 실측)
-  const guide = what => {
-    if (bar) bar.remove();
-    bar = document.createElement('div'); bar.className = 'applink-bar'; bar.setAttribute('role', 'status');
-    const p = document.createElement('span');
-    p.textContent = what === '영상' ? '인스타 앱 안에선 바로 못 넘어가요! 왼쪽 위 ✕로 창 닫고 프로필 맨 위 영상을 눌러 주세요!'
-      : what === 'DM' ? '왼쪽 위 ✕로 창 닫고 돈워너노우 프로필의 「메시지」를 눌러 주세요!' : '왼쪽 위 ✕로 창 닫으면 돈워너노우 프로필이에요!';
-    const x = document.createElement('button'); x.type = 'button'; x.textContent = '닫기'; x.dataset.t = 'ig_guide_close'; x.onclick = () => { bar.remove(); bar = null; };
-    bar.append(p, x);
-    Object.assign(bar.style, { position: 'fixed', left: '12px', right: '12px', bottom: 'calc(12px + env(safe-area-inset-bottom, 0px))', zIndex: '9999',
-      display: 'flex', gap: '10px', alignItems: 'center', justifyContent: 'space-between', padding: '14px', borderRadius: '14px',
-      background: 'rgba(16,16,32,.97)', color: '#fff', font: '15px/1.45 -apple-system,"Apple SD Gothic Neo",sans-serif', boxShadow: '0 6px 24px rgba(0,0,0,.35)', wordBreak: 'keep-all' });
-    Object.assign(x.style, { background: 'none', border: '0', color: 'rgba(255,255,255,.7)', font: 'inherit', padding: '4px', flex: 'none' });
-    document.body.append(bar);
+  // 아이폰 인스타 앱 안: 누르는 즉시 뜨는 안내 시트 — 표지 그림 + 두 단계 + 확인 버튼
+  const css = document.createElement('style');
+  css.textContent = `.igs-bg{position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;animation:igsf .15s ease-out}
+.igs{width:100%;max-width:480px;box-sizing:border-box;margin:0 auto;padding:22px 20px calc(18px + env(safe-area-inset-bottom,0px));border-radius:22px 22px 0 0;background:#14142b;color:#fff;font:16px/1.5 -apple-system,"Apple SD Gothic Neo",sans-serif;word-break:keep-all;animation:igsu .18s ease-out}
+.igs h3{margin:0 0 12px;font-size:19px;line-height:1.35;text-wrap:balance}
+.igs img{display:block;width:96px;height:96px;object-fit:cover;border-radius:14px;margin:0 0 14px}
+.igs ol{margin:0 0 16px;padding:0;list-style:none}.igs li{display:flex;gap:10px;align-items:flex-start;margin:0 0 10px;font-size:16px}
+.igs li b{flex:none;width:26px;height:26px;border-radius:50%;background:#FFD447;color:#1a1300;display:flex;align-items:center;justify-content:center;font-size:15px}
+.igs .ok{display:block;width:100%;padding:15px;border:0;border-radius:14px;background:#FFD447;color:#1a1300;font:800 17px/1.2 -apple-system,"Apple SD Gothic Neo",sans-serif}
+@keyframes igsf{from{opacity:0}}@keyframes igsu{from{transform:translateY(30px)}}`;
+  document.head.append(css);
+  let sheetEl = null;
+  const guide = (what, opts = {}) => {
+    if (sheetEl) sheetEl.remove();
+    const pick = opts.img ? '프로필에서 이 표지 영상 누르기' : '프로필 맨 위 영상 누르기';
+    const back = fromDm ? '대화방으로 돌아가요' : '돈워너노우 프로필로 돌아가요';
+    const steps = what === '영상'
+      ? [`왼쪽 위 ✕ 누르기 — ${back}`, fromDm ? '대화방 맨 위 「dontwannaknow.kr」 눌러 프로필로' : pick, ...(fromDm ? [pick] : [])]
+      : what === 'DM' ? [`왼쪽 위 ✕ 누르기 — ${back}`, fromDm ? '여기가 바로 DM이에요! 붙여 넣으면 끝' : '프로필의 「메시지」 누르기']
+      : [`왼쪽 위 ✕ 누르기 — ${back}`, ...(fromDm ? ['대화방 맨 위 「dontwannaknow.kr」 누르면 프로필'] : []), '「팔로우」 누르면 끝!'];
+    if (opts.copied) steps.push(opts.copied);
+    sheetEl = document.createElement('div'); sheetEl.className = 'igs-bg'; sheetEl.setAttribute('role', 'dialog');
+    const box = document.createElement('div'); box.className = 'igs';
+    const h = document.createElement('h3'); h.textContent = what === '영상' ? '이 영상은 인스타에서 바로 이어져요!' : what === 'DM' ? 'DM은 인스타에서 바로 보내요!' : '팔로우는 인스타에서 바로!';
+    box.append(h);
+    if (opts.img) { const im = document.createElement('img'); im.src = opts.img; im.alt = ''; box.append(im); }
+    const ol = document.createElement('ol');
+    steps.forEach((s, i) => { const li = document.createElement('li'); const b = document.createElement('b'); b.textContent = i + 1; const sp = document.createElement('span'); sp.textContent = s; li.append(b, sp); ol.append(li); });
+    const ok = document.createElement('button'); ok.type = 'button'; ok.className = 'ok'; ok.textContent = '알겠어요!'; ok.dataset.t = 'ig_sheet_ok';
+    const close = () => { if (sheetEl) { sheetEl.remove(); sheetEl = null; } };
+    ok.onclick = close; sheetEl.onclick = e => { if (e.target === sheetEl) close(); };
+    box.append(ol, ok); sheetEl.append(box); document.body.append(sheetEl);
     T().ev('click', { el: 'ig_guide_' + what });
   };
 
   // 인스타 웹 주소를 앱으로 연다. 바꿀 필요가 없는 기기면 false를 돌려준다(그땐 원래 링크대로 둔다).
   window.openIG = (web, opts = {}) => {
     const what = /instagram\.com\/(reel|reels|p)\//.test(web) ? '영상' : /ig\.me\//.test(web) ? 'DM' : '프로필';
-    if (guideOnly) { guide(what); return true; } // DM에서 연 창: 넘기지 않고 안내만
+    if (guideOnly) { guide(what, opts); return true; } // 아이폰 인스타 앱 안: 넘기지 않고 즉시 안내 시트
     const app = shouldTry() ? appUrl(web) : null;
     if (!app) {
       if (opts.navigate) { if (opts.newTab) window.open(web, '_blank', 'noopener'); else location.href = web; }
@@ -101,7 +122,7 @@
     let gone = false; const mark = () => { gone = true; };
     document.addEventListener('visibilitychange', mark, { once: true }); window.addEventListener('pagehide', mark, { once: true });
     location.href = app;
-    setTimeout(() => { if (!gone && document.visibilityState === 'visible') { if (iosIgApp) guide(what); else fallback(web); } }, 1600); // 아이폰 인스타 앱 안은 웹으로 보내면 앱스토어로 샌다 → 안내
+    setTimeout(() => { if (!gone && document.visibilityState === 'visible') fallback(web); }, 1600); // 아이폰 인스타 앱 안은 웹으로 보내면 앱스토어로 샌다 → 안내
     return true;
   };
   // 누른 그 순간에 바로 복사(기다리지 않음) — 기다렸다 넘기면 인스타 앱 안 브라우저가 앱 열기를 막는다(웹 조사 11-23: WarpLink·Airbridge 「사용자가 누른 순간의 이동만 앱을 연다」)
@@ -125,7 +146,7 @@
     if (!a || a.dataset.noapp != null || a.classList.contains('applink-skip')) return;
     if (!/^https:\/\/(www\.)?(instagram\.com|ig\.me)\//.test(a.href)) return;
     if (bar && bar.contains(a)) return;
-    if (guideOnly) { e.preventDefault(); window.openIG(a.href); return; } // DM에서 연 창: 안내만
+    if (guideOnly) { e.preventDefault(); e.stopImmediatePropagation(); const im = a.querySelector('img'); window.openIG(a.href, { img: im ? im.src : '' }); return; } // 아이폰 인스타 앱 안: 즉시 안내 시트(표지 같이)
     if (window.openIG(a.href)) e.preventDefault();
   });
 })();

@@ -57,10 +57,10 @@ function how(n) {
   $('backPl').onclick = gate;
   $('goCmt').onclick = () => { // 누른 그 순간에 복사하고 바로 넘긴다(기다리면 인스타 앱 안에서 앱 열기가 막힌다 · 웹 조사 11-23)
     const copied = window.openIG ? window.openIG.copyNow(`${n}번`) : false;
-    if (window.openIG && window.openIG.guideOnly) { // DM에서 연 창(아이폰 인스타 앱): 앱으로 못 넘긴다 — 표지와 함께 찾는 법만
+    if (window.openIG && window.openIG.guideOnly) { // 아이폰 인스타 앱 안: 앱으로 못 넘긴다 — 표지와 함께 찾는 법 시트
       const cv = coverOf(EP);
-      $('fb').innerHTML = `<span class="guide">${copied ? `「${n}번」 복사했어요!` : `댓글에 「${n}번」이라고 남겨 주세요!`}<br>왼쪽 위 ✕로 창 닫고, 프로필 맨 위 이 영상에 붙여 넣어 주세요!${cv.img ? `<img src="img/${esc(cv.img)}.jpg" alt="">` : ''}</span>`;
-      T.ev('click', { ep: EP, el: 'ig_inapp_profile' });
+      $('fb').textContent = copied ? `「${n}번」 복사했어요!` : `댓글에 「${n}번」이라고 남겨 주세요!`;
+      window.openIG(D.reel, { img: cv.img ? `img/${cv.img}.jpg` : '', copied: copied ? `댓글창에 「${n}번」 붙여 넣으면 끝!` : `댓글에 「${n}번」 쓰면 끝!` });
       return;
     }
     $('fb').textContent = copied ? '복사했어요! 댓글창에 붙여 넣어 주세요!' : `댓글창에 「${n}번」이라고 남겨 주세요!`;

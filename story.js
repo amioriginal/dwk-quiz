@@ -29,7 +29,7 @@ function copy(which) { // 누른 그 순간에 복사(기다리면 인스타 앱
   return true;
 }
 const go = url => { // 인스타 앱으로 바로(applink.js) — DM에서 연 창(아이폰 인스타 앱)만 못 넘긴다(11-23 실측): 창 닫으라고만 안내
-  if (window.openIG && window.openIG.guideOnly) { toast(url === DM_URL ? '복사했어! 왼쪽 위 ✕로 창 닫고 프로필의 「메시지」에 붙여 넣어 줘' : '복사했어! 왼쪽 위 ✕로 창 닫고 맨 위 영상 댓글창에 붙여 넣어 줘'); return; }
+  if (window.openIG && window.openIG.guideOnly) { window.openIG(url, { img: url !== DM_URL && EPS[0] && EPS[0].cover && url === EPS[0].reel ? `img/${EPS[0].cover}.jpg` : '', copied: url === DM_URL ? '복사한 글을 메시지 창에 붙여 넣으면 끝!' : '복사한 글을 그 영상 댓글창에 붙여 넣으면 끝!' }); return; }
   if (!(window.openIG && window.openIG(url))) location.href = url; // 누른 그 순간 바로
 };
 ['#pname', '#pdesc', '#prule'].forEach(s => { $(s).oninput = render; });
