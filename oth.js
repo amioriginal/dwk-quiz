@@ -1,0 +1,1 @@
+document.querySelectorAll('.ob').forEach(b=>b.addEventListener('click',()=>{const o=b.getAttribute('aria-expanded')!=='true';b.setAttribute('aria-expanded',o);b.querySelector('span').textContent=o?'접기':'보기';document.getElementById(b.getAttribute('aria-controls')).hidden=!o;}));
