@@ -4,4 +4,6 @@
   if (!/^(inpock|ig|igstory|igbio|yt|tt|fb|qr)$/.test(f)) return;
   var a = document.querySelectorAll('a.p');
   for (var i = 0; i < a.length; i++) a[i].href = a[i].getAttribute('href') + '?from=' + f;
+  var d = document.querySelector('a[data-t="go_door"]'); // 세 개의 문(/door/)으로 가는 글 링크에도 같은 꼬리표
+  if (d) d.href = d.getAttribute('href') + '?from=' + f;
 })();
