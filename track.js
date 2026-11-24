@@ -14,7 +14,8 @@
   // 어느 편·몇 번 문 화면인지: <meta name="dwk-ep">가 있으면 ep 칸에 넣는다(경로는 보내지 않는 기존 방식 유지)
   { const ep = meta('dwk-ep'); if (/^[a-z0-9_]{1,20}$/.test(ep)) T.ctx.ep = ep; }
   // 주소·키가 비었거나 배포 전 자리표시(__…__)면 아무것도 보내지 않는다
-  const okUrl = /^https:\/\/[a-z]{20}\.supabase\.co\/rest\/v1\/site_events$/.test(URL_) ||
+  const liveHost = /^(www\.)?dontwannaknow\.kr$|^amioriginal\.github\.io$/.test(location.hostname); // 2026-11-25: localhost 미리보기가 실제 기록에 섞이던 문제
+  const okUrl = (liveHost && /^https:\/\/[a-z]{20}\.supabase\.co\/rest\/v1\/site_events$/.test(URL_)) ||
     (location.hostname === '127.0.0.1' && /^http:\/\/127\.0\.0\.1:\d+\/rest\/v1\/site_events$/.test(URL_)); // 로컬 시험은 로컬 화면에서만
   if (!okUrl || !KEY || KEY.startsWith('__') || !/^(quiz|story|go|pul|hub|wp|res)$/.test(PAGE)) return; // wp = 배경화면 받기 · res = 결과 페이지(2026-11-25)
 

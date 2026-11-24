@@ -60,12 +60,18 @@ function renderDex() {
 let COUNTS = {};
 async function rpc(fn, body) {
   const r = await fetch(API + fn, { method: 'POST', headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
-  if (!r.ok) throw new Error('rpc ' + fn + ' ' + r.status);
+  if (!r.ok) { const e = new Error('rpc ' + fn + ' ' + r.status); e.status = r.status; throw e; }
   return r.json();
 }
 async function loadCounts() {
-  try { const rows = await rpc('hub_counts'); COUNTS = Object.fromEntries(rows.map(r => [r.cand, Number(r.n) || 0])); }
-  catch (err) { T.ev('jserr', { el: 'hub_counts' }); $('candNote').textContent = '지금은 실시간 하트 수를 불러올 수 없습니다.'; }
+  // 2026-11-25: 실제 방문 2건에서 첫 시도가 바로 실패(통신 끊김·서버 지연 추정) → 1.2초 뒤 한 번만 다시 묻는다. 그래도 실패면 안내 문구 + 실패 이유 기록
+  let rows = null, why = 0;
+  for (let i = 0; i < 2 && !rows; i++) {
+    if (i) await new Promise(r => setTimeout(r, 1200));
+    try { rows = await rpc('hub_counts'); } catch (err) { why = err.status || -1; }
+  }
+  if (rows) COUNTS = Object.fromEntries(rows.map(r => [r.cand, Number(r.n) || 0]));
+  else { T.ev('jserr', { el: 'hub_counts', num: why }); $('candNote').textContent = '지금은 실시간 하트 수를 불러올 수 없습니다.'; }
   renderCands();
 }
 const score = c => (COUNTS[c.id] || 0) + (c.likes || 0) + (VOTED.has(c.id) && !COUNTS[c.id] ? 1 : 0);

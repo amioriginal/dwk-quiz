@@ -13,6 +13,11 @@
   const resultQuestion = document.getElementById('reflection-question');
   const resultAction = document.getElementById('reflection-action');
 
+  if (!episode || !Array.isArray(window.QUIZ_DATA) || !window.PUL_DATA) { // 2026-11-25: data.js·pul_data.js가 못 오면 18줄에서 멈추던 문제
+    const box = document.getElementById('reflection'); if (box) box.hidden = true;
+    if (window.T) window.T.ev('jserr', { el: 'reflection_nodata' });
+    return;
+  }
   const byReel = new Map(Object.entries(window.PUL_DATA).map(([key, result]) => [result.reel, key]));
   const episodes = new Map();
   for (const video of window.QUIZ_DATA) {
