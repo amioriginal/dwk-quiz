@@ -32,6 +32,9 @@
   if (qs.get('t') === 'test') ssSet('dwk_test', '1');
   const TEST = ss('dwk_test') === '1' || navigator.webdriver === true;
 
+  // DM 번호표: DM 한 통마다 붙인 무작위 8자(?k=). 이름·아이디가 아니다. 같은 방문 안의 다른 페이지(배경화면 등)에도 이어 붙인다.
+  const kq = qs.get('k'); if (kq && /^[0-9a-f]{8}$/.test(kq)) ssSet('dwk_dk', kq);
+  const DK = /^[0-9a-f]{8}$/.test(ss('dwk_dk') || '') ? ss('dwk_dk') : null;
   let sid = ss('dwk_sid'); if (!sid || !/^[0-9a-f]{16}$/.test(sid)) { sid = rand(); ssSet('dwk_sid', sid); }
   let seq = Number(ss('dwk_seq_' + PAGE) || 0);
 
@@ -62,7 +65,7 @@
       ref: p.ref || null, app: p.app || null, os: p.os || null, dev: p.dev || null, src: p.src || null,
       vw: int(p.vw, 0, 10000), lang: clip(p.lang, 12),
       visit_n: int(p.visit_n, 0, 100000), days_first: int(p.days_first, 0, 100000),
-      test: TEST, v: V,
+      test: TEST, v: V, dk: DK,
     });
     ssSet('dwk_seq_' + PAGE, String(Math.min(seq, 99999)));
     if (q.length >= 10) flush(); else if (!timer) timer = setTimeout(flush, 5000);
