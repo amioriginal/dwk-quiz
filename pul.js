@@ -50,7 +50,7 @@ function how(n) {
   $('app').innerHTML = `<div class="card hero"><p class="ep">${esc(D.no)} · ${n}번 ${esc(p.name)}</p>
     <img class="qimg" src="img/${esc(p.img)}.jpg" alt="">
     <h2 class="h">「${esc(p.t)}」 ${p.e}</h2>
-    <div class="steps"><p><b>1</b> 영상에 「${n}번」 댓글 남기기</p><p><b>2</b> DM으로 온 [팔로우 확인] 누르기</p><p><b>3</b> [내 풀이 보기] 누르면 끝!</p></div>
+    <div class="steps"><p><b>1</b> 영상에 「${n}번」 댓글 남기기</p><p><b>2</b> DM으로 온 [내 풀이 보기] 누르면 끝!</p></div>
     <button class="btn y" id="goCmt" data-t="go_comment${n}">「${n}번」 복사하고 영상으로 가기</button>
     <button class="btn g" id="backPl" data-t="back_planets">다른 행성 보기</button>
     <p class="fb" id="fb"></p></div>`;
