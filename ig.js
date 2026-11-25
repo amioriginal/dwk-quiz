@@ -1,9 +1,4 @@
 'use strict';
-// 인포크 「인스타그램」 카드가 가리키는 바로가기 페이지 — 들어오자마자 인스타 앱을 연다.
-// 앱 열기가 막히는 기기(사파리 등 자동 열기가 안 되는 곳)는 큰 버튼을 한 번 누르면 된다.
-(() => {
-  const PROFILE = 'https://www.instagram.com/dontwannaknow.kr/';
-  const env = (window.openIG && window.openIG.env) || {};
-  if (!env.ios && !env.android) { location.replace(PROFILE); return; } // 컴퓨터는 웹 프로필로
-  if (window.openIG) window.openIG(PROFILE); // 안드로이드·아이폰 앱 안 브라우저: 바로 시도(안 되면 아래 버튼·띠)
-})();
+// 인포크 「인스타그램」 카드가 가리키는 바로가기 페이지.
+// 2026-11-26: 들어오자마자 앱을 여는 자동 시도(와 컴퓨터의 자동 이동)를 없앴다 — 사람이 「인스타 앱에서 열기」를 누를 때만 applink.js가 앱으로 연다.
+//   이유: Meta 스팸 정책이 「사용자 동작 없는 이동」을 문제 삼는다(reports/돈워너노우_인스타제한_20261126/REPORT.md §8).
