@@ -223,3 +223,6 @@ body.gate .dch-new { background: var(--fg); color: #000; box-shadow: none; borde
   .live:not([hidden]) + .tri { height: calc(100vh - 64px - 50px); min-height: 560px; }
   .p-apply .bg { filter: brightness(.45) saturate(.85); object-position: 50% 30%; }
 }
+
+/* 11-29 탑승권 글 링크 — 폰에서 다른 글 링크(.txt)는 숨기지만 이것만은 남긴다(세 칸 한 화면 유지: 단추와 같은 줄) */
+@media (max-width: 899px) { .p-plaza .acts .txt.pass-link { display: inline-flex !important; min-height: 40px; } }

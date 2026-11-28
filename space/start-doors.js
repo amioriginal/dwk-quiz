@@ -106,16 +106,29 @@
   const S = D.site || {}; const L = S.links || {};
   const ship = Object.assign({ boarded: 0, openAt: 30000, asOf: '' }, D.ship || {});
   const nf = (x) => Math.round(+x || 0).toLocaleString('ko-KR');
-  const goal = +ship.openAt || 30000, got = Math.max(0, +ship.boarded || 0), isOpen = got >= goal;
+  const goal = +ship.openAt || 30000; let got = Math.max(0, +ship.boarded || 0); const isOpen = got >= goal;
   const man = goal % 10000 === 0 ? `${goal / 10000}만` : nf(goal);
   $('waitSub').textContent = `팔로우가 곧 탑승권이야. 탑승자 ${man} 명이 모이면 문이 열려.`;
-  if (got > 0) { // 실제 집계가 있을 때만 숫자를 건다(가짜 숫자 금지 IMM-1)
+  const drawBoard = () => { // 실제 집계가 있을 때만 숫자를 건다(가짜 숫자 금지 IMM-1)
+    if (!(got > 0)) return;
     $('boardN').textContent = `${nf(got)}명 탑승`;
     $('boardGoal').textContent = `${nf(goal)}명이면 열림`;
     $('boardBar').style.width = Math.min(100, got / goal * 100).toFixed(1) + '%';
     const src = ship.sources || {};
     $('boardSrc').textContent = [ship.asOf && `${ship.asOf} 기준`, (src.instagram || src.youtube) && '인스타 팔로워 + 유튜브 구독자'].filter(Boolean).join(' · ');
     $('board').hidden = false;
+  };
+  drawBoard();
+  // 라이브(11-29 · jointhebunker 비교 1단계): 배포 없이 숫자가 바뀌게 서버 표 ship_stats(id=1)를 읽는다.
+  //   탑승집계.py --push(launchd 30분)가 공식 API 값으로 쓴다 · 못 읽으면 data.js 값 그대로 · 문 열림 판정(isOpen)은 배포 값으로만(잠금 해제는 wait-gate.js 와 함께 사람이 한다)
+  if (B.url && B.anonKey) {
+    const kst = (iso) => { const d = new Date(iso); if (isNaN(d)) return ''; const k = new Date(d.getTime() + 9 * 3600e3); return `${String(k.getUTCMonth() + 1).padStart(2, '0')}-${String(k.getUTCDate()).padStart(2, '0')} ${String(k.getUTCHours()).padStart(2, '0')}:${String(k.getUTCMinutes()).padStart(2, '0')}`; };
+    getJSON(`${B.url}/rest/v1/ship_stats?id=eq.1&select=boarded,instagram,youtube,as_of`, { headers: { apikey: B.anonKey, Authorization: `Bearer ${B.anonKey}` }, cache: 'no-store' }).then((rows) => {
+      const row = Array.isArray(rows) ? rows[0] : null;
+      if (!row || !Number.isFinite(row.boarded) || row.boarded <= 0) return;
+      got = row.boarded; ship.asOf = kst(row.as_of) || ship.asOf; ship.sources = { instagram: row.instagram, youtube: row.youtube };
+      drawBoard();
+    });
   }
   const follow = $('goFollow');
   if (L.instagram) follow.href = L.instagram; else follow.remove();

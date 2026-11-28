@@ -133,16 +133,11 @@ window.DWK = {
   //   boarded: 지금 탑승 인원 = 인스타 팔로워 + 유튜브 구독자(편장부 H40 · 대표 11-28). sources에 두 값, asOf에 센 시각.
   //     손으로 고치지 말고 reports/돈워너노우_탑승집계_20261128/탑승집계.py 를 돌린다(공식 API로 읽어 이 줄을 다시 쓴다). 현황판·좌석 벽·우주선 창 불빛이 이 숫자를 따른다.
   //   openAt: 이 인원이 타면 우주선 광장이 열린다(대표 「1만 명에 먼저 열기」) · seats: 좌석 수 = 다 타면 출발(대표 「100,000명으로」)
-  //   wall: 좌석 벽에 새겨 보여 주는 견본 아이디(시연용 · 실제 팔로워 아님 · 벽에 「견본」 표시가 붙는다). 1번은 우리 계정.
+  //   wall: 좌석 벽 기본값 = 1번 우리 배만. 실제 탑승객 아이디는 탑승권 화면(pass.html)에서 스스로 건 사람만 서버(ship_wall)에서 읽는다 — 동의 없이 남의 아이디를 이 파일에 넣지 않는다(11-29 · 견본 sample_ 5개 뺌).
   ship: {
-    boarded: 5948, asOf: '11-28 22시', sources: { instagram: 2978, youtube: 2970 }, seats: 100000, openAt: 30000, // openAt 11-28 대표 「팔로우 3만되면 열거니까 접속 안되게」(구 10000 = 「1만 명에 먼저 열기」 대체됨)
+    boarded: 6209, asOf: '11-29 01시', sources: { instagram: 3199, youtube: 3010 }, seats: 100000, openAt: 30000, // openAt 11-28 대표 「팔로우 3만되면 열거니까 접속 안되게」(구 10000 = 「1만 명에 먼저 열기」 대체됨)
     wall: [
       { no: 1, id: 'dontwannaknow.kr' },
-      { no: 2, id: 'sample_bukang' },
-      { no: 3, id: 'sample_capybara' },
-      { no: 4, id: 'sample_mirrorball' },
-      { no: 5, id: 'sample_cloudsheep' },
-      { no: 6, id: 'sample_firefly' },
     ],
   },
   // 영상·캐러셀 속 코드 → 게임·타운 해금. 다음 편부터 영상 마지막 1초·캐러셀 마지막 장에 넣는다.

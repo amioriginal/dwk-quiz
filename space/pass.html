@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data: https://cdn.jsdelivr.net; img-src 'self' data: blob: https://i.ytimg.com; media-src 'self' data: blob:; connect-src 'self' https://yvjhsqbymgomicjqmuok.supabase.co wss://yvjhsqbymgomicjqmuok.supabase.co wss://dwk-realtime.dwk-plaza.workers.dev https://dwk-feed.dwk-plaza.workers.dev https://cdn.jsdelivr.net ws://127.0.0.1:* ws://localhost:*; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'"><!-- 보안(2026-11-28): start.html 과 같은 줄 · 근거 reports/돈워너노우_사이트보안_20261128/REPORT.md -->
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>내 탑승권 · 돈워너노우</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="img/icon-32.png" sizes="32x32"><link rel="apple-touch-icon" href="img/icon-180.png">
+<meta name="theme-color" content="#000000">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" integrity="sha384-GIdEBaqGN9mNkDkMkzMHW8EKUqtpPIe/sLj1X7DIrnc9uPtLROJgmuDlh+3rBw0j" crossorigin="anonymous">
+<link rel="stylesheet" href="settle.css?v=3">
+<link rel="stylesheet" href="pass.css?v=1">
+</head>
+<body class="settle pass">
+<!-- 내 탑승권(2026-11-29 · 대표 「영상 싹다 보고 분석해서 우리 사이트도 디벨롭하고 …」 → jointhebunker 비교 1단계)
+     아이디를 넣으면 돈워너노우호 좌석 번호. 좌석 = 팔로우 순서(편장부 H50 · 인스타 「내 정보 다운로드」 팔로워 명단).
+     명단은 서버 함수 ship_pass 가 그 한 사람 줄만 돌려준다 — 남의 아이디는 이 파일에 하나도 없다.
+     문구 규칙: 「팔로우했으니 확정」 안 씀(명단 날짜를 같이 적는다) · 명령형·선착순 문구 안 씀.
+     설계·시험: reports/돈워너노우_탑승권_20261129/REPORT.md -->
+<header class="nav">
+  <a class="mark" href="start.html" aria-label="Don't Wanna Know 처음으로"><img src="img/profile.jpg" alt="" width="24" height="24">DON'T WANNA KNOW</a>
+  <span class="here">탑승권</span>
+</header>
+
+<main>
+  <section class="hero" aria-labelledby="passT">
+    <img class="bg" src="media/launch_p_poster.jpg" alt="" decoding="async">
+    <div class="cap">
+      <p class="eyebrow">02 탑승</p>
+      <h1 id="passT">내 탑승권</h1>
+      <p class="sub">인스타 아이디를 넣으면 돈워너노우호 좌석 번호를 찾아 줘. 좌석은 팔로우한 순서대로 새겨져.</p>
+      <form class="find" id="find" autocomplete="off">
+        <label class="id"><span aria-hidden="true">@</span><input id="idIn" name="id" type="text" inputmode="email" autocapitalize="none" spellcheck="false" maxlength="31" placeholder="인스타 아이디" aria-label="인스타 아이디" required></label>
+        <button class="btn" id="go" type="submit">찾기<i aria-hidden="true"></i></button>
+      </form>
+      <div class="ticket" id="ticket" aria-live="polite" hidden>
+        <small id="tLabel">좌석 번호</small>
+        <b id="tSeat"></b>
+        <span id="tClass"></span>
+        <p class="bag" id="tBag" hidden></p>
+        <p class="sub" id="tNote"></p>
+        <div class="acts" id="tActs" hidden><button class="btn" id="wallJoin" type="button">좌석 벽에 내 아이디 걸기<i aria-hidden="true"></i></button></div>
+      </div>
+      <p class="err" id="err" role="status" hidden></p>
+      <p class="live" id="live" hidden></p>
+    </div>
+  </section>
+
+  <section class="wall" aria-labelledby="wallT">
+    <h2 id="wallT">좌석 벽</h2>
+    <p class="sub">탑승권 화면에서 스스로 아이디를 건 탑승객만 여기 보여. 빼고 싶으면 <a href="/contact.html">문의</a>로 알려 줘.</p>
+    <ol class="plates" id="plates"></ol>
+  </section>
+</main>
+
+<script src="data.js?v=16"></script>
+<script src="dwk-track.js?v=2"></script>
+<script src="pass.js?v=1"></script>
+</body>
+</html>

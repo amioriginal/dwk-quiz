@@ -1,0 +1,48 @@
+/* pass.css — 「내 탑승권」(2026-11-29). settle.css(입구와 같은 SpaceX·NASA 문법) 위에 이 화면 것만 더한다.
+   꽉 찬 장면 하나(이륙 영상 첫 장) · 글은 왼쪽 아래 · 단추 = 얇은 테 · 장식 0 · 화면 글자는 한국어. */
+body.pass .mark { display: inline-flex; align-items: center; gap: 8px; font: 800 14px/1 var(--sans); letter-spacing: .06em; white-space: nowrap; }
+body.pass .mark img { width: 24px; height: 24px; border-radius: 50%; display: block; }
+@media (max-width: 380px) { body.pass .mark { font-size: 12px; letter-spacing: .04em; } }
+
+.pass .hero { justify-content: flex-end; padding-bottom: calc(48px + env(safe-area-inset-bottom)); background: #000; }
+.pass .hero > .bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(.42); }
+.pass .hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, .78) 85%); pointer-events: none; }
+.pass .hero .cap { z-index: 1; width: 100%; }
+
+.find { display: flex; gap: 8px; margin-top: 6px; }
+.find .id { flex: 1; min-width: 0; display: flex; align-items: center; gap: 4px; height: 48px; padding: 0 14px; border: 1px solid var(--hair); border-radius: 4px; background: rgba(0, 0, 0, .5); }
+.find .id span { color: var(--fg3); font: 500 16px/1 var(--sans); }
+.find input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: var(--fg); font: 500 16px/1 var(--sans); } /* 16px = 아이폰이 확대하지 않는 크기 */
+.find input::placeholder { color: var(--fg3); }
+.find .id:focus-within { border-color: var(--fg); }
+.find .btn { flex: none; }
+
+.ticket { display: grid; gap: 6px; padding: 16px 0 2px; margin-top: 6px; border-top: 1px solid rgba(240, 240, 250, .16); }
+.ticket[hidden] { display: none; }
+.ticket small { font: 600 11px/1 var(--sans); letter-spacing: .08em; color: var(--fg3); }
+.ticket b { font: 700 44px/1 var(--sans); letter-spacing: .02em; font-variant-numeric: tabular-nums; word-break: keep-all; }
+.ticket b.word { font-size: 28px; line-height: 1.2; letter-spacing: -.01em; }
+.ticket span { font: 500 15px/1.4 var(--sans); color: var(--fg); }
+.ticket span:empty { display: none; }
+.ticket .bag { margin: 2px 0 0; font: 500 15px/1.45 var(--sans); color: var(--fg2); word-break: break-all; }
+.ticket .bag[hidden] { display: none; }
+.ticket .acts { margin-top: 4px; }
+.ticket .btn.done { opacity: .6; pointer-events: none; }
+
+.pass .live { margin: 10px 0 0; font: 500 13px/1.5 var(--sans); color: var(--fg3); font-variant-numeric: tabular-nums; }
+.pass .live b { color: var(--fg2); font-weight: 600; }
+.pass .live[hidden] { display: none; }
+
+.wall { padding: 40px 20px calc(60px + env(safe-area-inset-bottom)); max-width: 600px; }
+.wall h2 { margin: 0 0 8px; font: 700 22px/1.2 var(--sans); letter-spacing: -.01em; }
+.wall .sub a { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--fg3); }
+.plates { list-style: none; margin: 18px 0 0; padding: 0; border-top: 1px solid rgba(240, 240, 250, .12); }
+.plates li { display: flex; align-items: baseline; gap: 16px; padding: 12px 0; border-bottom: 1px solid rgba(240, 240, 250, .12); font: 500 15px/1.3 var(--sans); }
+.plates li b { flex: none; width: 92px; font: 600 14px/1 var(--sans); color: var(--fg3); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.plates li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plates li.empty { color: var(--fg3); }
+
+@media (min-width: 900px) {
+  .pass .hero { padding-left: 64px; padding-bottom: 64px; }
+  .wall { padding-left: 64px; }
+}

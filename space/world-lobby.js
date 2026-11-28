@@ -3,8 +3,8 @@
    줄거리(릴스 manseok_ship v11.1과 같은 말): 지구 멸망 직전 → 이 우주선이 유일한 탈출구 → 좌석 100,000개 → 팔로우하면 좌석에 아이디가 새겨짐
      → 10,000명이 타면 우주선 광장이 열림 → 100,000명이면 출발 → 도착하면 내 행성(town.html).
    배치(world.js LOBBY · SHIP_AT · GATE_AT): 광장 분수 → 북쪽 큰길(줄 서는 기둥) → 탑승구 + 현황판 → 발사대 위 모선(오른쪽 탑승탑·다리).
-     왼쪽 = 좌석 벽(견본 아이디) · 오른쪽 = 명예의 전당(world.js 에서 옮겨 둠).
-   숫자는 data.js DWK.ship 한 곳(boarded · asOf · seats · openAt · wall). 가짜 숫자를 만들지 않는다 — 벽 아이디는 「견본」 표시. */
+     왼쪽 = 좌석 벽(스스로 건 탑승객) · 오른쪽 = 명예의 전당(world.js 에서 옮겨 둠).
+   숫자는 data.js DWK.ship 한 곳(boarded · asOf · seats · openAt · wall). 가짜 숫자를 만들지 않는다 — 벽 아이디는 스스로 건 탑승객만(11-29). */
 import { makeMothership } from './dwk-ship.js?v=3';
 import { makeSilverShip } from './dwk-doom.js?v=1';
 import { DOOM_ON } from './world-doom.js?v=1';
@@ -13,6 +13,9 @@ const DOOR_FACE = Math.atan2(0.9, 0.43);   // 문이 바라볼 방향(atan2(x, z
 export function install(EXT) {
   const { THREE, mesh, mat, sign, canvasTex, el, ic, DC, D, world, COL, SHIP_AT, GATE_AT, faceTo } = EXT;
   const S = Object.assign({ boarded: 0, seats: 100000, openAt: 10000, asOf: '', wall: [] }, D.ship || {});
+  // 11-29 좌석 벽 = 탑승권 화면(pass.html)에서 스스로 건 사람만(서버 함수 ship_wall · 견본 sample_ 뺌) · 못 읽으면 data.js 기본값(1번 우리 배)
+  { const BW = D.world && D.world.backend; if (BW && BW.url && BW.anonKey) fetch(`${BW.url}/rest/v1/rpc/ship_wall`, { method: 'POST', headers: { apikey: BW.anonKey, Authorization: `Bearer ${BW.anonKey}`, 'content-type': 'application/json' }, body: '{}' })
+      .then((r) => (r.ok ? r.json() : null)).then((w) => { const L = w && Array.isArray(w.list) ? w.list.filter((x) => x && x.no && x.id).sort((a, b) => a.no - b.no) : []; if (L.length) S.wall = L; }).catch(() => {}); }
   const FONT = "'Pretendard Variable', Pretendard, system-ui, -apple-system, 'Apple SD Gothic Neo', sans-serif";
   const n = (v) => Number(v).toLocaleString('ko-KR');
   const seatNo = (v) => 'No.' + String(v).padStart(6, '0');
@@ -115,7 +118,6 @@ export function install(EXT) {
   const wallTex = canvasTex(1024, 540, (c, w, h) => {
     c.fillStyle = DOOM_ON ? '#c9ced6' : '#fff4dc'; c.fillRect(0, 0, w, h); c.strokeStyle = DOOM_ON ? '#5b636e' : '#1f1a2e'; c.lineWidth = 10; c.strokeRect(5, 5, w - 10, h - 10);
     c.fillStyle = '#1f1a2e'; c.textAlign = 'left'; c.textBaseline = 'middle'; c.font = `900 46px ${FONT}`; c.fillText('좌석 벽', 36, 52); c.font = `700 26px ${FONT}`; c.fillStyle = '#5b5270'; c.fillText('탑승하면 좌석 번호와 아이디가 새겨져', 200, 54);
-    c.fillStyle = DOOM_ON ? '#b9433a' : '#ff6f91'; c.fillRect(w - 128, 26, 96, 50); c.fillStyle = '#fff'; c.textAlign = 'center'; c.font = `800 28px ${FONT}`; c.fillText('견본', w - 80, 52);
     const plates = [...(S.wall || []).slice(0, 6).map(s => ({ no: s.no, id: '@' + s.id })), { gap: true }, { no: S.boarded + 1, id: '다음 자리 · 너?', next: true }, { no: S.boarded + 2, id: '비어 있음', empty: true }, { no: S.boarded + 3, id: '비어 있음', empty: true }];
     const cw = 232, ch = 116, gx0 = 36, gy0 = 96, gap = 12; let k = 0;
     for (const p of plates) {
@@ -125,7 +127,7 @@ export function install(EXT) {
       c.textAlign = 'center'; c.fillStyle = p.empty ? '#9a90a8' : '#1f1a2e'; c.font = `800 30px ${FONT}`; c.fillText(seatNo(p.no), x + cw / 2, y + 42);
       c.font = `${p.next ? 800 : 700} ${p.id.length > 16 ? 20 : 24}px ${FONT}`; c.fillStyle = p.empty ? '#9a90a8' : p.next ? '#1f1a2e' : '#3a3150'; c.fillText(p.id, x + cw / 2, y + 86); k++;
     }
-    c.fillStyle = '#7a6f86'; c.font = `600 22px ${FONT}`; c.textAlign = 'center'; c.fillText('지금 벽의 아이디는 보여 주기용 견본이야', w / 2, h - 30);
+    c.fillStyle = '#7a6f86'; c.font = `600 22px ${FONT}`; c.textAlign = 'center'; c.fillText('아이디는 탑승권 화면에서 스스로 건 사람만 보여', w / 2, h - 30);
   });
   wall.add(mesh(new THREE.BoxGeometry(7.4, 4.2, 0.4), mat(0x2b2f45), 0, 2.35, -0.05));
   wall.add(mesh(new THREE.BoxGeometry(7.7, 0.3, 0.6), mat(0xffcf3a), 0, 4.55, 0));
@@ -170,10 +172,11 @@ export function install(EXT) {
   function openWall() {
     EXT.sheet('좌석 벽',
       el('p', { class: 'lead' }, '탑승하면 좌석 번호와 인스타 아이디가 이 벽에 새겨져.'),
-      el('ul', { class: 'list' }, (S.wall || []).slice(0, 6).map(s => el('li', {}, el('span', { class: 'n' }, el('b', {}, seatNo(s.no)), el('small', {}, '@' + s.id)), el('span', { class: 'pill' }, '견본'))),
+      el('ul', { class: 'list' }, (S.wall || []).slice(0, 6).map(s => el('li', {}, el('span', { class: 'n' }, el('b', {}, seatNo(s.no)), el('small', {}, '@' + s.id))))),
         el('li', { class: 'lb-next' }, el('span', { class: 'n' }, el('b', {}, seatNo(S.boarded + 1)), el('small', {}, `다음 자리 · ${n(S.boarded)}명 다음이 너야`)))),
       el('a', { class: 'btn k sun', href: D.site.links.instagram, target: '_blank', rel: 'noopener' }, ic('heart'), '팔로우하고 내 자리 받기'),
-      el('p', { class: 'note' }, '지금 벽의 아이디는 보여 주기용 견본이야. 좌석 번호 고르기는 준비 중.'));
+      el('a', { class: 'btn k', href: 'pass.html' }, ic('board'), '내 탑승권 찾기'),
+      el('p', { class: 'note' }, '아이디는 탑승권 화면에서 스스로 건 사람만 보여. 좌석 번호는 팔로우한 순서대로 새겨져.'));
   }
 
 
