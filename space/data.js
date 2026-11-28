@@ -135,7 +135,7 @@ window.DWK = {
   //   openAt: 이 인원이 타면 우주선 광장이 열린다(대표 「1만 명에 먼저 열기」) · seats: 좌석 수 = 다 타면 출발(대표 「100,000명으로」)
   //   wall: 좌석 벽 기본값 = 1번 우리 배만. 실제 탑승객 아이디는 탑승권 화면(pass.html)에서 스스로 건 사람만 서버(ship_wall)에서 읽는다 — 동의 없이 남의 아이디를 이 파일에 넣지 않는다(11-29 · 견본 sample_ 5개 뺌).
   ship: {
-    boarded: 6209, asOf: '11-29 01시', sources: { instagram: 3199, youtube: 3010 }, seats: 100000, openAt: 30000, // openAt 11-28 대표 「팔로우 3만되면 열거니까 접속 안되게」(구 10000 = 「1만 명에 먼저 열기」 대체됨)
+    boarded: 6239, asOf: '11-29 02시', sources: { instagram: 3229, youtube: 3010 }, seats: 100000, openAt: 30000, // openAt 11-28 대표 「팔로우 3만되면 열거니까 접속 안되게」(구 10000 = 「1만 명에 먼저 열기」 대체됨)
     wall: [
       { no: 1, id: 'dontwannaknow.kr' },
     ],

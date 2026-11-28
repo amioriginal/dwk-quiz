@@ -12,7 +12,7 @@
 <meta name="theme-color" content="#000000">
 <link rel="stylesheet" href="style.css?v=4">
 <link rel="stylesheet" href="game-ui.css?v=2">
-<link rel="stylesheet" href="land.css?v=9">
+<link rel="stylesheet" href="land.css?v=11">
 </head>
 <body class="land gx">
 <canvas id="stars" aria-hidden="true"></canvas>
@@ -24,10 +24,11 @@
 </header>
 <div id="ui"><div class="panel"><div class="l-cap"><p class="gx-sub gx-dots">행성을 불러오는 중</p></div></div></div>
 <script src="data.js?v=15"></script>
+<script src="dwk-track.js?v=2"></script>
 <script src="dwk-core.js?v=5"></script>
 <script src="icons.js?v=1"></script>
 <script src="dwk-prog.js?v=14"></script>
 <script>new MutationObserver(() => document.querySelectorAll('.dp-flash b:not(.gx-gone)').forEach(b => { if (b.textContent.includes('광장')) b.classList.add('gx-gone'); })).observe(document.body, { childList: true, subtree: true });</script>
-<script src="land.js?v=15"></script>
+<script src="land.js?v=34"></script>
 </body>
 </html>

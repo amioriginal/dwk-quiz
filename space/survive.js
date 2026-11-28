@@ -182,8 +182,9 @@
     const got = playable().reduce((n, p) => n + DC.endings.got('survive').filter(k => k.startsWith(p.id + ':')).length, 0);
     const all = playable().reduce((n, p) => n + endingKeys(p.id).length, 0);
     const best = DC.store.get('best_survive', null);
-    box.append(el('section', { class: 'gx-hero' },
-      el('img', { class: 'gx-bg', src: DC.scene(daily.id, 'a'), alt: '', decoding: 'async' }),
+    // 5차: 시작 화면 큰 그림 = 오늘의 행성 단서 카드 3D 컷(행성 색 바탕). 전에는 720px 장면을 폰 전체로 키워 흐렸다(1~4차 남은 것)
+    box.append(el('section', { class: 'gx-hero s3d', style: pvars(daily.id) },
+      el('div', { class: 's-fan', 'aria-hidden': 'true' }, [`${daily.id}_1`, `k_${daily.id}`, `${daily.id}_0`].map((k, i) => el('i', { class: 'fc f' + i, style: `background-image:url(${g3url(k)}), radial-gradient(120% 95% at 50% 36%, var(--p1), var(--p2))` }))), // 이 행성 카드 3장을 부채꼴로
       el('div', { class: 'gx-cap' },
         seat ? el('p', { class: 'ticket' }, DI.ic('ticket'), `비공개 테스트 · 좌석 ${seat}번`) : '', // null 을 넣으면 「null」 글자가 찍힌다(UX 점검 F1)
         el('p', { class: 'gx-eyebrow' }, el('span', {}, '02'), '1분 게임'),
@@ -229,37 +230,28 @@
   const TH = 84;             // 이만큼 밀면 넘어간다(넘김 직전에 선택지가 흰 바탕으로 뒤집히며 「딱」 소리)
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const wait = (ms) => new Promise(r => setTimeout(r, ms));
-  // 같은 장면 그림도 달마다 다른 구도로 자른다: [확대, 가로 %, 세로 %, 흐르는 방향 %]
-  // 확대는 1.25배까지 — 장면 그림이 720px라 그 이상 키우면 흐려진다(1.6배 컷 흐림 실측)
   const HINT0 = '게이지는 바닥나도, 꽉 차도 끝 · 좌우로 밀어 골라', HINT1 = '흰 점 = 바뀔 게이지 · 오를지 내릴지는 몰라'; // 3차: 점 옆에 「조금·바뀜·크게」 글이 붙어 크기 설명은 거기서 한다
   const PIPW = ['', '조금 바뀜', '바뀜', '크게 바뀜'];
-  // 엔딩 그림: 기존 3D 렌더(img/scene)에서 엔딩 성격에 맞는 장면을 골라 잘라 쓴다 — 새 그림 생성·다운로드 없음(2차 검수 「엔딩마다 그림이 없다」)
-  // [장면 a|b, 확대(≤1.3 — 720px 그림이라 그 이상은 흐림), 초점 가로 %, 초점 세로 %, (선택) 'lift' = 원래 어두운 렌더를 밝힘] · 색 보정은 엔딩 종류별(GRADE)
-  // 온천 규칙 = 물 빠진 탕(1-2b) — 전에는 이 그림이 짙은 그늘 밑 배경이라 검은 덩어리로 보였다. 액자 안에 밝게 두면 「빠진 탕」으로 읽힌다
-  // 규칙 = 함정 그 장면 · 체력 = 주인공이 쓰러진 자리 · 식량 = 텅 빈 살림 · 정신 = 이상해진 풍경 · 생존 = 집 전경
-  const GRADE = { rule: 'doom', hp: 'ash', hpX: 'ash', food: 'dry', foodX: 'dry', mind: 'odd', mindX: 'odd', win: 'gold' };
-  const ART = {
-    '1-1': { rule: ['b', 1.15, 60, 35], hp: ['a', 1.3, 72, 78], food: ['a', 1.3, 22, 80], mind: ['b', 1.3, 80, 30], win: ['a', 1.05, 50, 42], hpX: ['b', 1.2, 25, 60], foodX: ['b', 1.2, 72, 72], mindX: ['a', 1.2, 50, 28] },
-    '1-2': { rule: ['b', 1, 50, 55, 'lift'], hp: ['a', 1.3, 12, 72], food: ['a', 1.25, 50, 32], mind: ['a', 1.3, 86, 45], win: ['a', 1, 50, 50], hpX: ['b', 1.2, 25, 60], foodX: ['b', 1.2, 72, 72], mindX: ['a', 1.2, 50, 28] },
-    '1-3': { rule: ['b', 1.1, 50, 45], hp: ['a', 1.3, 42, 72], food: ['a', 1, 50, 50], mind: ['b', 1.3, 80, 45], win: ['a', 1.1, 50, 38], hpX: ['b', 1.2, 25, 60], foodX: ['b', 1.2, 72, 72], mindX: ['a', 1.2, 50, 28] },
-    '1-4': { hp: ['a', 1.3, 74, 70], food: ['a', 1, 50, 50], mind: ['b', 1.3, 50, 28], win: ['b', 1, 50, 55], hpX: ['b', 1.2, 25, 60], foodX: ['b', 1.2, 72, 72], mindX: ['a', 1.2, 50, 28] },
-    '2-1': { rule: ['b', 1.15, 50, 48], hp: ['a', 1.3, 22, 75], food: ['a', 1, 50, 50], mind: ['b', 1.3, 50, 50], win: ['a', 1.1, 50, 35], hpX: ['b', 1.2, 25, 60], foodX: ['b', 1.2, 72, 72], mindX: ['a', 1.2, 50, 28] },
-    '2-2': { rule: ['a', 1.3, 50, 22], hp: ['b', 1.3, 45, 65], food: ['b', 1, 50, 50], mind: ['a', 1.3, 30, 70], win: ['a', 1, 50, 50], hpX: ['a', 1.2, 25, 60], foodX: ['a', 1.2, 72, 72], mindX: ['b', 1.2, 50, 28] },
-    '2-3': { rule: ['b', 1.1, 55, 45], hp: ['a', 1.3, 50, 75], food: ['a', 1, 50, 50], mind: ['b', 1.3, 40, 35], win: ['a', 1, 50, 40], hpX: ['b', 1.2, 25, 60], foodX: ['b', 1.2, 72, 72], mindX: ['a', 1.2, 50, 28] },
+  // ── 5차(2026-11-28 게임3D): 카드·엔딩마다 새 3D 컷 — 캐글 Blender 렌더 · Poly Haven·Kenney(CC0) 소품 · 출처 reports/돈워너노우_게임3D_20261128/survive/출처.json
+  //  사진관 정물 한 장 = 그 사건의 주인공 사물 하나·둘(투명 배경 webp). 배경은 행성 색(PCOL)을 깔아 같은 세트로 보이게 한다 — 공통 카드도 그 행성 색을 입는다.
+  //  이름: 「이 행성」 카드 = <행성>_<카드 순번> · 공통 = com<순번> · 단서 = k_<행성> · 엔딩 = e_<종류>(공용 컷 + 행성 색) · 숨은 규칙 = r_<행성>(행성마다 그 규칙이 보이게)
+  const G3 = 'img/g3d/survive/', g3url = (k) => `${G3}${k}.webp`;
+  const PCOL = { '1-1': ['#f7d983', '#b5852a'], '1-2': ['#a6dcd2', '#3f8379'], '1-3': ['#f4b6cb', '#a95c7a'], '1-4': ['#3a4f8f', '#0f1631'], '2-1': ['#dceaf2', '#7f9db2'],
+    '2-2': ['#f0b3b0', '#9c5058'], '2-3': ['#c8d2c2', '#69775f'], '5-1': ['#f7c272', '#b06d22'], '5-2': ['#f2d9b4', '#ad8350'], '3-3': ['#b3d6f4', '#4f82b8'], '5-4': ['#79bde0', '#21597c'] };
+  const pvars = (id) => { const c = PCOL[id] || ['#a8b0d6', '#454c72']; return `--p1:${c[0]};--p2:${c[1]}`; };
+  // 밤 장면(불빛·반딧불·별이 주인공) — 같은 행성 색을 어둡게 깐다
+  const NIGHT = new Set(['com2', 'com7', '1-1_0', '1-1_1', '1-1_2', '1-3_1', '1-3_2', '1-4_0', '1-4_2', '1-4_3', '2-1_1', '3-3_3', '5-4_2', 'k_1-4', 'r_1-1', 'r_1-3', 'r_5-2']);
+  // 5차 검수 2회 「누가 나에게 묻는지가 없다」 → 카드마다 묻는 쪽 이름(Reigns 카드 아래 인물 이름 자리). 공통 카드 = 사건, 「이 행성」 카드 = 그 행성의 주인
+  const WHO_COM = ['지구 보급선', '네 몸', '밤하늘', '빗소리', '낯선 생존자', '고장 난 라디오', '텃밭', '꿈'];
+  const HOST = { '1-1': '해바라기 밭', '1-2': '온천', '1-3': '쇼핑몰', '1-4': '반딧불', '2-1': '호수', '2-2': '하얀 산맥', '2-3': '하얀 숲', '5-1': '카피바라', '5-2': '뚱냥이', '3-3': '잠든 양', '5-4': '부캉이' };
+  const whoOf = (c) => (c.clue ? '이상한 징후' : c.own ? HOST[S.id] || S.p.name : WHO_COM[+String(c.art).replace('com', '')] || '');
+  const endArt = (id, kind) => (kind === 'rule' ? `r_${id}` : `e_${kind}`);
+  const SRC_SCENE = 720; // 엔딩 그림 원본 크기(정사각) — 끝 화면 그림 칸 상한
+  // 5차: 엔딩 그림 = 새 3D 컷(720px 정사각) 위에 행성 색. 자르기·확대·색 보정 없음(원본 그대로라 또렷하다)
+  const artEl = (id, kind, cls = '') => {
+    const k = endArt(id, kind);
+    return el('div', { class: `s-art g3 k-${kind}${NIGHT.has(k) ? ' night' : ''} ${cls}`, style: pvars(id), 'aria-hidden': 'true' }, el('i', { style: `background-image:url(${g3url(k)})` }));
   };
-  // 장면 렌더가 없는 행성(카피바라·뚱냥이·구름·부캉이)은 행성 3D 렌더를 액자처럼 놓고 색만 바꾼다(420px라 확대하지 않는다)
-  // 3차: 크게 보이는 그림(o.px = 화면 css px)은 원본보다 키우지 않는다 — 장면 720px · 행성 그림 420px. o.full = 자르지 않고 장면 전체
-  //  (3차 검수: 실패 끝 화면 그림이 1.3배로 확대돼 뭉개지고, 붉은 덮개와 섞여 안개처럼 번졌다)
-  const SRC_SCENE = 720, SRC_PLANET = 420;
-  const artEl = (id, kind, cls = '', o = {}) => {
-    const a = ART[id]?.[kind], src = a ? DC.scene(id, a[0]) : DC.planet(id)?.img || '', real = !!a && src.includes('/scene/');
-    let [z, x, y] = real ? a.slice(1) : [1, 50, 50];
-    const dpr = devicePixelRatio || 1;
-    if (o.full) { z = 1; x = 50; y = 50; } else if (o.px) z = Math.max(1, Math.min(z, SRC_SCENE / (o.px * dpr)));
-    const pw = !real && o.px ? `;--pw:${Math.round(Math.min(o.px * 0.78, SRC_PLANET / dpr))}px` : '';
-    return el('div', { class: `s-art g-${GRADE[kind] || 'ash'}${real ? '' : ' s-pl'}${real && a[4] ? ' ' + a[4] : ''} ${cls}`, 'aria-hidden': 'true' }, el('i', { style: `background-image:url(${src});--z:${+z.toFixed(3)};--x:${x}%;--y:${y}%${pw}` }));
-  };
-  const CROPS = [[1, 50, 50, 1.5],[1.2, 28, 62, -1.5], [1.25, 72, 40, 1.2], [1.12, 50, 75, -1], [1.22, 40, 30, 1.4], [1.15, 66, 58, -1.4], [1.25, 22, 45, 1], [1.1, 80, 66, -1.2]];
 
   // 소리: 게임판 전용 합성음(Web Audio · 파일 없음 · 외부 음원 0). 끄기는 DC.sfx 설정을 따른다
   let ax = null, noiseBuf = null;
@@ -309,7 +301,8 @@
     return {
       warm() { if (!reduce) ensure(); },
       // 3차 검수: 성공 끝 화면에서 색종이(화면 맨 위 캔버스)가 글자를 덮었다 → 끝 화면 안으로 옮겨 그림 위·글자 뒤에서 떨어지게
-      under(host) { if (!cv || !host) return; cv.classList.add('in-end'); host.prepend(cv); }, // 첫 넘김 때 전체 화면 캔버스를 처음 만들며 한 프레임 끊기던 것(실측 133ms) — 판을 그릴 때 미리 만든다
+      under(host) { if (!cv || !host) return; cv.classList.add('in-end'); host.prepend(cv); },
+      clear() { parts = []; if (cx) cx.clearRect(0, 0, innerWidth, innerHeight); }, // 첫 넘김 때 전체 화면 캔버스를 처음 만들며 한 프레임 끊기던 것(실측 133ms) — 판을 그릴 때 미리 만든다
       burst(x, y, n, colors, o = {}) {
         if (reduce) return; ensure();
         for (let i = 0; i < n; i++) {
@@ -335,48 +328,35 @@
   const GMAX = 10, GSTART = 5, KEYS = ['hp', 'food', 'mind'];
   const upkeepOf = (m) => (m >= WINTER ? { food: -1 } : {});
   // 선택 하나 + 그 달 살림. g는 안 바꾸고 { after: 선택 직후, fin: 살림까지, up: 살림 몫, dead: 끝난 엔딩 키 } 를 돌려준다
+  // 5차: 1~3월은 적응기 — 게이지가 끝(0·10)에 닿아도 그 자리(1·9)에서 한 번 버티고(saved), 화면이 「4월부터는 여기서 끝」을 알려 준다.
+  //  5차 맡김 「초반 급사(단서 받기 전 함정·게이지 끝) — 처음 몇 달은 배우는 구간이 있게」. 함정 카드는 4월부터만 나온다(OWN_SLOTS)
+  const GRACE = 3;
   function stepRules(g, fx, m) {
-    const after = { ...g }, fin = { ...g }, up = {};
-    if (fx.trap) return { after, fin, up, dead: 'rule' };
-    for (const k of KEYS) after[k] = fin[k] = g[k] + (fx[k] || 0);
-    for (const k of KEYS) { if (after[k] <= 0) return { after, fin, up, dead: k }; if (after[k] >= GMAX) return { after, fin, up, dead: k + 'X' }; }
-    for (const [k, d] of Object.entries(upkeepOf(m))) { up[k] = d; fin[k] = after[k] + d; if (fin[k] <= 0) return { after, fin, up, dead: k }; }
-    return { after, fin, up, dead: '' };
+    const after = { ...g }, fin = { ...g }, up = {}, saved = [];
+    if (fx.trap) return { after, fin, up, dead: 'rule', saved };
+    for (const k of KEYS) after[k] = g[k] + (fx[k] || 0);
+    if (m <= GRACE) for (const k of KEYS) { if (after[k] <= 0) { after[k] = 1; saved.push(k); } else if (after[k] >= GMAX) { after[k] = GMAX - 1; saved.push(k + 'X'); } }
+    for (const k of KEYS) fin[k] = after[k];
+    for (const k of KEYS) { if (after[k] <= 0) return { after, fin, up, dead: k, saved }; if (after[k] >= GMAX) return { after, fin, up, dead: k + 'X', saved }; }
+    for (const [k, d] of Object.entries(upkeepOf(m))) { up[k] = d; fin[k] = after[k] + d; if (fin[k] <= 0) return { after, fin, up, dead: k, saved }; }
+    return { after, fin, up, dead: '', saved };
   }
   // 한쪽(L|R)만 계속 고르면 1년 안에 게이지가 끝(0 또는 10)에 닿는가 — 함정 선택지는 빼고 게이지만 본다
   const oneSideDies = (deck, side) => { let g = { hp: GSTART, food: GSTART, mind: GSTART }; for (let m = 1; m <= 12; m++) { const fx = { ...deck[m - 1][side][2] }; delete fx.trap; const r = stepRules(g, fx, m); if (r.dead) return true; g = r.fin; } return false; };
+  // 「이 행성」 카드(함정 포함) 4장이 나오는 달 — 판마다 칸 안에서 바꾼다. 5차: 첫 칸 3~4월 → 4~5월(적응기 1~3월에는 함정이 없다)
+  const OWN_SLOTS = [[4, 5], [6, 7], [8, 10], [11, 12]];
   function makeDeck(id, rule) {
-    const p = P[id], scenes = DC.scene(id, 'a').includes('/scene/');
-    let deck = [];
-    for (let t = 0; t < 40; t++) {
-      const own = shuffle(p.cards), com = shuffle(COMMON);
-      // 「이 행성」 카드 4장이 나오는 달도 판마다 바꾼다(전에는 늘 3·5·8·11월)
-      const ownM = [[3, 4], [5, 7], [8, 10], [11, 12]].map(([a, b]) => a + Math.floor(rand() * (b - a + 1)));
-      deck = [];
-      for (let m = 1; m <= 12; m++) {
-        // 단서는 2월 — 첫 함정(3월~) 전에 본다. 「수첩에 적어 둔다」를 고르면 숨은 규칙이 수첩에 적히고, 「이 행성」 카드마다 그 줄이 뜬다
-        if (ownM.includes(m)) deck.push({ q: own[0][0], L: own[0][1], R: own[0][2], img: own.shift()[3], own: true, fix: true });
-        else if (m === 2) deck.push({ q: p.clue, L: ['수첩에 적어 둔다', `수첩에 적었어 — 「${rule}」`, { mind: 1, memo: 1 }], R: ['신경 끈다', '대신 식량을 모았어. 단서는 잊어버렸어.', { food: 1, mind: -1 }], img: 'b', clue: true, fix: true });
-        else { const c = com.pop(); deck.push({ q: c[0], L: c[1], R: c[2], img: 'a' }); }
-      }
-      // 4차: 같은 그림이 연달아 나오지 않게 — 그림이 정해진 카드(이 행성 a|b · 단서 b)끼리 붙어 같은 그림이면 달 배치를 다시 뽑는다
-      if (!scenes || deck.every((c, i) => !i || !c.fix || !deck[i - 1].fix || c.img !== deck[i - 1].img)) break;
-    }
-    // 생존 카드 그림은 앞·뒤 카드와 다르게 고른다: a(집 장면) · p(행성 전경 — 같은 행성 3D 렌더, 새 그림 아님) · b는 둘 다 막힐 때만
-    if (scenes) {
-      const free = deck.map((c, i) => (c.fix ? -1 : i)).filter(i => i >= 0);
-      let best = null, bestCost = 1e9;
-      const walk = (j, cost) => {
-        if (cost >= bestCost) return;
-        if (j === free.length) { bestCost = cost; best = free.map(i => deck[i].img); return; }
-        const i = free[j];
-        for (const [x, c] of [['a', 0], ['p', 0.1], ['b', 5]]) {
-          if (deck[i - 1]?.img === x || (deck[i + 1]?.fix && deck[i + 1].img === x)) continue;
-          const keep = deck[i].img; deck[i].img = x; walk(j + 1, cost + c); deck[i].img = keep;
-        }
-      };
-      walk(0, 0);
-      if (best) free.forEach((i, j) => { deck[i].img = best[j]; });
+    const p = P[id];
+    // 5차: 카드마다 자기 그림(art)이 있다 — 공통 8장 중 7장이 한 판에 한 번씩만 나오므로 같은 그림이 연달아 나올 일이 없다
+    const own = shuffle(p.cards.map((c, i) => ({ q: c[0], L: c[1], R: c[2], art: `${id}_${i}`, own: true })));
+    const com = shuffle(COMMON.map((c, i) => ({ q: c[0], L: c[1], R: c[2], art: `com${i}` })));
+    const ownM = OWN_SLOTS.map(([a, b]) => a + Math.floor(rand() * (b - a + 1)));
+    const deck = [];
+    for (let m = 1; m <= 12; m++) {
+      // 5차: 단서는 1월 첫 카드 — 무엇보다 먼저 본다(4차는 2월). 「수첩에 적어 둔다」를 고르면 「이 행성」 카드마다 그 규칙이 수첩으로 뜬다
+      if (m === 1) deck.push({ q: p.clue, L: ['수첩에 적어 둔다', `수첩에 적었어 — 「${rule}」`, { mind: 1, memo: 1 }], R: ['신경 끈다', '대신 식량을 모았어. 단서는 잊어버렸어.', { food: 1, mind: -1 }], art: `k_${id}`, clue: true });
+      else if (ownM.includes(m)) deck.push(own.shift());
+      else deck.push(com.pop());
     }
     // 좌우 배치: 무작위로 섞되, 왼쪽만·오른쪽만 계속 고르면 반드시 게이지 끝에 닿는 배치만 쓴다(4차 검수 「왼쪽만 눌러도 1년 생존」)
     for (let t = 0; t < 60; t++) { deck.forEach(c => { if (rand() < 0.5) [c.L, c.R] = [c.R, c.L]; }); if (oneSideDies(deck, 'L') && oneSideDies(deck, 'R')) break; }
@@ -393,21 +373,19 @@
     busy = false;
     buildPlay();
     deal(true);
+    window.dwkT?.gameStart('survive', { planet: id, mode: daily ? (practice ? 'daily-again' : 'daily') : 'free' }); // 방문 기록(dwk-track.js) — 사이트데이터 REPORT 7절
   }
 
   // 카드 한 장: 앞면(그림·선택지 이름표·질문) + 뒷면(행성 3D 렌더 그림). 밑에 깔린 카드는 뒷면이 보이고, 위로 올라오며 뒤집힌다
   function cardEl(c, m, under) {
-    // 4차: 'p' = 행성 전경(같은 행성 3D 렌더 420px를 원본 크기 이하로 가운데에 — 키우면 흐려진다)
-    const pl = c.img === 'p', scn = pl ? S.meta.img : DC.scene(S.id, c.img), real = !pl && scn.includes('/scene/');
-    const cr = CROPS[(m * 3 + (c.img === 'b' ? 1 : 0)) % CROPS.length];
-    const z = pl ? 1 : real ? cr[0] : Math.min(1.12, cr[0]);
+    // 5차: 카드마다 그 사건의 3D 컷(c.art) — 행성 색 바탕(--p1·--p2는 판 전체에 걸림) 위 사진관 정물. 자르기·확대 없이 원본 그대로
     const kind = c.clue ? ['clue', '단서'] : c.own ? ['own', '이 행성'] : ['', '생존'];
     return el('div', { class: 'card' + (under ? ' under' : ''), tabindex: under ? -1 : 0, 'aria-hidden': under ? 'true' : null, 'aria-label': under ? null : `${m}월 카드. ${c.q} 왼쪽: ${c.L[0]}. 오른쪽: ${c.R[0]}.` },
       el('div', { class: 'face' },
-        el('div', { class: 'art' + (c.img === 'b' && c.fix ? ' dark' : '') + (c.clue ? ' clue' : '') + (pl ? ' pl' : '') },
-          el('div', { class: 'img', style: `background-image:url(${scn});--z:${z};--x:${real ? cr[1] : 50}%;--y:${real ? cr[2] : 50}%;--dx:${cr[3]}%${pl ? `;--pw:${Math.round(SRC_PLANET / (devicePixelRatio || 1) / 1.18)}px` : ''}` }),
+        el('div', { class: 'art g3' + (NIGHT.has(c.art) ? ' night' : '') + (c.clue ? ' clue' : '') + (c.own ? ' own' : '') },
+          el('div', { class: 'img', style: `background-image:url(${g3url(c.art)})` }),
           el('span', { class: 'tag' })),
-        el('div', { class: 'body' }, el('p', { class: 'meta month' }, el('span', {}, `${m}월`), el('span', { class: 'kind ' + kind[0] }, kind[1])), el('p', { class: 'q' }, c.q),
+        el('div', { class: 'body' }, el('p', { class: 'meta month' }, el('span', {}, `${m}월`), el('span', { class: 'kind ' + kind[0] }, kind[1]), el('span', { class: 'who' }, whoOf(c))), el('p', { class: 'q' }, c.q),
           c.clue ? el('p', { class: 'clue-note' }, el('b', {}, '숨은 규칙의 단서야.'), ' 적어 두면 「이 행성」 카드가 나올 때마다 수첩이 떠.') : null)),
       el('div', { class: 'back' }, el('img', { src: S.meta.img, alt: '', decoding: 'async' }), el('span', {}, `${m}월`)));
   }
@@ -419,7 +397,7 @@
       el('span', { class: 'gi' }, DI.ic(ic), el('small', {}, nm)), el('b', { class: 'gv' }, S.g[k]),
       el('span', { class: 'bar' }, el('b', { style: `width:${S.g[k] * 10}%` }), el('i', { style: `width:${S.g[k] * 10}%` })),
       el('span', { class: 'hint-pip', 'aria-hidden': 'true' }, el('i'), el('i'), el('i'), el('em'))))));
-    const months = el('div', { class: 'months', 'aria-hidden': 'true' }); for (let i = 1; i <= 12; i++) months.append(el('span', { class: i >= WINTER ? 'w' : '' }));
+    const months = el('div', { class: 'months', 'aria-hidden': 'true' }); for (let i = 1; i <= 12; i++) months.append(el('span', { class: i >= WINTER ? 'w' : i <= GRACE ? 'g' : '' }));
     const sub = el('small'), day = el('b', {}, '0일'), mon = el('small');
     const hud = el('div', { class: 'hud' },
       el('div', { class: 'hud-top' }, el('div', { class: 'mini-orb', style: `background-image:url(${S.meta.img})` }), el('div', {}, el('strong', {}, S.meta.name), sub), el('div', { class: 'hud-day' }, mon, day)),
@@ -433,19 +411,20 @@
       b.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') on(); }); b.addEventListener('pointerleave', off); b.addEventListener('focus', on); b.addEventListener('blur', off);
     }
     const hintLine = el('p', { class: 'hint' }, HINT0);
-    const box = el('div', { class: 's-play' }, hud, note, deck, el('div', { class: 'pick' }, bl, br), hintLine);
+    const box = el('div', { class: 's-play', style: pvars(S.id) }, hud, note, deck, el('div', { class: 'pick' }, bl, br), hintLine);
     main.append(box);
     R = { box, hud, g, months, sub, day, mon, note, deck, bl, br, hintLine, dayN: 0 };
     FX.warm(); layer('');
     // 엔딩 그림을 판 시작 때 미리 받아 풀어 둔다 — 끝 순간 처음 그리며 한 프레임 끊기던 것(2차 실측 50~567ms)
-    const want = new Set(endingKeys(S.id).map(k => { const a = ART[S.id]?.[k]; return a ? DC.scene(S.id, a[0]) : S.meta.img; }));
+    const want = new Set(endingKeys(S.id).map(k => g3url(endArt(S.id, k))));
     for (const u of want) { const im = new Image(); im.src = u; im.decode?.().catch(() => { /* 받기 실패 — 끝 화면에서 다시 받는다 */ }); (R.pre = R.pre || []).push(im); }
     updMonth();
     scrollTo(0, 0);
   }
-  function updMonth() {
-    R.sub.textContent = `${S.daily ? (S.practice ? '오늘의 행성 다시(순서 섞음) · ' : '오늘의 행성 · ') : ''}남은 달 ${12 - S.m + 1} · ${S.m >= WINTER ? '겨울 · 매달 식량 −1' : `${WINTER}월부터 겨울`}`;
-    R.sub.classList.toggle('winter', S.m >= WINTER);
+  function updMonth(subOnly) {
+    if (!R.sub.classList.contains('alert')) R.sub.textContent = `${S.daily ? (S.practice ? '오늘의 행성 다시(순서 섞음) · ' : '오늘의 행성 · ') : ''}남은 달 ${12 - S.m + 1} · ${S.m <= GRACE ? `적응기(~${GRACE}월) · 한 번 버텨` : S.m >= WINTER ? '겨울 · 매달 식량 −1' : `${WINTER}월부터 겨울`}`;
+    R.sub.classList.toggle('winter', S.m >= WINTER); R.sub.classList.toggle('grace', S.m <= GRACE);
+    if (subOnly) return;
     R.mon.textContent = `${S.m}월`;
     [...R.months.children].forEach((s, i) => { s.classList.toggle('done', i + 1 < S.m); s.classList.toggle('now', i + 1 === S.m); });
     setDay((S.m - 1) * 30);
@@ -464,7 +443,8 @@
     if (!top) { top = cardEl(c, S.m, true); R.deck.append(top); void top.offsetWidth; }
     top.classList.remove('under'); top.tabIndex = 0; top.removeAttribute('aria-hidden'); top.setAttribute('aria-label', `${S.m}월 카드. ${c.q} 왼쪽: ${c.L[0]}. 오른쪽: ${c.R[0]}.`);
     // 수첩: 단서를 적어 둔 판이면 「이 행성」 카드 그림 위에 규칙 한 줄(밑 카드는 단서보다 먼저 만들어지므로 올릴 때 붙인다)
-    if (c.own && S.memo && !top.querySelector('.s-memo')) top.querySelector('.art').append(el('p', { class: 's-memo' }, el('b', {}, '수첩'), S.memo));
+    // 5차 검수 1회 「숨은 규칙 죽음 앞에 경고 신호가 없다」 → 수첩을 안 적었어도 「이 행성」 카드엔 1월 단서를 한 줄 띄운다(적었으면 규칙 원문)
+    if (c.own && !top.querySelector('.s-memo') && (S.memo || !S.p.noTrap)) top.querySelector('.art').append(S.memo ? el('p', { class: 's-memo' }, el('b', {}, '수첩'), S.memo) : el('p', { class: 's-memo hintc' }, el('b', {}, '단서'), S.p.clue));
     snd('flip', first ? 0 : 0.05);
     if (S.m < 12) R.deck.prepend(cardEl(S.deck[S.m], S.m + 1, true));
     R.bl.replaceChildren(DI.ic('back'), c.L[0]); R.br.replaceChildren(c.R[0], DI.ic('arrow'));
@@ -545,6 +525,7 @@
     const kf = from === 'none' ? [{ transform: 'none' }, { transform: `translate(${dir * 34}px, 2px) rotate(${dir * 3}deg) scale(1.03)`, offset: 0.3 }, { transform: out }] : [{ transform: from }, { transform: out }];
     const dur = gold ? 560 : from === 'none' ? 380 : Math.max(200, 320 - Math.min(2, Math.abs(v)) * 60);
     card.animate(kf, { duration: dur, easing: 'cubic-bezier(.45,0,.85,.5)', fill: 'forwards' }).finished.then(() => card.remove(), () => card.remove());
+    S.picked = (dir < 0 ? c.L : c.R)[0]; // 결과 줄에 「무엇을 골랐나」를 남긴다(5차 검수 2회)
     setTimeout(() => apply(fx, result, card), from === 'none' ? 200 : 110);
   }
 
@@ -558,7 +539,10 @@
     S.g = clamp(res.fin);
     S.trail.push(hurt ? '🟨' : '🟩');
     // 결과 한 줄
-    R.note.textContent = result || ''; R.note.classList.remove('in', 'first'); void R.note.offsetWidth; R.note.classList.add('in');
+    // 5차 검수 1회 「고른 결과가 작은 한 줄이라 안 읽힌다」 → 결과 글 + 바뀐 게이지 칩(체력 +1 · 식량 −2)
+    const nm = Object.fromEntries(GAUGES.map(([k, , n]) => [k, n]));
+    const chips = KEYS.filter(k => fx[k]).map(k => el('em', { class: 'chip ' + k + (fx[k] > 0 ? ' up' : ' dn') }, `${nm[k]} ${fx[k] > 0 ? '+' : '−'}${Math.abs(fx[k])}`));
+    R.note.replaceChildren(el('b', { class: 'pk' }, `「${S.picked || ''}」`), el('span', {}, result || ''), ...chips); R.note.classList.remove('in', 'first'); void R.note.offsetWidth; R.note.classList.add('in');
     // 게이지: 선택 결과 먼저, 달마다 먹는 몫은 조금 뒤에 따로(무엇 때문에 줄었는지 보이게)
     setGauges(prev, afterChoice, fx);
     let ups = 0, downs = 0; for (const [k] of GAUGES) { const d = afterChoice[k] - prev[k]; if (d > 0) ups++; if (d < 0) downs++; }
@@ -566,11 +550,13 @@
     const lastWin = S.m === 12 && !res.dead; // 1년을 버틴 순간엔 「−1 먹음」 숫자가 「365일」 장면 위로 튀지 않게(값은 그대로 반영)
     if (Object.keys(upkeep).length && !lastWin) setTimeout(() => { setGauges(afterChoice, { ...S.g }, upkeep, '먹음'); snd('eat'); }, 420);
     if (res.dead) return setTimeout(() => { busy = false; finish(res.dead); }, 760);
+    if (res.saved.length) graceSave(res.saved); // 5차: 적응기에 끝에 닿았다 — 이번엔 버티고 「4월부터는 여기서 끝」을 보여 준다
     const near = (g) => KEYS.some(k => g[k] <= 2 || g[k] >= GMAX - 2);
     if (near(S.g) && !near(prev)) snd('beat', 0.5);
     S.m += 1; S.note = result;
     if (S.m > 12) { busy = false; setDay(365); R.day.classList.add('gold'); return finish('win'); } // 3차: 전에는 0.52초 더 기다려 카드 없는 빈 판이 0.55초 + 엔딩 판이 뜨기까지 입력 무반응 — 카드가 날아가는 동안 바로 성공 장면
     updMonth(); deal(false);
+    if (S.m === GRACE + 1 && !res.saved.length) banner(`${GRACE + 1}월 · 적응기 끝`, '이제 게이지가 0이나 10에 닿으면 끝나', 'grace');
     if (S.m === WINTER) winter();
     setTimeout(() => { busy = false; }, 260);
   }
@@ -588,16 +574,27 @@
       g.classList.remove('up', 'down', 'flash'); void g.offsetWidth; g.classList.add(d > 0 ? 'up' : 'down', 'flash'); clearTimeout(g._t); g._t = setTimeout(() => g.classList.remove('up', 'down', 'flash'), 700);
       gv.animate([{ transform: 'scale(1.6)' }, { transform: 'scale(1)' }], { duration: 380, easing: 'cubic-bezier(.2,1.4,.4,1)' });
       const r = g.querySelector('.bar').getBoundingClientRect(), x = r.left + r.width * (to[k] / 10), y = r.top + r.height / 2;
-      const p = el('span', { class: 's-pop ' + (d > 0 ? 'up' : 'down'), style: `left:${r.left + r.width / 2}px;top:${r.top - 14}px` }, (d > 0 ? '+' : '−') + Math.abs(d), label ? el('small', {}, label) : null);
+      const p = el('span', { class: 's-pop ' + (d > 0 ? 'up' : 'down'), style: `left:${r.right - 22}px;top:${r.top - 16}px` }, (d > 0 ? '+' : '−') + Math.abs(d), label ? el('small', {}, label) : null);
       document.body.append(p); setTimeout(() => p.remove(), 1150);
       const col = getComputedStyle(g).getPropertyValue('--c').trim() || '#fff';
-      FX.burst(x, y, d > 0 ? 10 + d * 4 : 8 + Math.abs(d) * 5, d > 0 ? [col, '#ffffff'] : [col, '#ff5a6e', '#2a0a10'], d > 0 ? { speed: 170, g: -60, life: 0.7, size: 2.6 } : { speed: 240, g: 700, life: 0.8, size: 3, angle: Math.PI / 2, spread: Math.PI * 1.4 });
+      FX.burst(x, y, d > 0 ? 5 + d * 2 : 4 + Math.abs(d) * 3, d > 0 ? [col, '#ffffff'] : [col, '#ff5a6e', '#2a0a10'], d > 0 ? { speed: 170, g: -60, life: 0.7, size: 2.6 } : { speed: 240, g: 700, life: 0.8, size: 3, angle: Math.PI / 2, spread: Math.PI * 1.4 });
     }
+  }
+  function banner(title, sub, cls = '') {
+    // 5차 검수 1·2회 「띠가 카드 그림을 가린다」 → 카드 위가 아니라 머리줄 안내 자리에 3초 동안 굵게(카드는 하나도 안 가린다)
+    clearTimeout(R.subT); R.sub.textContent = `${title} — ${sub}`; R.sub.className = 'alert ' + cls; void R.sub.offsetWidth; R.sub.classList.add('on');
+    R.subT = setTimeout(() => { R.sub.className = ''; updMonth(true); }, 3200);
+  }
+  // 적응기(1~3월)에 게이지가 끝에 닿은 순간: 그 게이지를 깜빡이고, 무엇 때문에 끝날 뻔했는지 한 줄로 알려 준다
+  function graceSave(saved) {
+    const nm = Object.fromEntries(GAUGES.map(([k, , n]) => [k, n])), k = saved[0], hi = /X$/.test(k), base = k.replace(/X$/, '');
+    snd('beat'); DC.buzz([20, 40, 20]);
+    for (const s of saved) { const g = R.g[s.replace(/X$/, '')]; g.classList.remove('saved'); void g.offsetWidth; g.classList.add('saved'); setTimeout(() => g.classList.remove('saved'), 1600); }
+    banner(`${nm[base]} ${hi ? '꽉 참' : '바닥'} — 적응기라 버텼어`, `${GRACE + 1}월부터는 ${hi ? '10까지 차면' : '0이 되면'} 끝이야`, 'grace');
   }
   function winter() {
     snd('winter');
-    const b = el('div', { class: 's-banner', role: 'status' }, el('b', {}, `${WINTER}월 · 겨울이 왔어`), el('small', {}, '이제 매달 식량 −1'));
-    R.deck.append(b); setTimeout(() => b.remove(), 2300);
+    banner(`${WINTER}월 · 겨울이 왔어`, '이제 매달 식량 −1');
     if (!reduce) FX.burst(innerWidth / 2, R.deck.getBoundingClientRect().top + 40, 40, ['#ffffff', '#cfe6ff'], { speed: 120, g: 60, drag: 0.6, life: 2.2, size: 2.2, angle: Math.PI / 2, spread: Math.PI * 2 });
   }
   // 끝나는 순간 한 장면: 판이 잿빛으로 식고 · 붉은 빛이 조여 오고 · 엔딩 이름이 내려꽂힌다(1.8초, 누르면 바로 넘어감)
@@ -635,6 +632,7 @@
     if (S.over) return; S.over = true;
     // 4차: 버틴 날도 달 단위와 맞춘다 — n월 카드에서 끝나면 그 달 중간((n−1)×30+15일). 전에는 그 달 안에서 5~29일을 무작위로 더했다
     const days = kind === 'win' ? 365 : (S.m - 1) * 30 + 15;
+    window.dwkT?.gameEnd('survive', { score: days, why: kind, at: 'm' + S.m }); // 몇 번째 달에 무엇으로 끝났나 = 실패 지점
     const [title, sub] = END(S.id)[kind];
     const fresh = DC.endings.add('survive', `${S.id}:${kind}`, title);
     if (kind !== 'win') S.trail.push('🟥');
@@ -664,7 +662,7 @@
           el('p', { class: 'story' }, story),
           kind === 'rule' ? el('p', { class: 'rule' }, `생존 규칙: ${S.rule || '영상에서 확인'}`) : null,
           acts,
-          kind === 'rule' ? el('p', { class: 's-memo-note' }, S.memo ? '수첩에 적어 둔 규칙이었어.' : '2월 단서 카드에서 「수첩에 적어 둔다」를 고르면, 「이 행성」 카드마다 이 규칙이 수첩으로 떠.') : null,
+          kind === 'rule' ? el('p', { class: 's-memo-note' }, S.memo ? '수첩에 적어 둔 규칙이었어.' : '1월 첫 카드(단서)에서 「수첩에 적어 둔다」를 고르면, 「이 행성」 카드마다 이 규칙이 수첩으로 떠.') : null,
           collection(kind, fresh),
           el('p', { class: 'trail', 'aria-label': '달마다 결과' }, S.trail.map(DI.sq)));
       box.append(
@@ -684,7 +682,7 @@
             DC.followCta(),
             el('p', { class: 'gx-note' }, '제일 오래 버틴 사람은 「명예 생존자」로 다음 영상에 별명이 나와 — 결과 화면을 캡처해 DM으로 보내 줘.')),
           el('canvas', { id: 'card', width: 1080, height: 1350, class: 'gx-preview', 'aria-label': '공유할 결과 카드' }))));
-      FX.under(sec); // 남은 색종이는 끝 화면 그림 위·글자 뒤에서 마저 떨어진다
+      FX.clear(); // 5차 검수 1회 「꽃가루가 엔딩 문장·단추를 가린다」 → 색종이는 엔딩 판(2.3초)까지만, 끝 화면에선 걷는다
       // 공유 카드(1080×1350 캔버스)는 화면 가까이 왔을 때·한가할 때·「결과 공유」를 누를 때 중 먼저 오는 때 한 번 그린다
       //  4차 실측: 끝 화면 0.45초 뒤에 그리면 색종이가 떨어지는 중에 50~100ms 한 프레임이 끊겼다(3차판도 같음)
       const cv = $('#card');
@@ -712,9 +710,12 @@
   async function drawCard(days, kind, title) {
     await DC.fonts();
     const c = $('#card'); if (!c) return; const x = c.getContext('2d'), W = 1080, H = 1350;
-    const img = await new Promise(ok => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = DC.scene(S.id, 'a'); });
+    // 5차: 공유 카드 그림 = 이 엔딩의 3D 컷을 행성 색 바탕 위에(끝 화면과 같은 그림)
+    const img = await new Promise(ok => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = g3url(endArt(S.id, kind)); });
     x.fillStyle = '#05060d'; x.fillRect(0, 0, W, H);
-    if (img) { x.drawImage(img, 0, 0, W, W); const g = x.createLinearGradient(0, W * 0.45, 0, W); g.addColorStop(0, 'rgba(5,6,13,0)'); g.addColorStop(1, 'rgba(5,6,13,1)'); x.fillStyle = g; x.fillRect(0, 0, W, W); }
+    const pc = PCOL[S.id] || ['#a8b0d6', '#454c72'], bg = x.createRadialGradient(W / 2, W * 0.42, 0, W / 2, W * 0.42, W * 0.75); bg.addColorStop(0, pc[0]); bg.addColorStop(1, pc[1]); x.fillStyle = bg; x.fillRect(0, 0, W, W);
+    if (img) x.drawImage(img, 0, 0, W, W);
+    { const g = x.createLinearGradient(0, W * 0.55, 0, W); g.addColorStop(0, 'rgba(5,6,13,0)'); g.addColorStop(1, 'rgba(5,6,13,1)'); x.fillStyle = g; x.fillRect(0, 0, W, W); }
     x.textAlign = 'center';
     x.fillStyle = 'rgba(240,240,250,.72)'; x.font = '500 34px \"Pretendard Variable\", sans-serif'; x.fillText(S.daily ? `오늘의 행성 · ${DC.today()}` : '행성에서 1년 버티기', W / 2, 90);
     x.fillStyle = '#f4f1ea'; x.font = '800 64px \"Pretendard Variable\", sans-serif'; x.fillText(`${S.p.icon} ${S.meta.name}`, W / 2, 900);
@@ -738,7 +739,7 @@
     const box = el('div', { class: 'gx-end' }); main.append(box);
     const got = new Set(DC.endings.got('survive'));
     box.append(el('p', { class: 'gx-eyebrow' }, el('span', {}, '도감'), '행성 생존'), el('h1', { class: 'gx-h1' }, '모든 끝을 모아 봐'),
-      el('p', { class: 'gx-sub' }, '행성마다 끝나는 방법이 여러 개야. 숨은 규칙 엔딩은 영상에 힌트가 있어.'));
+      el('p', { class: 'gx-sub' }, '행성마다 끝나는 방법이 여러 개야. 숨은 규칙은 1월 첫 카드(단서)에 힌트가 있어.'));
     for (const p of playable()) {
       const n = endingKeys(p.id).filter(k => got.has(`${p.id}:${k}`)).length;
       box.append(el('div', { class: 'dex-ep' }, el('h3', {}, el('span', { class: 'mini-orb', style: `background-image:url(${p.img})` }), p.name, el('small', { class: 's-dexn' }, `${n} / ${endingKeys(p.id).length}`)),
@@ -752,7 +753,7 @@
   if (params.get('sim') === '1') window.SURVIVE_SIM = {
     ids: Object.keys(P),
     run(id, strat, seed) {
-      rand = DC.rng(seed); const deck = makeDeck(id, P[id].rule); let g = { hp: GSTART, food: GSTART, mind: GSTART }; const imgs = deck.map(c => c.img).join('');
+      rand = DC.rng(seed); const deck = makeDeck(id, P[id].rule); let g = { hp: GSTART, food: GSTART, mind: GSTART }; const imgs = deck.map(c => c.art).join(' '); let saved = 0;
       const margin = (x) => Math.min(...KEYS.map(k => Math.min(x[k], GMAX - x[k])));
       for (let m = 1; m <= 12; m++) {
         const c = deck[m - 1]; let pick;
@@ -760,9 +761,9 @@
         else if (strat === 'rand') pick = rand() < 0.5 ? c.L : c.R;
         else if (strat === 'randsafe') { pick = rand() < 0.5 ? c.L : c.R; if (pick[2].trap) pick = pick === c.L ? c.R : c.L; }
         else { let bs = -1e9; for (const o of [c.L, c.R]) { if (o[2].trap) continue; const r = stepRules(g, o[2], m), sc = r.dead ? -50 : margin(r.fin) + rand() * 0.01; if (sc > bs) { bs = sc; pick = o; } } }
-        const r = stepRules(g, pick[2], m); if (r.dead) return { end: r.dead, m, imgs }; g = r.fin;
+        const r = stepRules(g, pick[2], m); saved += r.saved.length; if (r.dead) return { end: r.dead, m, imgs, saved }; g = r.fin;
       }
-      return { end: 'win', m: 12, imgs };
+      return { end: 'win', m: 12, imgs, saved };
     },
     // 화면 판에서 지금 카드의 고를 쪽(0 = 왼쪽 단추, 1 = 오른쪽): 'smart' = 함정 피하고 끝에서 가장 먼 쪽 · 'max:식량키' = 그 게이지를 더 올리는 쪽
     choose(how) {
@@ -771,7 +772,7 @@
       const sc = o.map(x => { if (x[2].trap) return -1e9; const r = stepRules(S.g, x[2], S.m); return r.dead ? -50 : Math.min(...KEYS.map(k => Math.min(r.fin[k], GMAX - r.fin[k]))); });
       return sc[1] > sc[0] ? 1 : 0;
     },
-    imgs: () => S?.deck.map(c => c.img).join(''),
+    imgs: () => S?.deck.map(c => c.art).join(' '),
   };
   addEventListener('keydown', (e) => { const ov = document.querySelector('.s-over'); if (ov && /^(Enter| |Escape|ArrowLeft|ArrowRight)$/.test(e.key)) { e.preventDefault(); ov.click(); return; } });
   addEventListener('keydown', (e) => { if (!S || S.over || !document.querySelector('.s-play')) return; if (e.key === 'ArrowLeft') { e.preventDefault(); commit(-1); } else if (e.key === 'ArrowRight') { e.preventDefault(); commit(1); } });

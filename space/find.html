@@ -8,11 +8,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>빈틈 찾기 · 돈워너노우</title>
 <meta name="robots" content="noindex, nofollow">
-<meta name="description" content="돈워너노우 행성 장면에서 빈틈을 찾는 짧은 게임">
+<meta name="description" content="돈워너노우 3D 탁자 장면에서 말이 안 되는 한 곳을 찾는 짧은 게임">
 <meta name="theme-color" content="#000000">
 <link rel="stylesheet" href="style.css?v=4">
 <link rel="stylesheet" href="game-ui.css?v=2">
-<link rel="stylesheet" href="find.css?v=13">
+<link rel="stylesheet" href="find.css?v=15">
 </head>
 <body class="gx f-page">
 <canvas id="stars" aria-hidden="true"></canvas>
@@ -23,10 +23,11 @@
 </header>
 <main id="app" class="gx-main" aria-live="polite"><div class="gx-state"><p class="gx-dots">장면을 불러오는 중</p></div></main>
 <script src="data.js?v=15"></script>
+<script src="dwk-track.js?v=2"></script>
 <script src="dwk-core.js?v=5"></script>
 <script src="icons.js?v=1"></script>
 <script src="dwk-prog.js?v=14"></script>
 <script>new MutationObserver(() => document.querySelectorAll('.dp-flash b:not(.gx-gone)').forEach(b => { if (b.textContent.includes('광장')) b.classList.add('gx-gone'); })).observe(document.body, { childList: true, subtree: true });</script>
-<script src="find.js?v=14"></script>
+<script src="find.js?v=16"></script>
 </body>
 </html>

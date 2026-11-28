@@ -11,15 +11,18 @@
   const CAPR = 0.11;               // 우주선 반지름(행성 반지름=1 기준)
   const PADW = 0.085;              // 착륙 표지 반쪽 폭(라디안) — 여기 앉으면 「완벽」
   const HOVER_Y = -1.62, GRAV = 16, V0 = 2.4; // 누르는 순간 바로 떨어진다(약 0.14초)
-  const LIVES = 3;
+  const LIVES = 3;                 // 7차: 목숨 3개(작은 우주선 아이콘) — 쾅 하면 하나 잃고 0이면 끝
   const TAKENW = 2 * CAPW;         // 이미 앉은 우주선 자리(양쪽 반쪽 폭) — 여기 떨어지면 부딪힌다. 화면에도 이 폭 그대로 빨갛게 칠한다(2차)
-  // 연출이 실제 시간에 더하는 몫(초) — 난이도 실측(landcurve.mjs)이 한 판 길이에 더한다
-  const FX_TIME = { land: 0.07, perfect: 0.3, fail: 0.52, crash: 0.52 }; // 3차: 실패 0.1초 멈춤 더함
+  // 연출이 실제 시간에 더하는 몫(초) — 난이도 실측(landbots.mjs)이 한 판 길이에 더한다
+  const FX_TIME = { land: 0.07, perfect: 0.3, fail: 0.67, crash: 0.67 };
+  // 7차(2026-11-29 · 총괄 지시 「설계를 줄인다」): 규칙은 색 셋뿐 — 초록 = 앉기 · 빨강/먼저 앉은 자리 = 쾅 · 금색 = 완벽.
+  //  연료·과열·배율을 뺐다. 기다리면 손해는 「우주선마다 약 3초 카운트다운」 하나 — 다 되면 저절로 떨어진다.
+  //  점수 = 앉은 우주선 수(완벽은 2점). 완벽 3연속이면 목숨 +1(최대 3).
+  const TIMER = { base: 2.6, perStage: 0.1, min: 1.8 };
 
   const norm = (a) => { a %= TAU; return a < 0 ? a + TAU : a; };
   const angDiff = (a, b) => { const d = Math.abs(norm(a) - norm(b)); return d > Math.PI ? TAU - d : d; };
 
-  // 행성별 속도·빈틈 수(규칙 문장은 화면에 쓰지 않는다 — 스포 방지)
   const CFG = {
     '1-1': { speed: 1.0, gaps: 2 }, '1-2': { speed: 0.95, gaps: 2 }, '1-3': { speed: 1.1, gaps: 3 }, '1-4': { speed: 0.9, gaps: 2 },
     '2-1': { speed: 1.1, gaps: 2 }, '2-2': { speed: 1.2, gaps: 3 }, '2-3': { speed: 1.15, gaps: 3 }, '3-1': { speed: 0.95, gaps: 2 },
@@ -28,26 +31,22 @@
   const cfgOf = (id) => CFG[id] || { speed: 1, gaps: 2 };
 
   // 난이도 곡선 — 한 곳에서 정한다. 첫 행성은 흔들림 없이 「도는 행성 + 한 번 누름」만, 셋째 행성부터 우주선이 좌우로 흔들린다.
-  // 2차(2026-11-28): 1차 곡선은 첫 행성 누름당 실패율이 2~5%(사람 모형)라 거의 안 죽었고, 다섯째 행성에서 오히려 쉬워졌다.
-  //  → 첫 행성부터 빨강 3곳(0.5×2 → 0.8×3 라디안, 원의 16% → 38%) · 회전 1.1배로 시작, 빈틈 수는 행성 순서로만 늘린다(행성별 CFG.gaps는 안 쓴다).
-  //    첫 행성 색 힌트(조준 빛)는 처음 두 번만 켠다 — 그 뒤로는 혼자 맞춘다(화면 2부 helpOn).
   function stageParams(stage, cfg) {
     return {
       need: [3, 4, 4, 5][Math.min(stage, 3)],
-      speed: Math.min(2.6, (1.1 + 0.12 * stage) * cfg.speed),
+      speed: Math.min(2.6, (1.1 + 0.09 * stage) * cfg.speed),
       dir: stage % 2 === 0 ? 1 : -1,
-      gaps: Math.min(4, 3 + (stage >= 3 ? 1 : 0)),
-      gapW: Math.min(0.95, 0.8 + 0.035 * stage),
+      gaps: stage < 1 ? 2 : stage < 3 ? 3 : 4,          // 7차: 목숨 3개로 돌아와 첫 행성은 빨강 2곳으로 시작
+      gapW: Math.min(0.95, 0.68 + 0.045 * stage),
       amp: stage < 2 ? 0 : Math.min(0.7, 0.26 + 0.07 * (stage - 2)),
       swayW: 1.5 + 0.1 * stage,
+      timer: Math.max(TIMER.min, TIMER.base - TIMER.perStage * stage),
     };
   }
 
-  // 기본 시드/난수 (dwk-core.js 와 같은 식 — 브라우저에서는 DC 것을 넘겨도 결과 동일)
   const defSeed = (str) => { let h = 2166136261; for (const ch of String(str)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
   const defRng = (s) => () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 
-  // 지대 배치: 안전/빈틈이 번갈아 원 전체를 덮는다. {a0: 시작각, w: 폭, type} · 넓은 안전 지대 가운데에 착륙 표지
   function makeZones(rand, stage, cfg) {
     const P = stageParams(stage, cfg), n = P.gaps;
     let gapW = P.gapW; const MIN_SAFE = 0.7;
@@ -58,20 +57,20 @@
     let a = rand() * TAU; const zones = [];
     for (let i = 0; i < n; i++) {
       const sw = safeTotal * ws[i] / sum;
-      zones.push({ a0: norm(a), w: sw, type: 'safe' }); a += sw;
+      zones.push({ a0: norm(a), w: sw, type: 'safe', side: rand() < 0.5 ? 0 : 1 }); a += sw;
       zones.push({ a0: norm(a), w: gapW, type: 'gap' }); a += gapW;
     }
     return zones;
   }
-  const makePads = (zones) => zones.filter(z => z.type === 'safe' && z.w >= 0.45).map(z => ({ a: norm(z.a0 + z.w / 2), used: false }));
+  // 금색 표지는 빨강 바로 옆(빨강 끝에서 0.13라디안) — 완벽을 노리면 빨강에 가까워진다 = 위험 감수 보상
+  const PAD_OFF = 0.13;
+  const makePads = (zones) => zones.filter(z => z.type === 'safe' && z.w >= 0.45).map(z => ({ a: norm(z.side ? z.a0 + z.w - PAD_OFF : z.a0 + PAD_OFF), used: false }));
 
-  // 판정: 행성 고정 좌표 각도 a(위쪽 0, 시계방향 +)에 우주선이 닿았을 때 — 'crash' = 이미 앉은 우주선과 겹침 / 'safe' / 'gap'
   function classify(a, zones, landed) {
     for (const l of landed) if (angDiff(a, l) < TAKENW) return 'crash';
     for (const z of zones) if (norm(a - z.a0) < z.w) return z.type;
-    return 'gap'; // 부동소수 경계 보호(실제로는 거의 안 옴)
+    return 'gap';
   }
-  // 우주선이 x(=dx, 행성 반지름 1 기준)에서 수직으로 내려와 닿는 월드 각도
   const contactAngle = (dx) => Math.asin(Math.max(-1, Math.min(1, dx)));
 
   function createSim(o) {
@@ -82,16 +81,16 @@
     const offset = o.daily ? seedFn(seedStr) % ids.length : 0;
     const s = {
       daily: !!o.daily, seedStr, ids, offset, stage: 0, planetId: null, zones: [], pads: [], landed: [],
-      need: 3, hits: 0, rot: 0, dir: 1, speed: 1, t: 0, ht: 0, amp: 0, swayW: 1.6, lives: LIVES, score: 0, combo: 0, bestCombo: 0,
-      perfects: 0, pstreak: 0, landings: 0, drops: [], phase: 'hover', dx: 0, y: HOVER_Y, vy: 0, wait: 0, pendingTap: false,
-      stageFails: 0, perfectStages: 0, over: false, lastLand: null, clearing: false,
+      need: 3, hits: 0, rot: 0, dir: 1, speed: 1, t: 0, ht: 0, amp: 0, swayW: 1.6, lives: LIVES, timer: TIMER.base,
+      score: 0, combo: 0, bestCombo: 0, perfects: 0, pstreak: 0, bestPstreak: 0, landings: 0, autos: 0, drops: [], phase: 'hover', dx: 0, y: HOVER_Y, vy: 0, wait: 0, pendingTap: false,
+      stageFails: 0, perfectStages: 0, over: false, why: null, lastLand: null, clearing: false, ship: 0,
     };
     function setupStage() {
       s.planetId = ids[(offset + s.stage) % ids.length];
       const cfg = cfgOf(s.planetId), P = stageParams(s.stage, cfg);
       s.zones = makeZones(rngF(seedFn(seedStr + '|' + s.stage)), s.stage, cfg); s.pads = makePads(s.zones);
       s.landed = []; s.hits = 0; s.stageFails = 0;
-      s.need = P.need; s.speed = P.speed; s.dir = P.dir; s.amp = P.amp; s.swayW = P.swayW;
+      s.need = P.need; s.speed = P.speed; s.dir = P.dir; s.amp = P.amp; s.swayW = P.swayW; s.timer = P.timer;
       s.rot = norm(rngF(seedFn(seedStr + '|r' + s.stage))() * TAU);
     }
     setupStage();
@@ -104,7 +103,8 @@
         s.t += dt; s.rot = norm(s.rot + s.dir * s.speed * dt);
         if (s.phase === 'hover') {
           s.ht += dt; s.dx = s.amp * Math.sin(s.swayW * s.ht); s.y = HOVER_Y; s.vy = 0;
-          if (s.pendingTap) { s.pendingTap = false; s.phase = 'fall'; s.vy = V0; ev.push({ type: 'drop' }); }
+          const auto = !s.pendingTap && s.ht >= s.timer; // 카운트다운이 다 되면 저절로 떨어진다
+          if (s.pendingTap || auto) { s.pendingTap = false; s.phase = 'fall'; s.vy = V0; s.auto = auto; if (auto) s.autos++; ev.push({ type: 'drop', auto }); }
         } else if (s.phase === 'fall') {
           s.vy += GRAV * dt; s.y += s.vy * dt;
           const surf = -Math.sqrt(Math.max(0, 1 - s.dx * s.dx));
@@ -113,26 +113,26 @@
             const res = classify(a, s.zones, s.landed);
             s.lastLand = { a, dx: s.dx, res };
             if (res === 'safe') {
-              const pad = s.pads.find(p => !p.used && angDiff(a, p.a) < PADW), perfect = !!pad;
+              const pad = s.auto ? null : s.pads.find(p => !p.used && angDiff(a, p.a) < PADW), perfect = !!pad; // 저절로 떨어진 우주선은 점수 0 · 완벽 없음
               if (pad) pad.used = true;
-              for (const p of s.pads) if (!p.used && angDiff(a, p.a) < 2 * CAPW) p.used = true; // 표지 위를 덮으면 그 표지는 끝
-              s.landings++; s.hits++; s.landed.push(a);
-              let gain = 10 + 5 * Math.min(s.combo, 10); if (perfect) { gain *= 2; s.perfects++; s.pstreak++; } else s.pstreak = 0;
-              s.score += gain; s.combo++;
+              for (const p of s.pads) if (!p.used && angDiff(a, p.a) < 2 * CAPW) p.used = true;
+              const gain = s.auto ? 0 : perfect ? 2 : 1;
+              s.landings++; s.hits++; s.landed.push(a); s.score += gain; s.combo++; s.ship++;
+              if (perfect) { s.perfects++; s.pstreak++; if (s.pstreak > s.bestPstreak) s.bestPstreak = s.pstreak; } else s.pstreak = 0;
               if (s.combo > s.bestCombo) s.bestCombo = s.combo;
               s.drops.push(true);
-              ev.push({ type: 'land', a, gain, combo: s.combo, perfect });
+              ev.push({ type: 'land', a, gain, combo: s.combo, perfect, pstreak: s.pstreak, auto: s.auto });
               if (perfect && s.pstreak % 3 === 0 && s.lives < LIVES) { s.lives++; ev.push({ type: 'heal', lives: s.lives }); }
               if (s.hits >= s.need) {
-                s.score += 50; if (s.stageFails === 0) s.perfectStages++;
+                const clean = s.stageFails === 0; if (clean) s.perfectStages++;
                 const nid = ids[(offset + s.stage + 1) % ids.length], NP = stageParams(s.stage + 1, cfgOf(nid));
-                ev.push({ type: 'clear', stage: s.stage, perfect: s.stageFails === 0, next: nid, nextRot: norm(rngF(seedFn(seedStr + '|r' + (s.stage + 1)))() * TAU), nextSpin: NP.dir * NP.speed });
+                ev.push({ type: 'clear', stage: s.stage, perfect: clean, next: nid, nextRot: norm(rngF(seedFn(seedStr + '|r' + (s.stage + 1)))() * TAU), nextSpin: NP.dir * NP.speed });
                 s.phase = 'wait'; s.wait = 1.35; s.clearing = true;
               } else { s.phase = 'wait'; s.wait = 0.24; s.clearing = false; }
             } else {
-              s.lives--; s.stageFails++; s.combo = 0; s.pstreak = 0; s.drops.push(false);
+              s.lives--; s.stageFails++; s.combo = 0; s.pstreak = 0; s.drops.push(false); s.ship++;
               ev.push({ type: res === 'crash' ? 'crash' : 'fail', a, dx: s.dx, lives: s.lives });
-              if (s.lives <= 0) { s.over = true; s.phase = 'over'; ev.push({ type: 'over' }); }
+              if (s.lives <= 0) { s.over = true; s.phase = 'over'; s.why = res; ev.push({ type: 'over', why: res }); }
               else { s.phase = 'wait'; s.wait = 0.6; s.clearing = false; }
             }
           }
@@ -148,15 +148,14 @@
     };
     return sim;
   }
-  // 지금 누르면 어떻게 되나 — 상태를 복제해 미리 돌려 본다(조준 빛 색 · 시험 봇)
   function predict(s) {
     const c = createSim({ planetIds: s.ids, seedStr: s.seedStr }); Object.assign(c.s, JSON.parse(JSON.stringify(s)));
-    c.s.pendingTap = false; c.tap();
+    c.s.pendingTap = false; c.s.lives = 99; c.tap();
     for (let i = 0; i < 240; i++) { const e = c.step(STEP); const h = e.find(x => x.type === 'land' || x.type === 'fail' || x.type === 'crash'); if (h) return h; }
     return { type: 'none' };
   }
 
-  const Land = { TAU, STEP, CAPW, CAPR, PADW, TAKENW, LIVES, CFG, FX_TIME, cfgOf, stageParams, norm, angDiff, makeZones, makePads, classify, contactAngle, createSim, predict };
+  const Land = { TAU, STEP, CAPW, CAPR, PADW, TAKENW, LIVES, TIMER, PAD_OFF, CFG, FX_TIME, cfgOf, stageParams, norm, angDiff, makeZones, makePads, classify, contactAngle, createSim, predict };
   if (typeof module !== 'undefined' && module.exports) module.exports = Land;
   else root.Land = Land;
 
@@ -221,8 +220,8 @@
     cvs.width = Math.round(W * DPR); cvs.height = Math.round(H * DPR);
     // 게임 중: 점수판 아래 ~ 화면 아래 60px 사이에 「떠 있는 우주선 + 행성 + 콤보」가 다 들어가게(위 2.25R · 아래 1.2R)
     // 3차: 점수판이 커졌고(HUD_H) 점수판과 우주선 사이 띠에 알림이 앉는다 — 위 여유 164→180, 높이 몫 3.45→3.5(폰 390×844는 R이 폭으로 정해져 그대로)
-    const hb = 180, avail = Math.max(200, H - 60 - hb);
-    R = Math.min(W * 0.36, H * 0.26, avail / 3.5); cx = W / 2; cy = hb + 2.25 * R + (avail - 3.5 * R) / 2;
+    const hb = (document.body.classList.contains('l-play') ? 100 : 140), avail = Math.max(200, H - 40 - hb); // 7차: 머리 줄이 숨으면 위 여유 100 // 6차: 계기판이 한 줄이 되어 위 여유 180 → 140
+    R = Math.min(W * 0.37, H * 0.27, avail / 3.3); cx = W / 2; cy = Math.max(hb + 2.25 * R, Math.min(H - 1.25 * R - 30, 0.45 * H + R)); // 7차 검수 6회: 행성 꼭대기(착지점)를 화면 높이 45%에 // 검수 1회: 앉은 우주선이 화면 옆에서 잘렸다(1.49R > 반폭) → 0.36W → 0.31W
     if (idle) {
       if (W >= 900 || W > H * 1.3) { R = Math.min(W * 0.2, H * 0.26); cx = W * 0.7; cy = H * 0.55; }
       else { R = Math.min(W * 0.32, H * 0.19); cy = H * 0.31; }
@@ -235,7 +234,7 @@
   const imgs = {}, meta = {};
   const getImg = (src) => {
     if (!src) return null; if (imgs[src]) return imgs[src];
-    const im = new Image(); im.src = src; imgs[src] = im; im.onload = () => analyse(src, im); return im;
+    const im = new Image(); im.src = src; imgs[src] = im; im.onload = () => { if (!(meta[src] && meta[src].fixed)) analyse(src, im); }; return im;
   };
   function analyse(src, im) { // 행성 원(중심·반지름)과 대표 색을 잰다 — 그림 아래 편 번호 글자·후광에 끌려가지 않게 「폭」과 「위쪽 끝」만 쓴다
     try {
@@ -272,11 +271,12 @@
     c.save(); c.globalAlpha = alpha;
     const ag = c.createRadialGradient(x, y, r * 0.95, x, y, r * 1.5); ag.addColorStop(0, colOf(src, 0.42 * gk, 0.35 * lf)); ag.addColorStop(0.35, colOf(src, 0.12 * gk, 0.2 * lf)); ag.addColorStop(1, colOf(src, 0, 0)); // 대기 빛
     c.fillStyle = ag; c.beginPath(); c.arc(x, y, r * 1.5, 0, TAU); c.fill();
-    c.save(); c.translate(x, y); c.beginPath(); c.arc(0, 0, r, 0, TAU); c.fillStyle = colOf(src, 1, -0.4); c.fill(); c.clip(); c.rotate(rot);
+    c.save(); c.translate(x, y); c.beginPath(); c.arc(0, 0, r * (m && m.full ? 1.02 : 1), 0, TAU); c.fillStyle = colOf(src, 1, -0.4); c.fill(); c.clip(); c.rotate(rot); // 5차: 3D 행성 세트는 돌출(나무·산)이 원 밖으로 나와서 자르지 않는다
     if (im && im.complete && im.naturalWidth && m) { const sc = r / (m.rad * im.naturalWidth); c.drawImage(im, -m.u * im.naturalWidth * sc, -m.v * im.naturalHeight * sc, im.naturalWidth * sc, im.naturalHeight * sc); }
     c.restore();
     if (c === ctx) {
       const sh = shadeLayer(R), S = shadeCache.S * r / R; c.drawImage(sh, x - S / 2, y - S / 2, S, S);
+      if (!idle && m && m.full) { c.beginPath(); c.arc(x, y, r, 0, TAU); c.fillStyle = 'rgba(0,0,14,.3)'; c.fill(); } // 검수 1회: 표면이 바빠 고리가 묻혔다 → 게임 중에는 행성 몸통을 한 톤 낮춘다
       c.beginPath(); c.arc(x, y, r, 0, TAU); c.lineWidth = Math.max(1, r * 0.012); c.strokeStyle = `rgba(0,0,12,${0.35 + 0.3 * bright})`; c.stroke();
     }
     c.restore();
@@ -349,10 +349,43 @@
   }
   // 화면 각도 ang로 선 우주선이 받는 빛: lx = 몸 기준 옆 방향 빛(-1 왼쪽 ~ 1 오른쪽)
   const lightX = (ang) => LIGHT[0] * Math.cos(ang) + LIGHT[1] * Math.sin(ang);
+  // ── 5차(게임 3D): Blender로 렌더한 우주선 함대·착륙 먼지·폭발·분사 불꽃 스프라이트(img/g3d/land/ · 목록 land.json) ──
+  //  우주선은 빛 방향 3가지(l·c·r = 몸 왼쪽·정면·오른쪽에서 빛)로 렌더했다. 화면 각도마다 빛이 오는 쪽을 골라 쓴다. 못 받으면 옛 그림(shipSprite)으로 그린다.
+  const G3 = { ok: false, ships: [], fx: {}, img: {}, dark: new Map() };
+  const g3img = (f) => { if (G3.img[f]) return G3.img[f]; const im = new Image(); im.decoding = 'async'; im.src = 'img/g3d/land/' + f; G3.img[f] = im; return im; };
+  const g3ready = (im) => im && im.complete && im.naturalWidth > 0;
+  fetch('img/g3d/land/land.json').then(r => r.ok ? r.json() : null).then(j => {
+    if (!j) return; G3.ships = j.ships || []; G3.fx = j.fx || {}; G3.ok = G3.ships.length > 0;
+    for (const sh of G3.ships) for (const k of ['l', 'c', 'r']) g3img(sh.files[k]);
+    for (const f of Object.values(G3.fx)) for (const n of f.files) g3img(n);
+  }).catch(() => { /* 그림 목록이 없으면 옛 그림으로 */ });
+  // 어두운 쪽(행성 뒤편)에 앉은 우주선: 같은 그림에 검은 막을 씌운 사본을 한 번만 만든다
+  function g3dark(im, dk, grey) {
+    const b = Math.round(dk * 5); if (!b && !grey) return im; const key = im.src + '|' + b + (grey ? 'g' : ''); let c = G3.dark.get(key); if (c) return c;
+    c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const x = c.getContext('2d');
+    if (grey) x.filter = 'saturate(0.25) brightness(0.85)';
+    x.drawImage(im, 0, 0); x.filter = 'none'; x.globalCompositeOperation = 'source-atop'; x.fillStyle = `rgba(6,6,16,${b / 5 * 0.85})`; x.fillRect(0, 0, c.width, c.height); G3.dark.set(key, c); return c;
+  }
+  // 우주선 3D 그림 — (0,0) = 우주선 바닥 가운데, 위쪽 = -y, 높이 h(바닥~꼭대기)
+  function ship3d(c, v, h, lx, dk, grey) {
+    const sh = G3.ships[((v % G3.ships.length) + G3.ships.length) % G3.ships.length]; if (!sh) return false;
+    const im = g3img(sh.files[lx < -0.33 ? 'l' : lx > 0.33 ? 'r' : 'c']); if (!g3ready(im)) return false;
+    const k = 1.22 * h / ((sh.base - sh.top) * im.naturalHeight), w = im.naturalWidth * k, hh = im.naturalHeight * k; // 3D 로켓은 옛 그림보다 가늘어 1.22배
+    c.drawImage(g3dark(im, dk, grey), -sh.cx * w, -sh.base * hh, w, hh); return true;
+  }
+  // 효과 연속 장면 한 장: name = boom·dust·flame · t 0~1 · (0,0) = 앵커(땅 닿는 점 / 분사구) · size = 그림 폭(px)
+  const BOOM_SEQ = [0, 1, 2, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 9]; // 저폴리 폭발 10장: 불꽃(4~5)·연기(6~7)에 조금 더 머문다
+  function fx3d(c, name, t, size, alpha = 1, add = false, seq = null) {
+    const f = G3.fx[name]; if (!f) return false; const n = seq ? seq.length : f.files.length, k = Math.min(n - 1, Math.max(0, Math.floor(t * n))), i = Math.min(f.files.length - 1, seq ? seq[k] : k), im = g3img(f.files[i]); if (!g3ready(im)) return false;
+    const w = size, hh = size * im.naturalHeight / im.naturalWidth; c.save(); c.globalAlpha *= alpha; if (add) c.globalCompositeOperation = 'lighter';
+    c.drawImage(im, -f.ax * w, -f.ay * hh, w, hh); c.restore(); return true;
+  }
   function ship(c, x, y, ang, h, o = {}) {
     const u = h / 2.6, sx = o.sx || 1, sy = o.sy || 1;
     c.save(); c.translate(x, y); c.rotate(ang); c.scale(sx, sy); c.globalAlpha = o.alpha ?? 1;
-    if (o.flame > 0.02) { // 분사 불꽃
+    const use3 = G3.ok && !o.old;
+    if (o.flame > 0.02 && use3 && G3.fx.flame && fx3d(c, 'flame', (performance.now() / 1000 * 9 % 1), u * (0.9 + 0.9 * o.flame), 0.95, !o.soft)) { /* 3D 불꽃 */ }
+    else if (o.flame > 0.02) { // 분사 불꽃
       const L = u * (0.9 + 1.9 * o.flame) * (0.85 + Math.random() * 0.3), fw = u * 0.34;
       c.globalCompositeOperation = o.soft ? 'source-over' : 'lighter'; // 4차: 행성 위를 떠나는 우주선 불꽃은 더하기 합성을 안 쓴다(흰 행성 위에서 하얗게 타 버림)
       let g = c.createLinearGradient(0, -u * 0.1, 0, L); g.addColorStop(0, 'rgba(255,240,180,.95)'); g.addColorStop(0.4, 'rgba(255,170,60,.75)'); g.addColorStop(1, 'rgba(255,80,40,0)');
@@ -361,18 +394,37 @@
       c.fillStyle = g; c.beginPath(); c.moveTo(-fw * 0.45, 0); c.quadraticCurveTo(0, L * 0.6, fw * 0.45, 0); c.fill();
       c.globalCompositeOperation = 'source-over';
     }
-    const sp = shipSprite(h, o.lx ?? lightX(ang), Math.max(0, Math.min(0.85, o.dark || 0)), o.win);
-    c.drawImage(sp.c, -sp.w / 2, -sp.oy, sp.w, sp.h);
+    const lx0 = o.lx ?? lightX(ang), dk0 = Math.max(0, Math.min(0.85, o.dark || 0));
+    if (!(use3 && ship3d(c, o.v ?? curShip, h, lx0, dk0, o.grey))) { const sp = shipSprite(h, lx0, dk0, o.win); c.drawImage(sp.c, -sp.w / 2, -sp.oy, sp.w, sp.h); }
+    else if (o.win && o.win !== '#333') { c.globalCompositeOperation = 'lighter'; const g = c.createRadialGradient(0, -h * 0.5, 0, 0, -h * 0.5, h * 0.55); g.addColorStop(0, 'rgba(255,70,50,.75)'); g.addColorStop(1, 'rgba(255,70,50,0)'); c.fillStyle = g; c.fillRect(-h, -h * 1.1, 2 * h, 1.2 * h); } // 부딪힌 우주선은 붉게 달아오른다
     c.restore();
   }
 
-  const pList = () => { const l = DC.planets().filter(p => !p.id.startsWith('4-')).sort((a, b) => a.ep - b.ep); return l.length ? l : [{ id: '1-1', name: '해바라기 행성', img: 'img/p01_1.jpg' }]; };
-  const pInfo = (id) => DC.planet(id) || { id, name: id, img: '' };
+  // 5차: 「행성 합치기」 담당이 만든 새 3D 행성 세트(img/g3d/planets/planets.json · 1024px 투명 webp)가 있으면 그 세트로 착륙한다.
+  //  json 모양이 정해지기 전이라 이름 몇 가지를 다 받는다(id · name/이름 · color/col/대표색 · r/radius/ratio/반지름비율). 없으면 옛 행성 그림(data.js) 그대로.
+  const NP = { list: null, by: {} };
+  const hexArr = (c) => Array.isArray(c) ? c.slice(0, 3).map(Number) : (typeof c === 'string' && /^#?[0-9a-f]{6}$/i.test(c.trim()) ? hexc('#' + c.trim().replace('#', '')) : null);
+  fetch('img/g3d/planets/planets.json').then(r => r.ok ? r.json() : null).then(j => {
+    const arr = j && (Array.isArray(j) ? j : (j.planets || j.list));
+    if (!arr || !arr.length) return;
+    const l = [];
+    // 합치기 담당 형식(2026-11-28): r = 몸통 원 반지름 / 그림 반폭 · (cx, cy) = 중심(그림 비율) · src = 그림 경로 · tier = 순서 · color = 몸통 대표 색
+    for (const p of arr.slice().sort((a, b) => (a.tier ?? 0) - (b.tier ?? 0))) {
+      if (!p || !p.id) continue; const img = p.src || ('img/g3d/planets/' + p.id + '.webp');
+      let r = +(p.r ?? 0.9) / 2; if (!(r > 0.15 && r <= 0.5)) r = 0.45;
+      const col = hexArr(p.color ?? p.col);
+      meta[img] = { u: +(p.cx ?? 0.5), v: +(p.cy ?? 0.5), rad: r, col: col || [140, 160, 220], fixed: true, full: true };
+      const it = { id: 'g3-' + p.id, name: p.name || p.id, img, ep: l.length }; l.push(it); NP.by[it.id] = it;
+    }
+    if (l.length >= 3) { NP.list = l; for (const it of l.slice(0, 3)) getImg(it.img); if (idle && !running && sim) sim = createSim({ planetIds: l.map(p => p.id), seedStr: 'idle' }); } // 검수 2회: 시작 화면도 실제 첫 행성으로
+  }).catch(() => { /* 새 행성 세트가 아직 없다 */ });
+  const pList = () => { if (NP.list) return NP.list; const l = DC.planets().filter(p => !p.id.startsWith('4-')).sort((a, b) => a.ep - b.ep); return l.length ? l : [{ id: '1-1', name: '해바라기 행성', img: 'img/p01_1.jpg' }]; };
+  const pInfo = (id) => NP.by[id] || DC.planet(id) || { id, name: id, img: '' };
 
   // ── 상태 ──
   const loadFonts = () => Promise.all([document.fonts.load('800 40px "Pretendard Variable"'), document.fonts.load('600 40px "Pretendard Variable"')]).catch(() => {});
   let sim = null, running = false, hitstop = 0, slow = 0, slowK = 1, shakeAmp = 0, punch = 0, flash = 0, flashCol = '255,77,77', scorePop = 0, comboPop = 0;
-  let parts = [], floats = [], acc = 0, last = 0, tapped = false, kick = 0, landSquash = 0, spawnT = 1, zoneIn = 1, lifeAnim = [0, 0, 0], healAnim = 0;
+  let parts = [], floats = [], acc = 0, last = 0, tapped = false, kick = 0, landSquash = 0, spawnT = 1, zoneIn = 1, healAnim = 0;
   let trans = null, card = null, beam = null, lastShown = 0;
   // 2차 연출: 충격 방향 흔들림(thud) · 완벽 빛기둥(pillar) · 행성 둘레를 도는 금빛 물결(wave) · 「완벽!」 도장(stamp) · 점수로 날아가는 숫자(flies) · 앉은 자리 빨강 등장 시각(takenAt)
   let thud = null, pillar = null, wave = null, stamp = null, whiteout = 0, flies = [], helpOffShown = false;
@@ -380,6 +432,8 @@
   // 3차(2026-11-28): 알림 자리를 나눈다 — 띠 알림(banner: 클리어·실패, 점수판과 떠 있는 우주선 사이 빈 띠) · 빛기둥 옆 쪽지(helpNote: 「이제 색 힌트 없이!」)
   //  폭발(boom)은 행성에 붙여 행성과 같이 돈다(터진 자리가 행성과 함께 움직여야 「어디서」가 보인다) · 부딪힌 앉은 우주선은 휘청(knock)
   let banner = null, helpNote = null, boom = null, knock = null, headA = 0;
+  // 7차: 목숨 아이콘 깨짐(lifeAnim) · 앉은 우주선 종류(shipVar: 행성 기준 각 → 함대 번호) · 지금 우주선 종류(curShip) · 착륙 먼지(dust3)
+  let lifeAnim = [0, 0, 0], tagLine = null, curShip = 0, dust3 = null; const shipVar = new Map();
   // 4차: 시험용으로 마지막에 그린 안내 자리를 남긴다(읽기 전용 훅 __land.fx) · 행성 이동 카메라 값(cam)
   let labelRect = null, guideRect = null, camView = null;
 
@@ -424,25 +478,26 @@
           if (!REDUCE) { shakeAmp = 9; punch = 1.6; slow = 0.3; slowK = 0.35; }
           sparks(x, y, '#ffe9a0', 30, 300 * R / 140); flash = 0.7; flashCol = '255,211,77'; whiteout = REDUCE ? 0 : 0.55;
           pillar = { phi, t: 0 }; wave = { phi, t: 0 };
-          stamp = { t: 0, end: 0.8, text: s.pstreak >= 2 ? `완벽 ×${s.pstreak}` : '완벽!', sub: `점수 2배 +${e.gain}` };
+          stamp = { t: 0, end: 0.8, text: e.pstreak >= 2 ? `완벽 ${e.pstreak}연속!` : '완벽!', sub: '+2' };
         } else {
           hitstop = 0.06;
           if (!REDUCE) { shakeAmp = 3; punch = 0.6; }
         }
         const [tx, ty] = surfPt(phi, 1.25), side = Math.sin(phi) >= 0 ? 1 : -1;
-        flies.push({ x0: tx + side * R * 0.38, y0: ty, t: 0, text: `+${e.gain}`, c: e.perfect ? '#ffd34d' : '#7ff0a6', size: e.perfect ? 30 : 24 }); // 점수판으로 날아가 합쳐진다
+        if (!e.perfect && e.gain > 0) flies.push({ x0: tx + side * R * 0.38, y0: ty, t: 0, text: `+${e.gain}`, c: '#7ff0a6', size: 26 }); else if (e.perfect) scorePop = 1; // 7차: 판정 글자는 하나 — 보통은 「+1」, 완벽은 도장(+2)
+        shipVar.set(e.a, s.ship - 1); dust3 = { a: e.a, t: 0, big: e.perfect };
         snd(e.perfect ? 'perfect' : 'land', e.combo - 1); DC.buzz(e.perfect ? [25, 40, 35] : 18);
         if (e.combo >= 5) award('combo5'); if (e.combo >= 10) award('combo10');
         const tot = (DC.store.get('land_total', 0) || 0) + 1; DC.store.set('land_total', tot); if (tot >= 10) award('first10');
-      } else if (e.type === 'heal') { healAnim = 1; snd('heal'); pop(W / 2, hudTop() + 132, '목숨 +1', '#7ff0a6', 18, 1.1); }
+      } else if (e.type === 'heal') { healAnim = 1; snd('heal'); }
       else if (e.type === 'fail' || e.type === 'crash') {
         const phi = e.a + s.rot, [x, y] = surfPt(phi, 1.06);
-        debris(x, y, phi, 24, 250 * R / 140); sparks(x, y, '#ffb46b', 30, 320 * R / 140);
+        if (!G3.fx.boom) debris(x, y, phi, 24, 250 * R / 140); sparks(x, y, '#ffb46b', G3.fx.boom ? 18 : 30, 320 * R / 140); // 5차: 3D 폭발에 파편이 들어 있어 2D 조각은 거들기만
         // 3차: 불덩이·충격 고리·그을음은 행성에 붙인다(boom.a = 행성 기준 각) — 느려진 동안 행성이 돌아도 터진 자리를 따라간다
         boom = { a: e.a, t: 0, blobs: Array.from({ length: 8 }, (_, i) => ({ ox: (Math.random() - .5) * 0.7, oy: 0.1 + Math.random() * 0.55, r: 0.55 + Math.random() * 0.5, d: i * 0.012 + Math.random() * 0.03 })) };
         if (e.type === 'crash') { let best = null, bd = 9; for (const l of s.landed) { const d = angDiff(l, e.a); if (d < bd) { bd = d; best = l; } } knock = best === null ? null : { a: best, t: 0, dir: Math.sin(e.a - best) >= 0 ? -1 : 1 }; } // 맞은 쪽 반대로 휘청
-        hitstop = 0.1; // 3차: 닿는 순간 0.1초 멈춘다 — 행성이 멈춘 채 터져 터진 자리가 보인다
-        if (!REDUCE) { shakeAmp = 16; punch = -0.8; slow = 0.42; slowK = 0.3; }
+        hitstop = 0.25; // 6차(검수 4회 「실패가 아프지 않다」): 0.1 → 0.25초. 3차: 닿는 순간 멈춘다 — 행성이 멈춘 채 터져 터진 자리가 보인다
+        if (!REDUCE) { shakeAmp = 22; punch = -1.2; slow = 0.42; slowK = 0.3; }
         flash = 1; flashCol = '255,60,50'; lifeAnim[e.lives] = 1; beam = null; helpNote = null;
         showBanner(e.type === 'crash' ? '먼저 앉은 우주선과 쾅' : '빨강에 떨어졌어', e.lives > 0 ? `남은 우주선 ${e.lives}대` : '마지막 우주선이었어', '#ff6b6b', 1.05, 0);
         snd(e.type); DC.buzz([45, 30, 70]);
@@ -455,23 +510,25 @@
         let wait = 0;
         if (helpNote) { helpNote.t = Math.max(helpNote.t, helpNote.life - 0.2); wait = 0.2; }
         if (stamp) { stamp.end = Math.min(stamp.end, 0.55); wait = Math.max(wait, stamp.end + 0.25 - stamp.t); }
-        showBanner('행성 클리어 +50', e.perfect ? '한 번도 안 터지고 넘었어' : `${s.stage + 2}번째 행성으로`, '#ffd34d', 1.25, wait);
+        showBanner('행성 클리어', e.perfect ? '한 번도 안 터지고 넘었어' : `${ordK(s.stage + 2)} 행성으로`, '#ffd34d', 1.25, wait);
         flash = 0.45; flashCol = '255,211,77';
       } else if (e.type === 'stage') {
         if (e.stage >= 2) award('stage3');
-        zoneIn = 0; takenAt.clear(); boom = null; knock = null;
+        zoneIn = 0; takenAt.clear(); boom = null; knock = null; shipVar.clear(); dust3 = null;
         if (!card || card.id !== e.planetId) card = { t: 0, n: e.stage + 1, id: e.planetId, name: pInfo(e.planetId).name, sway: s.amp > 0 && stageParams(e.stage - 1, cfgOf(e.planetId)).amp === 0 };
       } else if (e.type === 'over') { snd('over'); slow = REDUCE ? 0 : 0.8; slowK = 0.3; setTimeout(showEnd, 1300); }
     }
   }
 
   // ── 그리기 ──
-  const hudTop = () => 52 + (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0);
+  const ordK = (n) => n === 1 ? '첫 번째' : `${n}번째`; // 검수 2회: 「1번째」 → 「첫 번째」
+  const playing = () => document.body.classList.contains('l-play'); // 7차: 플레이 중에는 사이트 머리 줄을 숨기고(land.css) 계기판을 위로 올린다
+  const hudTop = () => (playing() ? 10 : 52) + (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0);
   const ease = (t) => 1 - Math.pow(1 - Math.min(1, Math.max(0, t)), 3);
   const back = (t) => { t = Math.min(1, Math.max(0, t)); const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); };
   // ── 3차: 글 받침·자리 나누기 ──
   //  점수판(hudTop ~ +HUD_H) · 빈 띠(점수판과 떠 있는 우주선 사이: 첫 목표·클리어·실패 알림) · 행성 가운데(다음 행성 이름표) · 빛기둥 옆(첫 안내·힌트 끝 쪽지)
-  const HUD_H = 118;
+  const HUD_H = 52; // 6차: 한 줄 계기판
   const shipTipY = () => cy + (HOVER_Y + CAPR) * R - R * 0.36;
   const bandY = () => (hudTop() + HUD_H + shipTipY()) / 2;
   function plate(x, y, w, h, fill, line, r = 10) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fillStyle = fill; ctx.fill(); if (line) { ctx.lineWidth = 1.5; ctx.strokeStyle = line; ctx.stroke(); } }
@@ -537,7 +594,11 @@
       const em = Math.max(0, 1 - t / 1.6); ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = `rgba(255,120,40,${0.7 * em})`; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.ellipse(0, 0, R * 0.17, R * 0.06, 0, 0, TAU); ctx.stroke();
       ctx.restore(); }
     // 충격 고리(터진 자리 중심)
-    if (t < 0.5) { const k = ease(t / 0.5); ctx.strokeStyle = `rgba(255,96,70,${0.95 * (1 - k)})`; ctx.lineWidth = 6 * (1 - k) + 1; ctx.beginPath(); ctx.arc(gx, gy, R * (0.12 + 0.85 * k), 0, TAU); ctx.stroke(); }
+    // 5차: 불덩이·연기·파편은 Blender 볼륨 폭발 연속 장면(행성에 붙어 같이 돈다). 그림이 없을 때만 아래 2D 불덩이로 그린다
+    if (G3.fx.boom && t < 1.25) { ctx.save(); ctx.translate(gx, gy); ctx.rotate(phi); const ok = fx3d(ctx, 'boom', t / 1.25, R * 2.2, Math.min(1, (1.25 - t) / 0.2), false, BOOM_SEQ); ctx.restore(); // 검수 1회: 뿌연 볼륨 폭발이 각진 우주선과 그림체가 따로 놀아 저폴리 공 폭발(fxlp.py)로 바꿨다
+      if (ok) { ctx.save(); ctx.globalCompositeOperation = 'lighter';
+        if (t < 0.1) { const k = t / 0.1, rr = R * 0.65 * (0.5 + k), g = ctx.createRadialGradient(gx, gy, 0, gx, gy, rr); g.addColorStop(0, `rgba(255,255,255,${1 - k})`); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(gx, gy, rr, 0, TAU); ctx.fill(); }
+        ctx.restore(); return; } }
     if (t > 1.3) return;
     const at = (o, k, sp) => [gx + (nx * o.oy + tx * o.ox) * R * sp * k, gy + (ny * o.oy + ty * o.ox) * R * sp * k];
     // 연기: 불이 잦아든 뒤(0.15초~) 솟아오르는 잿빛 덩이
@@ -553,9 +614,16 @@
     if (t < 0.1) { const k = t / 0.1, rr = R * 0.65 * (0.5 + k), g = ctx.createRadialGradient(gx, gy, 0, gx, gy, rr); g.addColorStop(0, `rgba(255,255,255,${1 - k})`); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(gx, gy, rr, 0, TAU); ctx.fill(); } // 첫 순간 흰 섬광
     ctx.restore();
   }
+  // 5차: 착륙 흙먼지 3D 연속 장면 — 앉은 자리에 붙어 행성과 같이 돈다. 행성 대표 색을 살짝 입힌다(source-atop 대신 곱하기 느낌은 투명도로)
+  function drawDust3(s) {
+    const d = dust3; if (!d || !G3.fx.dust) return; const phi = d.a + s.rot, [x, y] = surfPt(phi, 1.0);
+    ctx.save(); ctx.translate(x, y); ctx.rotate(phi); fx3d(ctx, 'dust', d.t / 0.75, R * (d.big ? 1.25 : 1.0), 0.95); ctx.restore();
+  }
   function drawZones(s, a) {
     if (a <= 0.01) return;
     const t = performance.now() / 1000; ctx.save(); ctx.globalAlpha = a; ctx.lineCap = 'butt';
+    // 6차(검수 3회): 판정 띠가 행성 장식에 묻혔다 → 띠 밑에 어두운 받침 고리를 깔아 띠가 화면의 주인공이 되게
+    ctx.strokeStyle = 'rgba(4,4,12,.82)'; ctx.lineWidth = R * 0.15; ctx.beginPath(); ctx.arc(cx, cy, R * 1.035, 0, TAU); ctx.stroke();
     for (const z of s.zones) {
       const a0 = z.a0 + s.rot - Math.PI / 2, a1 = a0 + z.w;
       if (z.type === 'safe') {
@@ -599,7 +667,7 @@
     const t1 = '여기 또 내리면 터져';
     ctx.save(); ctx.globalAlpha = la; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = `800 13px ${FF}`; const pw = ctx.measureText(t1).width + 20, ph = 26;
-    const [lx, ly] = surfPt(phi + sd * (TAKENW + 0.42), 1.34), px = Math.max(8, Math.min(W - 8 - pw, lx - pw / 2)), py = Math.max(hudTop() + HUD_H + 4, Math.min(H - ph - 8, ly - ph / 2));
+    const [lx, ly] = surfPt(phi + sd * (TAKENW + 0.42), 1.34), px = Math.max(14, Math.min(W - 14 - pw, lx - pw / 2)), py = Math.max(hudTop() + HUD_H + 4, Math.min(H - ph - 8, ly - ph / 2));
     const [ex, ey] = surfPt(phi + sd * TAKENW, 1.1), qx = Math.max(px, Math.min(px + pw, ex)), qy = Math.max(py, Math.min(py + ph, ey));
     ctx.strokeStyle = 'rgba(255,120,110,.9)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(qx, qy); ctx.lineTo(ex, ey); ctx.stroke();
     ctx.fillStyle = '#ff8a80'; ctx.beginPath(); ctx.arc(ex, ey, 3, 0, TAU); ctx.fill();
@@ -609,13 +677,13 @@
     labelRect = { x: px, y: py, w: pw, h: ph, line: Math.hypot(qx - ex, qy - ey) };
   }
   function drawLanded(list, rot, k = 0, lift = 0) {
-    const h = R * 0.32;
+    const h = R * 0.22; // 7차: 화면 옆에서 잘리지 않게 더 작게 · 검수 2회: 앉은 우주선이 띠를 가리고 지금 우주선과 헷갈렸다 → 작게, 색을 빼서(grey)
     for (const a of list) {
-      const phi = a + rot, up = lift * lift * R * 3, [x, y] = surfPt(phi, 1.05 + up / R), lit = sunAt(phi), dark = lift ? 0 : Math.max(0, Math.min(0.72, 0.42 - 0.6 * lit));
-      if (!lift) { const t = lightX(phi) > 0 ? -1 : 1, [sx, sy] = surfPt(phi, 1.04); ctx.save(); ctx.translate(sx, sy); ctx.rotate(phi); ctx.fillStyle = `rgba(0,0,0,${0.45 - 0.2 * dark})`; ctx.beginPath(); ctx.ellipse(t * h * 0.22, 0, h * 0.55, h * 0.075, 0, 0, TAU); ctx.fill(); ctx.restore(); } // 빛 반대쪽으로 드리운 그림자
+      const phi = a + rot, up = lift * lift * R * 3, [x, y] = surfPt(phi, 1.075 + up / R), lit = sunAt(phi), dark = lift ? 0 : Math.max(0, Math.min(0.4, 0.3 - 0.5 * lit)); // 검수 1회: 고리 바깥에 선다 · 뒤편 그늘은 옅게(반투명처럼 보였다)
+      if (!lift) { const t = lightX(phi) > 0 ? -1 : 1, [sx, sy] = surfPt(phi, 1.065); ctx.save(); ctx.translate(sx, sy); ctx.rotate(phi); ctx.fillStyle = `rgba(0,0,0,${0.45 - 0.2 * dark})`; ctx.beginPath(); ctx.ellipse(t * h * 0.22, 0, h * 0.55, h * 0.075, 0, 0, TAU); ctx.fill(); ctx.restore(); } // 빛 반대쪽으로 드리운 그림자
       const sq = k > 0 && a === list[list.length - 1] ? k : 0;
       const hit = !lift && knock && a === knock.a, kn = hit ? knock.dir * 0.42 * Math.exp(-knock.t * 4) * Math.cos(knock.t * 22) : 0; // 3차: 부딪힌 우주선은 맞은 쪽 반대로 휘청
-      ship(ctx, x, y, phi + kn, h, { sx: 1 + 0.28 * sq, sy: 1 - 0.3 * sq, flame: lift ? 0.4 + lift : 0, soft: !!lift, dark: hit ? Math.max(dark, 0.3) : dark, win: hit && knock.t < 0.6 ? '#ff5a4a' : null });
+      ship(ctx, x, y, phi + kn, h, { grey: !lift, v: shipVar.get(a) ?? 0, sx: 1 + 0.28 * sq, sy: 1 - 0.3 * sq, flame: lift ? 0.4 + lift : 0, soft: !!lift, dark: hit ? Math.max(dark, 0.3) : dark, win: hit && knock.t < 0.6 ? '#ff5a4a' : null });
     }
   }
   function draw() {
@@ -641,13 +709,13 @@
         ctx.restore();
       }
       ctx.save(); ctx.translate(cx, cy); ctx.scale(z, z); ctx.translate(-cx, -cy - cam * D);
-      drawPlanet(ctx, toI.img, cx, cy + D, R, trans.nextRot - Math.max(0, 1.35 - t) * trans.nextSpin, 1, { glow: 0.7 });
+      drawPlanet(ctx, toI.img, cx, cy + D, R * 0.95, trans.nextRot - Math.max(0, 1.35 - t) * trans.nextSpin, 1, { glow: 0.7 });
       // 옛 행성은 점수판 밑으로 들어가는 후반에 옅어진다(점수판 글자가 행성 무늬 위에서 안 읽히지 않게)
       const fo = Math.min(1, Math.max(0, (cam - 0.45) / 0.5)), oa = 1 - 0.8 * fo * fo * (3 - 2 * fo);
-      ctx.globalAlpha = oa; drawPlanet(ctx, fromI.img, cx, cy, R, oldRot, oa, { glow: 0.7 }); drawLanded(trans.landed, oldRot, 0, Math.min(1, t / 0.5)); ctx.globalAlpha = 1;
+      ctx.globalAlpha = oa; drawPlanet(ctx, fromI.img, cx, cy, R * 0.95, oldRot, oa, { glow: 0.7 }); drawLanded(trans.landed, oldRot, 0, Math.min(1, t / 0.5)); ctx.globalAlpha = 1;
       ctx.restore();
     } else {
-      drawPlanet(ctx, info.img, cx, cy, R, s.rot);
+      drawPlanet(ctx, info.img, cx, cy, R * 0.95, s.rot); // 6차: 행성은 띠 안쪽에 조금 작게
       drawZones(s, ease(zoneIn));
       if (wave) { // 완벽: 앉은 자리에서 행성 둘레를 따라 양쪽으로 달리는 금빛
         const k = ease(wave.t / 0.65), a = Math.max(0, 1 - wave.t / 0.65), base = wave.phi - Math.PI / 2;
@@ -655,10 +723,10 @@
         for (const sgn of [-1, 1]) { const m = base + sgn * Math.PI * k; ctx.strokeStyle = `rgba(255,214,90,${0.85 * a})`; ctx.lineWidth = R * 0.1 * (0.5 + a); ctx.beginPath(); ctx.arc(cx, cy, R * 1.035, m - 0.28, m + 0.28); ctx.stroke(); }
         ctx.strokeStyle = `rgba(255,230,150,${0.35 * a})`; ctx.lineWidth = R * 0.05; ctx.beginPath(); ctx.arc(cx, cy, R * 1.035, base - Math.PI * k, base + Math.PI * k); ctx.stroke(); ctx.restore();
       }
-      drawBoom(s); drawLanded(s.landed, s.rot, landSquash);
+      drawBoom(s); drawLanded(s.landed, s.rot, landSquash); drawDust3(s);
       if (pillar) { // 완벽: 앉은 자리에서 하늘로 솟는 빛기둥
-        const a = Math.max(0, 1 - pillar.t / 0.8), grow = ease(pillar.t / 0.12), phi = pillar.phi, [px, py] = surfPt(phi, 1.0), L = R * 3.2 * grow, wd = R * (0.1 + 0.22 * a);
-        ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.translate(px, py); ctx.rotate(phi);
+        const a = Math.max(0, 1 - pillar.t / 0.8), grow = ease(pillar.t / 0.12), phi = pillar.phi, [px, py] = surfPt(phi, 1.0), L = R * 1.7 * grow, wd = R * (0.1 + 0.22 * a);
+        ctx.save(); ctx.beginPath(); ctx.rect(-W, hudTop() + HUD_H + 4, 3 * W, 3 * H); ctx.clip(); ctx.globalCompositeOperation = 'lighter'; ctx.translate(px, py); ctx.rotate(phi); // 검수 1회: 빛기둥이 점수판을 덮었다
         let g = ctx.createLinearGradient(0, 0, 0, -L); g.addColorStop(0, `rgba(255,236,160,${0.9 * a})`); g.addColorStop(0.5, `rgba(255,211,77,${0.4 * a})`); g.addColorStop(1, 'rgba(255,211,77,0)');
         ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(-wd, 0); ctx.lineTo(wd, 0); ctx.lineTo(wd * 0.45, -L); ctx.lineTo(-wd * 0.45, -L); ctx.fill();
         g = ctx.createLinearGradient(0, 0, 0, -L * 0.8); g.addColorStop(0, `rgba(255,255,255,${0.95 * a})`); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g; ctx.fillRect(-wd * 0.18, -L * 0.8, wd * 0.36, L * 0.8);
@@ -677,10 +745,21 @@
         const g = ctx.createLinearGradient(0, y, 0, sy0); g.addColorStop(0, `rgba(${col},${al})`); g.addColorStop(1, `rgba(${col},${al * 0.35})`);
         ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(x - h * 0.16, y); ctx.lineTo(x + h * 0.16, y); ctx.lineTo(x + h * 0.32, sy0); ctx.lineTo(x - h * 0.32, sy0); ctx.fill();
         ctx.fillStyle = `rgba(${col},${Math.min(1, al * 2)})`; ctx.beginPath(); ctx.ellipse(x, sy0, h * 0.34, h * 0.07, Math.asin(Math.max(-1, Math.min(1, s.dx))), 0, TAU); ctx.fill();
+        // 검수 1회: 「우주선 바로 아래 고리 조각이 가장 얇다」 → 지금 바로 아래 고리 조각을 두껍게 짚어 준다(그 조각의 색 그대로)
+        { const ca = contactAngle(s.dx), typ = classify(norm(ca - s.rot), s.zones, s.landed), sa = ca - Math.PI / 2, uc = typ === 'safe' ? '110,236,156' : '255,92,80';
+          ctx.save(); ctx.lineCap = 'round'; ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = R * 0.12; ctx.beginPath(); ctx.arc(cx, cy, R * 1.035, sa - 0.07, sa + 0.07); ctx.stroke();
+          ctx.strokeStyle = `rgb(${uc})`; ctx.lineWidth = R * 0.085; ctx.beginPath(); ctx.arc(cx, cy, R * 1.035, sa - 0.07, sa + 0.07); ctx.stroke(); ctx.restore(); }
       }
       const fall = s.phase === 'fall', st = fall ? Math.min(0.32, s.vy * 0.045) : 0.08 * kick;
       if (fall) { for (let i = 1; i <= 3; i++) ship(ctx, x, y - s.vy * R * 0.018 * i, 0, h, { alpha: 0.16 / i, sx: 1 - st * 0.4, sy: 1 + st }); } // 잔상
-      ship(ctx, x, y, 0, h * sp, { sx: (1 - st * 0.4) * (1 + 0.12 * kick), sy: (1 + st) * (1 - 0.18 * kick), flame: fall ? 0 : 0.22 + 0.15 * Math.sin(performance.now() / 45) });
+      // 7차: 기다리면 손해 = 우주선마다 짧은 카운트다운. 우주선 둘레 고리가 줄어들고(초록 → 노랑 → 빨강), 불꽃도 함께 작아진다. 다 줄면 저절로 떨어진다(점수 0)
+      const left = fall ? 0 : Math.max(0, 1 - s.ht / s.timer), urgent = !fall && left < 0.3;
+      if (!fall && !idle) { const ox = x, oy = y - h * 0.5, rr = h * 0.78, col = '240,240,250', // 7차 검수 6회: 빨강은 「쾅」 색이라 카운트다운 고리는 흰색만
+        _c = 0, pul = urgent ? 0.6 + 0.4 * Math.sin(performance.now() / 60) : 1;
+        ctx.save(); ctx.lineCap = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.beginPath(); ctx.arc(ox, oy, rr, 0, TAU); ctx.stroke();
+        ctx.strokeStyle = `rgba(${col},${pul})`; ctx.beginPath(); ctx.arc(ox, oy, rr, -Math.PI / 2, -Math.PI / 2 + TAU * left); ctx.stroke(); ctx.restore(); }
+      const hotNow = urgent;
+      ship(ctx, x + (hotNow ? (Math.random() - 0.5) * 2.5 : 0), y, 0, h * sp, { sx: (1 - st * 0.4) * (1 + 0.12 * kick), sy: (1 + st) * (1 - 0.18 * kick), flame: fall ? 0 : (0.08 + 0.32 * left) * (0.85 + 0.15 * Math.sin(performance.now() / 45)) });
     }
     // 파티클
     for (const p of parts) {
@@ -703,14 +782,9 @@
       ctx.save(); ctx.globalAlpha = Math.max(0, a); ctx.translate(f.x, f.y - ease(k) * 34); ctx.scale(sc, sc);
       ctx.font = `800 ${f.size}px ${FF}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,.75)'; ctx.lineJoin = 'round'; ctx.strokeText(f.text, 0, 0); ctx.fillStyle = f.c; ctx.fillText(f.text, 0, 0); ctx.restore();
     }
-    for (const f of flies) { // 점수로 날아가는 숫자
-      const k = Math.min(1, f.t / 0.6), e2 = k * k * (3 - 2 * k), x1 = W / 2, y1 = hudTop() + 24, hold = Math.min(1, f.t / 0.18);
-      const x = f.x0 + (x1 - f.x0) * Math.max(0, (e2 - 0.15) / 0.85), y = f.y0 - 18 * hold + (y1 - f.y0 + 18) * Math.max(0, (e2 - 0.15) / 0.85), sc = back(hold) * (1 - 0.35 * k);
-      ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc); ctx.font = `800 ${f.size}px ${FF}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 5; ctx.lineJoin = 'round'; ctx.strokeStyle = 'rgba(0,0,0,.75)'; ctx.strokeText(f.text, 0, 0); ctx.fillStyle = f.c; ctx.fillText(f.text, 0, 0); ctx.restore();
-    }
     if (whiteout > 0.01) { ctx.fillStyle = `rgba(255,238,190,${whiteout * 0.38})`; ctx.fillRect(0, 0, W, H); }
     if (stamp) { // 「완벽!」 도장 — 크게 찍혀 들어와 잠깐 머문다
-      const k = stamp.t, a = k > stamp.end ? Math.max(0, 1 - (k - stamp.end) / 0.25) : 1, sl = Math.min(1, k / 0.13), sc = 2.6 - 1.6 * (sl * sl), y = (hudTop() + 112 + cy - (1.9 + 0.05) * R) / 2;
+      const k = stamp.t, a = k > stamp.end ? Math.max(0, 1 - (k - stamp.end) / 0.25) : 1, sl = Math.min(1, k / 0.13), sc = 2.6 - 1.6 * (sl * sl), y = Math.max(hudTop() + HUD_H + 58, (hudTop() + 112 + cy - (1.9 + 0.05) * R) / 2);
       ctx.save(); ctx.globalAlpha = a; ctx.translate(W / 2, y); ctx.rotate(-0.07); ctx.scale(sc, sc); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
       if (k < 0.3) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 130); g.addColorStop(0, `rgba(255,214,90,${0.5 * (1 - k / 0.3)})`); g.addColorStop(1, 'rgba(255,214,90,0)'); ctx.fillStyle = g; ctx.fillRect(-140, -140, 280, 280); ctx.restore(); }
       ctx.font = `900 54px ${FF}`; ctx.lineWidth = 9; ctx.strokeStyle = 'rgba(40,22,0,.85)'; ctx.strokeText(stamp.text, 0, 0);
@@ -726,7 +800,7 @@
       // 4차: 흰 행성(온천) 위에서 받침이 반투명(0.88 × 0.2초 페이드)이라 회색으로 비쳤다 → 거의 불투명(0.96)·그림자·0.1초 등장. 이동 중에는 새 행성을 따라온다.
       const k = card.t, a = k < 0.1 ? k / 0.1 : k > 1.35 ? Math.max(0, 1 - (k - 1.35) / 0.3) : 1, sc = 0.85 + 0.15 * back(Math.min(1, k / 0.22)), ci = pInfo(card.id || s.planetId).img;
       ctx.save(); ctx.globalAlpha = a; ctx.translate(W / 2, camView ? camView.nextY : cy); ctx.scale(sc, sc); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      const t0 = `${card.n}번째 행성`; ctx.font = `800 28px ${FF}`; const nw = ctx.measureText(card.name).width;
+      const t0 = `${ordK(card.n)} 행성`; ctx.font = `800 28px ${FF}`; const nw = ctx.measureText(card.name).width;
       const pw = Math.min(W - 24, Math.max(nw, card.sway ? 150 : 110) + 52), ph = card.sway ? 100 : 76;
       ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.7)'; ctx.shadowBlur = 22; ctx.shadowOffsetY = 4; plate(-pw / 2, -ph / 2, pw, ph, 'rgba(6,6,14,.96)', null, 14); ctx.restore();
       plate(-pw / 2, -ph / 2, pw, ph, 'rgba(6,6,14,0)', colOf(ci, 0.95, 0.35), 14);
@@ -736,29 +810,40 @@
       ctx.restore();
     }
     if (idle) return; // 시작·끝 화면에서는 점수판을 그리지 않는다(글과 겹침)
-    // 점수판
-    const top = hudTop(); ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'center';
-    // 3차: 점수판을 키우고 대비를 올렸다 — 점수 40→46px(검은 테), 목숨 20→22px, 행성 이름은 회색 13px 맨글씨 → 받침 알약 위 흰 14px(행성 색 점),
-    //  남은 착륙 점은 흐린 회색 채움 → 테 있는 빈 원(보이게) · 점수판 높이 HUD_H
-    ctx.save(); ctx.translate(W / 2, top + 22); const ps = 1 + 0.28 * back(1 - scorePop) * scorePop; ctx.scale(ps, ps); ctx.lineJoin = 'round';
-    ctx.font = `800 46px ${FF}`; ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.strokeText(String(s.score), 0, 16); ctx.fillStyle = '#ffffff'; ctx.fillText(String(s.score), 0, 16); ctx.restore();
-    for (let i = 0; i < LIVES; i++) { // 목숨 = 작은 우주선 3대
-      const lx = W / 2 + (i - 1) * 27, ly = top + 66, la = lifeAnim[i], alive = i < s.lives;
-      const jig = la > 0 ? Math.sin(la * 40) * 4 * la : 0, hs = (i === s.lives - 1 && healAnim > 0) ? 1 + 0.5 * healAnim : 1;
-      ship(ctx, lx + jig, ly, 0, 22 * hs, { alpha: alive ? 1 : 0.22, win: alive ? null : '#333' });
+    // 점수판 — 검수 3회(6차): 다섯 줄(점수·연료·행성 이름·점·콤보) → 한 줄 계기판 [점수 | 연료 막대 | 콤보 배수 · 남은 착륙 점]. 행성 이름은 넘어갈 때 이름표로만 보인다
+    const top = hudTop(), rowY = top + HUD_H / 2, hw = Math.min(W, 440), hx0 = (W - hw) / 2; ctx.textBaseline = 'middle'; // 넓은 화면에서도 계기판은 가운데 440px 안에
+    ctx.save(); ctx.translate(hx0 + 16, rowY); const ps = 1 + 0.28 * back(1 - scorePop) * scorePop; ctx.scale(ps, ps); ctx.lineJoin = 'round'; ctx.textAlign = 'left';
+    ctx.font = `800 30px ${FF}`; ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.strokeText(String(s.score), 0, 1); ctx.fillStyle = '#ffffff'; ctx.fillText(String(s.score), 0, 1); ctx.restore();
+    // 7차: 연료 막대 → 목숨 = 작은 우주선 3대(가운데). 잃으면 아이콘이 깨져 흩어진다
+    for (let i = 0; i < LIVES; i++) {
+      const lx = W / 2 + (i - 1) * 30, la = lifeAnim[i], alive = i < s.lives, hs = (i === s.lives - 1 && healAnim > 0) ? 1 + 0.5 * healAnim : 1;
+      if (!alive && la > 0) { // 깨지는 순간: 두 조각으로 갈라져 떨어지며 붉게 번쩍
+        const k = 1 - la; ctx.save(); ctx.globalAlpha = Math.max(0, la);
+        for (const sd of [-1, 1]) { ctx.save(); ctx.translate(lx + sd * 10 * k, rowY + 10 + 26 * k * k); ctx.rotate(sd * 0.9 * k); ctx.beginPath(); ctx.rect(sd < 0 ? -20 : 0, -30, 20, 40); ctx.clip(); ship(ctx, 0, 0, 0, 24, { win: '#ff5a4a', v: 0 }); ctx.restore(); }
+        const g = ctx.createRadialGradient(lx, rowY, 0, lx, rowY, 24); g.addColorStop(0, `rgba(255,90,60,${0.8 * la})`); g.addColorStop(1, 'rgba(255,90,60,0)'); ctx.fillStyle = g; ctx.fillRect(lx - 24, rowY - 24, 48, 48); ctx.restore();
+      } else ship(ctx, lx, rowY + 11, 0, 24 * hs, { alpha: alive ? 1 : 0.18, grey: !alive, v: 0 }); // 총괄 11-29: 목숨 아이콘은 한 모양으로 고정(비교 검수 「목숨 색이 매번 바뀌어 지금 탈 우주선과 헷갈림」)
     }
-    const nm = `${s.stage + 1}번째 행성 · ${info.name}${s.daily ? ' · 오늘 문제' : ''}`; ctx.font = `700 14px ${FF}`; const nmw = ctx.measureText(nm).width, pw = Math.min(W - 24, nmw + 38);
-    plate(W / 2 - pw / 2, top + 74, pw, 26, 'rgba(12,12,24,.82)', 'rgba(240,240,250,.18)', 13);
-    ctx.fillStyle = colOf(info.img, 1, 0.3); ctx.beginPath(); ctx.arc(W / 2 - pw / 2 + 14, top + 87, 4.5, 0, TAU); ctx.fill();
-    ctx.fillStyle = '#f4f1ea'; ctx.textBaseline = 'middle'; ctx.fillText(nm, W / 2 + 7, top + 87.5); ctx.textBaseline = 'alphabetic';
-    for (let i = 0; i < s.need; i++) { const on = i < s.hits, x = W / 2 + (i - (s.need - 1) / 2) * 19, r = on && i === s.hits - 1 ? 5.5 + 2.5 * comboPop : 5.5;
-      ctx.beginPath(); ctx.arc(x, top + 111, r, 0, TAU); if (on) { ctx.fillStyle = '#6eec9c'; ctx.fill(); } else { ctx.fillStyle = 'rgba(240,240,250,.08)'; ctx.fill(); ctx.lineWidth = 1.6; ctx.strokeStyle = 'rgba(240,240,250,.6)'; ctx.stroke(); } }
-    if (s.combo >= 2 && !trans) {
-      const k = 1 + comboPop * 0.45; ctx.save(); ctx.translate(W / 2, Math.min(H - 40, cy + R * 1.62)); ctx.scale(k, k);
-      ctx.fillStyle = s.combo >= 10 ? '#ffd34d' : '#f0f0fa'; ctx.font = `800 28px ${FF}`; ctx.textAlign = 'center'; ctx.fillText(`${s.combo} 콤보`, 0, 0); ctx.restore();
-    }
+    // 7차 검수 6회: 점이 무엇을 세는지 안 읽혔다 → 「착륙 2/4」 글자로(다 채우면 다음 행성)
+    ctx.save(); ctx.textAlign = 'right'; ctx.font = `800 14px ${FF}`; ctx.fillStyle = 'rgba(244,241,234,.75)'; const pr = `${s.hits}/${s.need}`; ctx.fillText(pr, hx0 + hw - 16, rowY + 0.5); const pw2 = ctx.measureText(pr).width; ctx.font = `700 12px ${FF}`; ctx.fillStyle = 'rgba(244,241,234,.5)'; ctx.fillText('착륙', hx0 + hw - 22 - pw2, rowY + 0.5); ctx.restore();
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
     // 4차: 빛기둥 옆 화살표 글(2차)과 빈 띠 큰 제목(3차)을 drawGuide 하나로 합쳤다
+    drawTags();
+    for (const f of flies) { // 점수로 날아가는 숫자
+      const k = Math.min(1, f.t / 0.6), e2 = 0, x1 = f.x0, y1 = f.y0 - 40, hold = Math.min(1, f.t / 0.18); // 7차 검수 6회: 「+점수」는 착지점에서 떠오른다
+      const x = f.x0 + (x1 - f.x0) * Math.max(0, (e2 - 0.15) / 0.85), y = f.y0 - 18 * hold + (y1 - f.y0 + 18) * Math.max(0, (e2 - 0.15) / 0.85), sc = back(hold) * (1 - 0.35 * k);
+      ctx.font = `800 ${f.size}px ${FF}`; const fw = ctx.measureText(f.text).width * sc / 2 + 16; // 검수 5회: 화면 왼쪽 끝에서 잘렸다 → 양옆 16px 안으로
+      ctx.save(); ctx.translate(Math.max(fw, Math.min(W - fw, x)), y); ctx.scale(sc, sc); ctx.font = `800 ${f.size}px ${FF}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 5; ctx.lineJoin = 'round'; ctx.strokeStyle = 'rgba(0,0,0,.75)'; ctx.strokeText(f.text, 0, 0); ctx.fillStyle = f.c; ctx.fillText(f.text, 0, 0); ctx.restore();
+    }
     drawTakenLabel(s); drawGuide(s); drawHelpNote(s); drawBanner(); ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  }
+  // 5차: 착륙 점수 꼬리표 — 「+N」 아래에 정확도·빠름·아슬아슬·콤보 배수 · 연료 +x
+  function drawTags() {
+    const L2 = tagLine; if (!L2) return; const k = L2.t, a = Math.min(1, k / 0.08) * Math.min(1, Math.max(0, (1.1 - k) / 0.3)); if (a <= 0) return;
+    ctx.save(); ctx.globalAlpha = a; ctx.font = `800 13px ${FF}`; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+    const items = L2.tags; if (!items.length) { ctx.restore(); return; } const _u = 0, ws = items.map(([t]) => ctx.measureText(t).width + 14), tot = ws.reduce((p, q) => p + q + 4, -4);
+    let x = Math.max(8, Math.min(W - 8 - tot, L2.x - tot / 2)); const y = L2.y - 10 * ease(k / 0.3);
+    items.forEach(([t, c], i) => { plate(x, y - 10, ws[i], 20, 'rgba(8,8,18,.82)', null, 10); ctx.fillStyle = c; ctx.fillText(t, x + 7, y + 0.5); x += ws[i] + 4; });
+    ctx.restore();
   }
   let beamPerfect = false;
   // 첫 행성 처음 두 번만 「지금 누르면」 색을 보여 준다(2차 — 계속 켜 두면 첫 행성은 거의 못 죽는다)
@@ -772,7 +857,7 @@
     else { acc += dt; while (acc >= STEP) { acc -= STEP; handle(sim.step(STEP)); if (hitstop > 0) { acc = 0; break; } } }
     const s = sim.s;
     if (s.phase === 'hover' && helpOn(s) && !trans) { const p = predict(s); beam = p.type; beamPerfect = p.type === 'land' && s.pads.some(q => !q.used && angDiff(p.a, q.a) < PADW); }
-    if (s.stage === 0 && !s.daily && s.hits === 2 && s.phase === 'hover' && !helpOffShown && !stamp && !trans) { helpOffShown = true; helpNote = { t: 0, life: 1.8 }; }
+    // 7차: 「이제 색 힌트 없이!」 쪽지는 뺐다(화면 글 줄이기) — 힌트 빛은 조용히 하얗게 바뀐다
     const goalOn = s.stage === 0 && s.landings === 0 && !trans && !banner && s.phase !== 'over';
     headA = goalOn ? Math.min(1, headA + raw * 5) : Math.max(0, headA - raw * 5);
     if (banner) { banner.t += raw; if (banner.t > banner.life) banner = null; }
@@ -792,8 +877,9 @@
     whiteout = Math.max(0, whiteout - raw * 5);
     for (const f of flies) { f.t += raw; if (f.t >= 0.6 && !f.done) { f.done = true; scorePop = 1; } } flies = flies.filter(f => !f.done);
     shakeAmp *= Math.pow(0.0008, raw); punch *= Math.pow(0.002, raw); kick = Math.max(0, kick - raw * 7); landSquash = Math.max(0, landSquash - raw * 5);
-    scorePop = Math.max(0, scorePop - raw * 3.5); comboPop = Math.max(0, comboPop - raw * 4); flash = Math.max(0, flash - raw * 2.6); healAnim = Math.max(0, healAnim - raw * 2);
-    spawnT = Math.min(1, spawnT + raw); zoneIn = Math.min(1, zoneIn + raw * 3); for (let i = 0; i < LIVES; i++) lifeAnim[i] = Math.max(0, lifeAnim[i] - raw * 1.6);
+    scorePop = Math.max(0, scorePop - raw * 3.5); comboPop = Math.max(0, comboPop - raw * 4); flash = Math.max(0, flash - raw * 2.6); healAnim = Math.max(0, healAnim - raw * 2); for (let i = 0; i < LIVES; i++) lifeAnim[i] = Math.max(0, lifeAnim[i] - raw * 1.4);
+    curShip = s.ship; if (dust3) { dust3.t += pdt; if (dust3.t > 0.75) dust3 = null; } if (tagLine) { tagLine.t += raw; if (tagLine.t > 1.1) tagLine = null; }
+    spawnT = Math.min(1, spawnT + raw); zoneIn = Math.min(1, zoneIn + raw * 3);
     draw(); lastShown = now; requestAnimationFrame(frame);
   }
 
@@ -803,7 +889,7 @@
     if (!tapped) { tapped = true; DC.store.set('land_seen', true); }
     const s = sim.s; if (s.phase !== 'hover' || s.over || trans) return;
     kick = 1; snd('drop'); DC.buzz(8);
-    const x = cx + s.dx * R, y = cy + (s.y + CAPR) * R; ring(x, y - R * 0.05, '255,240,200', R * 0.1, R * 0.32, 0.22, 2);
+    // 7차 검수 6회: 누른 순간의 흰 고리는 멈춤 동안 남아 판정 원처럼 보여 뺐다(움찔·소리·진동은 그대로)
     sim.tap();
   }
   cvs.addEventListener('pointerdown', (e) => { e.preventDefault(); doTap(); });
@@ -816,13 +902,13 @@
   const row = (k, v) => el('div', {}, el('dt', {}, k), el('dd', {}, v));
   const panel = (...kids) => el('div', { class: 'panel' }, el('div', { class: 'l-cap' }, ...kids));
   function showStart() {
-    running = false; clearUI(); setIdle(true); const best = DC.store.get('land_best', 0), dBest = DC.store.get('land_best_' + DC.today(), 0);
+    running = false; document.body.classList.remove('l-play'); clearUI(); setIdle(true); const best = DC.store.get('land_best', 0), dBest = DC.store.get('land_best_' + DC.today(), 0);
     const n = Object.keys(DC.endings.all().land || {}).length;
     sim = createSim({ planetIds: pList().map(p => p.id), seedStr: 'idle' }); trans = null; card = null; idleSpin();
     ui.append(panel(
       el('p', { class: 'gx-eyebrow' }, el('span', {}, '03'), '1분 게임'),
       el('h1', { class: 'gx-h1' }, '행성 착륙'),
-      el('p', { class: 'gx-sub' }, '탭하면 우주선이 떨어져. 도는 행성의 ', el('b', {}, '초록에 내려앉히고'), ', 금색 표지에 앉으면 ', el('b', {}, '완벽'), '. 빨강, 그리고 먼저 앉은 우주선 자리(빨강으로 바뀜)에 떨어지면 터져. 3번 터지면 끝.'),
+      el('p', { class: 'gx-sub' }, el('b', {}, '초록'), '에 앉히면 1점, ', el('b', {}, '금색'), '이면 완벽 2점. ', el('b', {}, '빨강'), '·먼저 앉은 우주선 자리는 쾅 — 3번 쾅이면 끝.'),
       el('div', { class: 'gx-acts' },
         el('button', { class: 'gx-btn main', type: 'button', onclick: () => start('free') }, '시작', el('i')),
         el('button', { class: 'gx-btn', type: 'button', onclick: () => start('daily') }, '오늘 문제')),
@@ -840,9 +926,10 @@
     spin = requestAnimationFrame(f);
   }
   function start(m) {
-    clearUI(); setIdle(false); const ids = pList().map(p => p.id);
+    window.dwkT?.gameStart('land', { mode: m });
+    document.body.classList.add('l-play'); clearUI(); setIdle(false); const ids = pList().map(p => p.id);
     sim = createSim({ planetIds: ids, daily: m === 'daily', seedStr: m === 'daily' ? 'land|' + DC.today() : undefined, seedFn: DC.seed, rngF: DC.rng });
-    parts = []; floats = []; acc = 0; hitstop = 0; slow = 0; shakeAmp = 0; punch = 0; flash = 0; trans = null; beam = null; thud = null; pillar = null; wave = null; stamp = null; whiteout = 0; flies = []; helpOffShown = false; takenAt.clear(); banner = null; helpNote = null; boom = null; knock = null; headA = 0; kick = 0; landSquash = 0; spawnT = 0; zoneIn = 0; lifeAnim = [0, 0, 0];
+    parts = []; floats = []; acc = 0; hitstop = 0; slow = 0; shakeAmp = 0; punch = 0; flash = 0; trans = null; beam = null; thud = null; pillar = null; wave = null; stamp = null; whiteout = 0; flies = []; helpOffShown = false; takenAt.clear(); banner = null; helpNote = null; boom = null; knock = null; headA = 0; kick = 0; landSquash = 0; spawnT = 0; zoneIn = 0; lifeAnim = [0, 0, 0]; tagLine = null; curShip = 0; shipVar.clear();
     card = null; // 4차: 첫 행성 이름표는 띄우지 않는다(점수판 알약에 이름이 있다) — 첫 5초 안내는 drawGuide 하나
     tapped = DC.store.get('land_seen', false);
     if (m === 'daily') award('daily');
@@ -879,14 +966,15 @@
     catch { const ta = el('textarea', { style: 'position:fixed;opacity:0' }); ta.value = t; document.body.append(ta); ta.select(); try { document.execCommand('copy'); DC.toast('복사했어'); } catch { DC.toast('복사가 막혀 있어'); } ta.remove(); }
   }
   async function showEnd() {
-    running = false; const s = sim.s; clearUI(); cardCanvas = null; parts = []; floats = []; flash = 0; shakeAmp = 0; punch = 0; trans = null; card = null; thud = null; pillar = null; wave = null; stamp = null; whiteout = 0; flies = []; banner = null; helpNote = null; boom = null; knock = null; headA = 0; setIdle(true); idleSpin();
+    running = false; const s = sim.s;
+    window.dwkT?.gameEnd('land', { score: s.score, why: s.why || 'gap', at: s.stage + 1 }); document.body.classList.remove('l-play'); clearUI(); cardCanvas = null; parts = []; floats = []; flash = 0; shakeAmp = 0; punch = 0; trans = null; card = null; thud = null; pillar = null; wave = null; stamp = null; whiteout = 0; flies = []; banner = null; helpNote = null; boom = null; knock = null; headA = 0; setIdle(true); idleSpin();
     const key = s.daily ? 'land_best_' + DC.today() : 'land_best', old = DC.store.get(key, 0), isBest = s.score > old; if (isBest) DC.store.set(key, s.score);
     if (isBest && s.score > 0) snd('clear');
     window.DP?.event('play', { game: 'land', score: s.score }); // 레벨·코인·미션(dwk-prog.js)
     const prev = el('canvas', { class: 'gx-preview', width: 270, height: 338, 'aria-label': '공유할 결과 카드' });
     // 3차: 「한 판 더」가 폰 첫 화면 아래로 잘려 스크롤해야 눌렀다 → 점수·기록 표시 바로 아래로 올리고, 기록 줄은 그 아래로
     const endPanel = panel(
-      el('p', { class: 'gx-eyebrow' }, el('span', {}, '끝'), `${pInfo(s.planetId).name}에서 멈췄어${s.daily ? ' · 오늘 문제' : ''}`),
+      el('p', { class: 'gx-eyebrow' }, el('span', {}, '끝'), `우주선 3대를 다 썼어 · ${pInfo(s.planetId).name}${s.daily ? ' · 오늘 문제' : ''}`),
       el('div', { class: 'l-scoreline' },
         el('p', { class: 'gx-score' }, String(s.score), el('small', {}, '점')),
         el('p', { class: 'gx-flag' + (isBest ? '' : ' off') }, isBest ? '내 최고 기록' : `내 최고 ${Math.max(old, s.score)}점`)),
@@ -894,7 +982,7 @@
         el('button', { class: 'gx-btn main', type: 'button', onclick: () => start(s.daily ? 'daily' : 'free') }, '한 판 더', el('i')),
         el('button', { class: 'gx-btn', type: 'button', onclick: async () => { cardCanvas = cardCanvas || await drawResultCard(s); DC.shareCanvas(cardCanvas, 'planet-land.png', `행성 착륙 ${s.landings}번 · 최고 콤보 ${s.bestCombo}`); } }, '결과 공유'),
         s.daily ? el('button', { class: 'gx-txt', type: 'button', onclick: () => copyText(`행성 착륙 ${DC.today()} ${s.score}점\n${emojiLines(s)}\n${location.origin}${location.pathname}`) }, '결과 줄 복사') : null),
-      el('dl', { class: 'gx-rows' }, row('착륙 성공', `${s.landings}번`), row('완벽 착륙', `${s.perfects}번`), row('최고 콤보', `${s.bestCombo}`), row('도착한 행성', `${s.stage + 1}번째`)),
+      el('dl', { class: 'gx-rows' }, row('앉힌 우주선', `${s.landings}대 · 쾅 ${s.drops.length - s.landings}번`), row('완벽 착륙', `${s.perfects}번 · 최고 ${s.bestPstreak}연속`), row('도착한 행성', `${s.stage + 1}번째`), row('버틴 시간', `${Math.round(s.t)}초`)),
       el('p', { class: 'emojis', 'aria-label': '착륙 결과' }, s.drops.map(d => DI.sq(d ? 'g' : 'r'))),
       el('ul', { class: 'gx-rows', 'aria-label': '다른 곳으로' },
         el('li', {}, el('a', { href: 'find.html' }, '다음 게임 · 빈틈 찾기', el('small', {}, '장면마다 8초'))),
@@ -903,7 +991,7 @@
         el('li', {}, el('a', { href: 'start.html' }, '입구로'))),
       s.daily ? null : prev,
       DC.followCta());
-    endPanel.classList.add('l-end'); ui.append(endPanel);
+    endPanel.classList.add('l-end'); if (isBest && s.score > 0) endPanel.classList.add('l-best'); ui.append(endPanel); // 7차: 신기록이면 점수를 금색으로 튀게(land.css)
     cardCanvas = await drawResultCard(s); if (!s.daily) prev.getContext('2d').drawImage(cardCanvas, 0, 0, 270, 338);
   }
   window.__land = { get sim() { return sim; }, get meta() { return meta; }, planetTo(cv, src) { const x = cv.getContext('2d'); x.fillStyle = '#000'; x.fillRect(0, 0, cv.width, cv.height); drawPlanet(x, src, cv.width / 2, cv.height / 2, cv.width * 0.36, 0); }, get fx() { return { parts: parts.length, floats: floats.length, trans: !!trans, card: !!card, beam, note: !!helpNote, banner: banner ? banner.text : null, stamp: !!stamp, boom: !!boom, labelRect, guideRect, cam: camView, cardT: card ? card.t : null, cardY: camView ? camView.nextY : cy, layout: { cx, cy, R, W, H } }; } }; // 시험용 훅(읽기 전용 용도) · 4차: 안내 자리·카메라·배치

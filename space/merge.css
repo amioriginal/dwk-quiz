@@ -91,3 +91,21 @@ body.gx.m-page .dp-stack { top: auto; bottom: calc(14px + env(safe-area-inset-bo
 /* 다음 칸 단계 색 테도 얇게(작은 행성이 스티커처럼 보이지 않게) */
 .nextbox .chip { box-shadow: 0 0 0 1px var(--tc, transparent), 0 0 8px -3px var(--tc, transparent); }
 @media (prefers-reduced-motion: reduce) { .m-hud .m-warn b { animation: none; } }
+
+/* 5차(2026-11-28 · 새 3D 행성 세트): 검수 — 점수 「0」과 시간 「0」이 붙어 「00」처럼 읽힘 · 버틴 시간이 늘 빨개 경고처럼 보임 · 점수가 커지면 옆 칸을 밀어냄 */
+.m-hud { gap: 26px; }
+.m-hud #score { display: inline-block; min-width: 3.4ch; }
+.m-hud .m-time.low b { color: var(--fg); }
+/* 5차 4회: 점수줄 위계 — 검수 3회 「숫자 셋이 경쟁」. 점수만 크게, 버틴 시간·내 최고·초읽기는 작게(기준선은 아래로 맞춤) */
+.m-hud { align-items: flex-end; gap: 18px; }
+.m-hud .m-time b, .m-hud .dim b { font-size: 17px; font-weight: 700; line-height: 1; }
+.m-hud .m-warn b { font-size: 20px; }
+.m-hud > div:first-child b { font-size: 34px; }
+/* 5차 4회(검수 4회 「점수줄이 흔들림」): 칸 너비 고정 · 점수 튀김은 왼쪽 아래 기준(왼쪽 밖으로 안 밀림) */
+.m-hud > div:first-child { min-width: 5.6ch; }
+.m-hud #score { min-width: 0; transform-origin: left bottom; }
+.m-hud .m-time { min-width: 4.5em; }
+.m-hud .dim, .m-hud .m-warn { min-width: 5.5em; }
+/* 5차 5회(검수 5회 「한 판 더가 결과 공유와 똑같아 눈에 안 띔」): 끝 화면 「한 판 더」만 꽉 찬 주 단추 · 결과 공유는 보조(옅은 테) */
+.m-endgrid .gx-acts .gx-btn.main { background: var(--fg); color: #000; border-color: var(--fg); min-height: 56px; padding: 0 30px; font-size: 17px; font-weight: 800; }
+.m-endgrid .gx-acts .gx-btn:not(.main) { border-color: rgba(240, 240, 250, .25); color: var(--fg2); font-size: 14px; min-height: 44px; }

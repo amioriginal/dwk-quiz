@@ -38,3 +38,10 @@ body.land .gx-nav { position: fixed; left: 0; right: 0; top: 0; z-index: 5; }
   #ui .panel { padding-top: 70px; background: linear-gradient(90deg, rgba(0, 0, 0, .92) 0%, rgba(0, 0, 0, .7) 45%, rgba(0, 0, 0, 0) 70%); }
   #ui .l-cap { max-width: 420px; }
 }
+
+/* 7차(2026-11-29): 플레이 중에는 사이트 머리 줄(돈워너노우 / 게임 목록 / 소리)을 숨긴다 — 「화면 아무 데나 탭」 게임에서 잘못 누르지 않게. 시작·끝 화면에서는 그대로 */
+body.land.l-play .gx-nav { opacity: 0; pointer-events: none; transition: opacity .25s; }
+/* 7차: 신기록 — 점수가 금색으로 한 번 튄다 */
+.panel.l-best .gx-score { color: #ffd34d; animation: lBest .6s cubic-bezier(.2,1.6,.4,1) both; }
+@keyframes lBest { from { transform: scale(.6); } to { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .panel.l-best .gx-score { animation: none; } }

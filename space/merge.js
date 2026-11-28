@@ -16,46 +16,56 @@
   const params = new URLSearchParams(location.search);
   const seat = (params.get('seat') || '').replace(/\D/g, '').slice(0, 3);
   const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // 5차: 모의 실험(?sim=1) — 같은 게임 코드를 가상 시계로 빨리 돌려 판 길이·점수 분포를 잰다(그리기·소리·저장·방문 기록 없음)
+  const SIMN = +(params.get('sim') || 0);
+  let SIM = false, VT = 0;
+  const NOW = () => SIM ? VT : performance.now();
 
   // 작은 행성 → 큰 행성 (10단계). 마지막 두 개가 합쳐지면 「새 은하」로 사라지며 큰 점수.
-  // cut = 공 모양이 아닌 행성(도넛·양·손) — 원으로 자르지 않고 검은 배경만 지운다
-  const CUT = new Set(['3-1', '3-3', '2-3']);
-  // 2차(2026-11-28 검수): 둘레가 「완전 검정」이 아니라 어두운 빛 번짐인 행성 — 밝기(가장 밝은 채널) lo 이하는 배경, lo~hi는 반투명으로 녹인다.
-  // 도넛 원본은 둘레 번짐이 밝기 30~75라 예전 기준(26)으로는 안 지워져 네모난 얼룩이 남았다(화면에서 실측: 아래 번짐 최대 74).
-  // 양(3-3)은 얼굴이 검어서 아래쪽(가운데에서 반지름 0.5배 아래)은 예전 기준(거의 검정만 배경)을 그대로 쓴다 — 셋째 값
-  const KEY = { '3-1': [78, 132], '2-3': [16, 46], '3-3': [44, 100, 0.5] };
-  // 그림이 원본 가장자리에 닿아 일자로 잘린 행성(가시 손) — 둥글게 사라지게 해 네모 잘림이 안 보이게
-  const EDGE = new Set(['2-3']);
-  // 가로로 넓은 행성(도넛·양) — 반지름을 긴 쪽 기준으로 잡아 몸통 원 안에 들어오게(예전엔 짧은 쪽 기준이라 도넛 양 끝이 원에 잘리고, 양은 벽 밖으로 삐져나왔다)
-  const WIDE = new Set(['3-1', '3-3']);
-  // 4차: 푸른 칸을 보라 쪽으로(빨강 += 파랑×kr, 초록 ×kg) — 반딧불 호수만
-  const TINT = { '1-4': [0.62, 0.7] };
-  // 원본 렌더 아래쪽에 찍힌 번호 글씨(01·02)가 있는 줄 — 이 줄부터 아래는 배경으로 본다(420px 원본 기준 · 화면에서 직접 잼)
-  const LABEL_Y = { '1-4': 400, '1-1': 385, '1-2': 402, '3-1': 395, '1-3': 403 };
-  // 3차: 단계 색(행성 둘레 대기 빛 · 사다리 테 · 합칠 때 빛)을 이웃 단계끼리 색상환에서 멀게 다시 골랐다.
-  // 예전엔 흰색·회색 계열이 넷(온천 #e8f1ff · 쇼핑몰 #c7cfdb · 구름 #fff · 하얀 숲 #f2f2f2)이라 작은 크기에서 흰 달과 회색 쇼핑몰이 헷갈렸다(2차 검수).
+  // 5차(2026-11-28): 그림을 단계별로 새로 렌더한 3D 행성 세트로 바꿨다(Blender · 투명 배경 · 같은 조명) — 행성 착륙과 같은 세트(img/g3d/planets/planets.json).
+  //   예전 옛 렌더(검은 배경 jpg)를 지우던 배경 지우기(KEY·CUT·EDGE·WIDE·TINT·LABEL_Y)는 필요 없어져 걷어냈다.
+  //   GEO = [물리 원 반지름 rHit, 그림 끝 rFull] — 둘 다 그림 반폭에 대한 비율(planets.json과 같은 값). 물리 원(t.r)이 rHit에 맞게 그린다(돌출은 조금 밖으로).
+  // 5차: 크기 곡선을 완만하게(검수: 6단계가 판 폭 30%·7단계 40%라 큰 행성 몇 개로 판이 막히고 9~10단계는 판에 안 들어감).
+  //   예전 반지름 18.5 × 1.255^단계(10단계 지름 = 판 안쪽 폭의 77%) → 16.5 × 1.225^단계(10단계 약 55%, 수박 게임의 수박과 비슷)
+  const RB = 18.5, RG = 1.24; // 5차 5회: 18.5·1.24(10단계 지름 = 판 폭의 약 69%) — 선 압박을 작게 둔 만큼 행성으로 판을 채운다 · 5차 4회: 16.5·1.225 → 16.5·1.25 — 검수 4회 「이웃 단계 크기가 비슷해 순서가 안 읽힘(1.25배 이상)」 · 10단계 지름 = 판 폭의 약 66%
+  const GEO = { '1-4': [0.8388, 0.8442], '3-2': [0.76, 0.7589], '1-1': [0.8134, 0.82], '1-2': [0.7791, 0.7823], '3-1': [0.8, 0.7826], '2-1': [0.8, 0.7958], '1-3': [0.8177, 0.8254], '3-3': [0.7671, 0.7704], '2-2': [0.7842, 0.7884], '2-3': [0.8194, 0.833] };
+  // 3차: 단계 색(행성 둘레 대기 빛 · 사다리 테 · 합칠 때 빛)은 이웃 단계끼리 색상환에서 멀게.
   const TIERS = [
-    { id: '1-4', name: '반딧불 호수', col: '#ffd23f' },  // 노랑
-    { id: '3-2', name: '물방울', col: '#38d6ff' },       // 하늘
-    { id: '1-1', name: '해바라기', col: '#8fe34a' },     // 연두
-    { id: '1-2', name: '온천', col: '#b07cff' },         // 보라(흰 달 → 보라 대기)
-    { id: '3-1', name: '디저트', col: '#ff6fae' },       // 분홍
-    { id: '2-1', name: '호수', col: '#3f7dff' },         // 파랑
-    { id: '1-3', name: '쇼핑몰', col: '#ff9a2e' },       // 주황(회색 쇼핑몰 → 주황 대기)
-    { id: '3-3', name: '구름', col: '#3ff0c0' },         // 청록
-    { id: '2-2', name: '하얀 산맥', col: '#ff4d5e' },    // 빨강
-    { id: '2-3', name: '하얀 숲', col: '#ffe9a0' },      // 금빛
-  ].map((t, i) => { const img = (DC.planet(t.id) || {}).img || ''; return { ...t, i, img, icon: img, cut: CUT.has(t.id), r: 18.5 * Math.pow(1.255, i), pts: (i + 1) * (i + 2) / 2 }; });
+    { id: '1-4', name: '반딧불 호수', col: '#ffd23f' },  // 노랑 — 보라 밤 숲 + 빛나는 호수 + 노란 반딧불(5차 4회: 2단계 물방울 파랑과 갈리게)
+    { id: '3-2', name: '물방울', col: '#38d6ff' },       // 하늘 — 속이 비치는 물방울 안 고래
+    { id: '1-1', name: '해바라기', col: '#8fe34a' },     // 연두 — 해바라기 밭
+    { id: '1-2', name: '온천', col: '#dbe6ff' },         // 눈빛 흰 파랑 — 연보라 눈 + 청록 온천(5차 4회: 1단계 보라 행성과 보라 테가 겹친다는 검수 4회 지적으로 보라 → 눈빛)
+    { id: '3-1', name: '디저트', col: '#ff6fae' },       // 분홍 — 딸기 도넛
+    { id: '2-1', name: '호수', col: '#3f7dff' },         // 파랑 — 눈알 호수
+    { id: '1-3', name: '쇼핑몰', col: '#ff9a2e' },       // 주황 — 빌딩이 빽빽한 주황 도시
+    { id: '3-3', name: '구름', col: '#3ff0c0' },         // 청록 — 잠든 양 + 마을
+    { id: '2-2', name: '하얀 산맥', col: '#ff4d5e' },    // 빨강 — 분홍 살결 + 하얀 산맥(이빨)
+    { id: '2-3', name: '하얀 숲', col: '#ffe9a0' },      // 금빛 — 어두운 행성 + 하얀 손 나무
+  ].map((t, i) => { const img = `img/g3d/merge/${t.id}.webp?v=5`; return { ...t, i, img, icon: '', r: RB * Math.pow(RG, i), pts: (i + 1) * (i + 2) / 2 }; });
   const SPAWN_MAX = 4;          // 떨어뜨리는 건 0~4단계만
-  // 3차: 시간제 대신 「넘치면 끝」(수박 게임과 같다). 한 판 약 1분은 빨간 선이 내려오는 압박으로 맞춘다 —
-  // 첫 행성을 놓고 LINE_T0 뒤부터 선이 초당 LINE_V씩 내려오고(최대 LINE_MAX), 큰 합치기는 선을 밀어 올린다.
-  const LINE_T0 = 25000, LINE_V = 7, LINE_MAX = 380;
+  // 3차: 시간제 대신 「넘치면 끝」(수박 게임과 같다). 한 판 약 1분은 빨간 선이 내려오는 압박으로 맞춘다.
+  // 5차: 예전엔 선이 실력과 상관없이 같은 속도로 내려와 누구나 약 64초에 끝났다(4차 검수). 이제 선 압박이 합치기 실력에 반응한다 —
+  //   첫 행성을 놓고 T0 뒤부터 「줄다리기」: 떨어뜨릴 때마다 선이 D만큼 내려오고(+ 시간에 따라 V0·ACC로 아주 조금씩, 최대 MAX까지),
+  //   합칠 때마다 (LA + LB × 새 단계^LP) × 콤보 덤(연쇄 하나마다 +LC)만큼 밀려 올라간다. 잘 합치면 선이 위에 머물러 오래 살고 점수가 커지고,
+  //   아무 데나 놓으면 판이 빨리 조여 일찍 끝난다. 막 빨리 던지면 떨어뜨린 수만큼 압박이 쌓여 일찍 끝난다(5차 3회부터 압박은 「올라오는 바닥」으로 보인다).
+  //   값은 자동 플레이 모의 실험(?sim=1 · 무작위 봇 vs 같은 행성 근처에 놓는 봇)으로 맞췄다 — REPORT_merge.md
+  const TUNE = { BASE: 0, T0: 8000, V0: 4, ACC: 0.03, D: 12, MAX: 235, LA: 0, LB: 0.48, LP: 2.2, LC: 1.0 };
+  // 5차 3회: 검수 「넘치기 직전인데 판 위쪽 절반이 비어 있다 — 선이 내려와서 지는 게임」 → 선은 위에 고정하고, 같은 양만큼 「바닥」이 올라온다.
+  //   st.dz(압박량) − DANGER = 바닥이 올라온 높이. 놓을 때마다 올라오고 합치면 내려간다(줄다리기 값 TUNE은 그대로 — 쌓을 수 있는 높이도 같다).
+  //   그래서 행성 더미는 늘 선 바로 아래까지 차 보이고, 위기 = 쌓인 높이로 읽힌다.
+  // 5차 5회(7차 검수 지적 ①): 「빈 보라 바닥판이 화면 20~25%를 먹는다」 → 바닥은 다시 고정(수박 게임처럼 얇은 그릇 바닥), 압박은 선으로.
+  //   st.dz = 빨간 선 높이. 8초 뒤부터 놓을 때마다 D만큼 내려오고(+시간에 따라 조금씩), 합치면 밀려 올라간다. 내려오는 폭은 최대 MAX−DANGER(=130)로 작게 —
+  //   3회 검수의 「선이 판 절반까지 내려와 위가 텅 빔」(예전 최대 350)을 되풀이하지 않게
+  const FY = () => H;
+  const LY = () => (st ? st.dz : DANGER);
+  const lift = (nt, combo) => (TUNE.LA + TUNE.LB * Math.pow(nt, TUNE.LP)) * (1 + TUNE.LC * Math.min(4, Math.max(0, combo - 1)));
   const GRACE = 2000;           // 빨간 선 위에 이만큼 머물면 끝
   // 3차: 넘친 뒤 순서 = 마지막 합치기 연출이 마저 끝나는 동안 판이 멈춤(STOP_MS) → 「넘쳤어!」 선언(받침판) → (4차) 선언이 다 보인 뒤 HOLD_MS·HOLD_FR가 지나면 결과 화면
   // 4차: 결과 화면은 시계(END_MS)가 아니라 「선언이 다 보인 첫 프레임」부터 HOLD_MS가 지나고, 그 뒤로 실제로 그린 프레임이 HOLD_FR장 넘을 때 넘어간다
   //   (예전엔 넘친 순간부터 2.6초 시계라, 프레임이 밀리면 선언이 반쯤 그려진 채 결과 화면으로 넘어갈 수 있었다 — 검수 지적)
   const STOP_MS = 520, POP_MS = 220, HOLD_MS = 1500, HOLD_FR = 30;
-  const W = 400, H = 600, WALL = 14, TOP = 96, DANGER = 120;
+  // 5차 6회(검수 6회 「경기장 위쪽 절반 이상이 늘 비어 있음 · 판이 너무 길다(가로세로 1:1.3쯤)」): 판 높이 600 → 540, 선 120 → 105, 위쪽 늘림(EX) 최대 110 → 30. 남는 화면은 판을 세로 가운데로
+  const W = 400, H = 540, WALL = 14, TOP = 96, DANGER = 105;
   // 2차: 세로로 긴 폰에서는 판 위쪽(떨어뜨리는 자리)만 EX만큼 늘린다 — 바닥~빨간 선 거리(쌓을 수 있는 양)는 어느 화면에서나 같다.
   // 예전엔 판이 폭에 맞춰 350×525로 고정돼 390×844 폰에서 사다리 아래 약 136px이 비었다(실측).
   // 4차: 판(BY)을 캔버스 맨 위 6까지 올리고, 들고 있는 행성은 판 위 가장자리에 매달리듯(위 맞춤) — 점수줄과 판 사이 약 90px 빈 띠 정리
@@ -64,85 +74,28 @@
   const BX = WALL - 4, BW = W - (WALL - 4) * 2;
   const STEP = 1000 / 60;
 
-  // ── 그림: 3D 렌더(img/*.jpg, 검은 배경)를 투명 배경 스프라이트로 바꿔 둔다 ──
-  const SPR = 128; // 스프라이트 안에서 행성 반지름(px)
+  // ── 그림: 3D 렌더(투명 webp)를 단계 크기에 맞는 스프라이트로 한 번 줄여 둔다(매 프레임 큰 그림을 줄이면 흐리고 느리다) ──
+  const SPR = 128; // 그림자·빛 무리 기준 크기(px)
+  const RIM = true; // 5차 2회: 검수 「작은 단계끼리 구별이 안 됨 · 사다리 테 색과 같은 얇은 테를 판 위에도」 — 얇은 테만(4차의 작은 단계 굵기)
   const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
-  const IMG = TIERS.map(t => { const im = new Image(); im.src = t.img; return im; });
+  const IMG = TIERS.map(t => { const im = new Image(); im.decoding = 'async'; im.src = t.img; return im; });
   const SPRITES = TIERS.map(() => null);
-  function makeSprite(im, t) {
-    const N = im.naturalWidth, NH = im.naturalHeight, c = mk(N, NH), x = c.getContext('2d', { willReadFrequently: true });
-    x.drawImage(im, 0, 0);
-    const d = x.getImageData(0, 0, N, NH), p = d.data, n = N * NH;
-    const ly = LABEL_Y[t.id]; if (ly) { const y0 = Math.round(ly * NH / 420); for (let k = y0 * N * 4; k < p.length; k += 4) { p[k] = p[k + 1] = p[k + 2] = 0; } }
-    // 가장자리에서 이어진 검은 칸 = 배경
-    const bg = new Uint8Array(n), q = new Int32Array(n); let h = 0, tl = 0;
-    const key = KEY[t.id], mxOf = (k) => { const o = k << 2; return Math.max(p[o], p[o + 1], p[o + 2]); };
-    const dark = (k) => { const o = k << 2; return p[o] < 26 && p[o + 1] < 26 && p[o + 2] < 32; };
-    let keyY = 1e9; // 이 줄(원본 픽셀 y)보다 아래는 빛 번짐 기준을 안 쓴다(양 얼굴 보호) — 가운데·반지름은 아래에서 다시 잼, 여기선 원본 비율로 어림
-    if (key && key[2]) keyY = NH * (0.5 + 0.42 * key[2]);
-    const isBg = key ? (k) => ((k / N) | 0) < keyY ? mxOf(k) < key[1] : dark(k) : dark;
-    const seed = (k) => { if (bg[k]) return; if (isBg(k)) { bg[k] = 1; q[tl++] = k; } };
-    for (let i = 0; i < N; i++) { seed(i); seed((NH - 1) * N + i); }
-    for (let j = 0; j < NH; j++) { seed(j * N); seed(j * N + N - 1); }
-    while (h < tl) { const k = q[h++], xx = k % N; if (xx > 0) seed(k - 1); if (xx < N - 1) seed(k + 1); if (k >= N) seed(k - N); if (k < n - N) seed(k + N); }
-    // 떨어진 작은 조각(그림 아래 번호 글씨·별 점)은 배경으로 — 가장 큰 덩어리의 4%보다 작은 덩어리를 지운다
-    const lab = new Int32Array(n), sizes = [0]; let big = 0;
-    for (let k0 = 0; k0 < n; k0++) {
-      if (bg[k0] || lab[k0]) continue; const id = sizes.length; let cnt = 0; h = 0; tl = 0; lab[k0] = id; q[tl++] = k0;
-      while (h < tl) { const k = q[h++], xx = k % N; cnt++; const nb = [xx > 0 ? k - 1 : -1, xx < N - 1 ? k + 1 : -1, k >= N ? k - N : -1, k < n - N ? k + N : -1]; for (const m of nb) if (m >= 0 && !bg[m] && !lab[m]) { lab[m] = id; q[tl++] = m; } }
-      sizes.push(cnt); if (cnt > big) big = cnt;
-    }
-    const minKeep = Math.max(400, big * 0.04);
-    for (let k = 0; k < n; k++) if (!bg[k] && sizes[lab[k]] < minKeep) bg[k] = 1;
-    // 행·열마다 행성이 차지한 폭으로 상자 → 가운데·반지름 (별 점·아래 번호 글씨처럼 작은 것은 무시)
-    const rows = new Uint16Array(NH), cols = new Uint16Array(N);
-    for (let k = 0; k < n; k++) if (!bg[k]) { rows[(k / N) | 0]++; cols[k % N]++; }
-    const span = (arr, len, lim) => { let a = 0, b = len - 1; while (a < len - 1 && arr[a] < lim) a++; while (b > a && arr[b] < lim) b--; return [a, b]; };
-    const [y0, y1] = span(rows, NH, N * 0.08), [x0, x1] = span(cols, N, NH * 0.08);
-    const ccx = (x0 + x1) / 2, ccy = (y0 + y1) / 2;
-    const R = Math.max(24, WIDE.has(t.id) ? Math.max(x1 - x0, y1 - y0) / 2 * 0.97 : Math.min(x1 - x0, y1 - y0) / 2);
-    // 투명도: 공 모양 = 원 안 전부(그늘진 가장자리까지) · 그 밖 = 배경만 지우고 부드럽게
-    // keep(그림을 남기는 원)은 스프라이트 칸(반지름 1.36R) 안쪽이어야 네모로 잘리지 않는다
-    const A = new Float32Array(n), keep = R * (t.cut ? 1.3 : 1.0);
-    // 원본 가장자리에 닿은 그림은 원본 테두리 4px 안쪽에서 둥글게 사라지게(폭 0.16R)
-    const rEdge = EDGE.has(t.id) ? Math.min(keep, ccx - 4, N - 4 - ccx, ccy - 4, NH - 4 - ccy) : 0, fw = R * 0.16;
-    for (let k = 0; k < n; k++) {
-      const xx = k % N, yy = (k / N) | 0, dd = Math.hypot(xx - ccx, yy - ccy);
-      // 공 모양도 가장자리 띠(반지름 86% 밖)에서는 배경을 지워 검은 테가 안 남게 · 빛 번짐 행성은 밝기에 따라 반투명
-      let a = 1;
-      if (bg[k] && (t.cut || dd > R * 0.86)) a = key ? Math.max(0, Math.min(1, (mxOf(k) - key[0]) / (key[1] - key[0]))) : 0;
-      if (rEdge) a *= Math.max(0, Math.min(1, (rEdge - dd) / fw));
-      A[k] = a * Math.max(0, Math.min(1, (keep - dd) / 1.6 + 0.5));
-    }
-    { // 가장자리 계단 줄이기(3×3 평균)
-      const B = A.slice();
-      for (let yy = 1; yy < NH - 1; yy++) for (let xx = 1; xx < N - 1; xx++) { const k = yy * N + xx; A[k] = Math.min(B[k], (B[k - 1] + B[k + 1] + B[k - N] + B[k + N] + B[k - N - 1] + B[k - N + 1] + B[k + N - 1] + B[k + N + 1] + B[k]) / 9 * 1.25); }
-    }
-    for (let k = 0; k < n; k++) p[(k << 2) + 3] = Math.round(A[k] * 255);
-    // 4차: 1단계(반딧불 호수)와 2단계(물방울)가 둘 다 파랑이라 작은 크기에서 헷갈렸다(검수) — 새 그림 없이 반딧불 호수의 푸른 칸만 보라 쪽으로 옮긴다.
-    //   노란 반딧불(빨강 > 파랑인 칸)은 그대로 둔다. 원본 파일은 안 바뀐다(불러온 뒤 화면용 사본만)
-    if (TINT[t.id]) { const [kr, kg] = TINT[t.id]; for (let k = 0; k < n; k++) { const o = k << 2, r0 = p[o], g0 = p[o + 1], b0 = p[o + 2]; if (b0 > r0 + 6) { p[o] = Math.min(255, r0 * 0.55 + b0 * kr); p[o + 1] = g0 * kg; } } }
-    x.putImageData(d, 0, 0);
-    const S = Math.ceil(SPR * 2 * 1.36), o = mk(S, S), ox = o.getContext('2d'), k = SPR / R;
-    ox.imageSmoothingQuality = 'high';
-    ox.drawImage(c, S / 2 - ccx * k, S / 2 - ccy * k, N * k, NH * k);
-    // 작은 그림(다음·사다리·시작 화면) — 투명 배경
-    // 모양 행성(도넛·양·손)은 그림이 반지름의 1.3배까지 뻗으므로 작게 넣어 칸(112) 밖으로 네모나게 잘리지 않게
-    const ic = mk(112, 112), icx = ic.getContext('2d'), kk = (t.cut ? 41 : 50) / SPR;
-    icx.imageSmoothingQuality = 'high'; icx.drawImage(o, 56 - S / 2 * kk, 56 - S / 2 * kk, S * kk, S * kk);
-    if (!t.cut) { icx.drawImage(SHADE, 6, 6, 100, 100); }
-    return { img: o, S, icon: ic.toDataURL('image/png') };
+  // 큰 그림을 반씩 줄여 가며 목표 크기로(한 번에 크게 줄이면 계단·반짝임이 생긴다)
+  function shrink(src, w) {
+    let cur = src, cw = src.naturalWidth || src.width;
+    while (cw / 2 >= w * 1.05) { const n = mk(Math.round(cw / 2), Math.round(cw / 2)), x = n.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(cur, 0, 0, n.width, n.height); cur = n; cw = n.width; }
+    const o = mk(w, w), ox = o.getContext('2d'); ox.imageSmoothingQuality = 'high'; ox.drawImage(cur, 0, 0, w, w); return o;
   }
-  // 고정 빛(굴러도 빛 방향은 그대로): 가장자리 어둡게 · 왼쪽 위 밝게 · 얇은 테두리 빛
-  const SHADE = (() => {
-    const s = SPR * 2, c = mk(s, s), x = c.getContext('2d');
-    x.beginPath(); x.arc(SPR, SPR, SPR, 0, 6.283); x.clip();
-    let g = x.createRadialGradient(SPR, SPR, SPR * 0.5, SPR, SPR, SPR); g.addColorStop(0, 'rgba(0,0,14,0)'); g.addColorStop(1, 'rgba(0,0,14,.48)'); x.fillStyle = g; x.fillRect(0, 0, s, s);
-    g = x.createLinearGradient(SPR * 0.4, SPR * 0.3, SPR * 1.75, SPR * 1.85); g.addColorStop(0, 'rgba(0,0,10,0)'); g.addColorStop(1, 'rgba(0,0,10,.32)'); x.fillStyle = g; x.fillRect(0, 0, s, s);
-    g = x.createRadialGradient(SPR * 0.62, SPR * 0.52, 0, SPR * 0.62, SPR * 0.52, SPR * 0.62); g.addColorStop(0, 'rgba(255,255,255,.2)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, s, s);
-    x.lineWidth = SPR * 0.045; x.strokeStyle = 'rgba(255,255,255,.16)'; x.beginPath(); x.arc(SPR, SPR, SPR * 0.975, Math.PI * 1.02, Math.PI * 1.62); x.stroke();
-    return c;
-  })();
+  function makeSprite(im, t) {
+    const [rHit, rFull] = GEO[t.id] || [0.75, 0.8];
+    // 판에서 가장 크게 그려질 때(물리 반지름 × 화면 배율 최대 1.1 × 기기 배율 2) 픽셀이 모자라지 않게
+    const spr = Math.ceil(t.r * 2.2), S = Math.min(im.naturalWidth, Math.ceil(spr / rHit) * 2);
+    const img = shrink(im, S);
+    // 작은 그림(다음·사다리·시작 화면) — 그림 끝(rFull)이 칸(112)의 반지름 54에 닿게
+    const ic = mk(112, 112), icx = ic.getContext('2d'), w = Math.round(108 / rFull);
+    icx.imageSmoothingQuality = 'high'; icx.drawImage(shrink(im, w), 56 - w / 2, 56 - w / 2);
+    return { img, S, k: rHit * S / 2, icon: ic.toDataURL('image/png') };
+  }
   // 바닥 그림자(부드러운 검은 원)
   const SHADOW = (() => { const s = SPR * 3, c = mk(s, s), x = c.getContext('2d'), g = x.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2); g.addColorStop(0, 'rgba(0,0,0,.55)'); g.addColorStop(.55, 'rgba(0,0,0,.32)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, s, s); return c; })();
   // 단계 색 빛 무리
@@ -158,11 +111,11 @@
   }
   // 행성 하나 그리기(게임판·공유 카드 공용)
   function drawPlanet(c, tier, x, y, r, ang = 0, sx = 1, sy = 1, alpha = 1) {
-    const t = TIERS[tier], s = SPRITES[tier], k = r / SPR;
+    const t = TIERS[tier], s = SPRITES[tier];
     c.save(); c.globalAlpha = alpha; c.translate(x, y); if (sx !== 1 || sy !== 1) c.scale(sx, sy);
     if (s) {
+      const k = r / s.k; // 스프라이트 안 물리 반지름(px) → 화면 반지름 r
       c.rotate(ang); c.drawImage(s.img, -s.S / 2 * k, -s.S / 2 * k, s.S * k, s.S * k); c.rotate(-ang);
-      if (!t.cut) c.drawImage(SHADE, -r, -r, r * 2, r * 2);
     } else {
       const g = c.createRadialGradient(-r * .35, -r * .4, r * .05, 0, 0, r); g.addColorStop(0, '#fff'); g.addColorStop(.3, t.col); g.addColorStop(1, '#1a1d33');
       c.fillStyle = g; c.beginPath(); c.arc(0, 0, r, 0, 6.283); c.fill();
@@ -173,7 +126,7 @@
   // ── 소리: Web Audio 합성(파일 없음). 끄기는 DC.sfx 설정을 그대로 따른다. 큰 순간은 DC.sfx 것을 쓴다 ──
   const SND = (() => {
     let ac = null, out = null, nb = null, lastLand = 0;
-    const on = () => !DC.sfx.on || DC.sfx.on();
+    const on = () => !SIM && (!DC.sfx.on || DC.sfx.on());
     function ctx() {
       if (!on()) return null;
       try {
@@ -223,6 +176,7 @@
   })();
 
   // ── 상태 ──
+  let floorBody = null;
   let engine, world, cv, cx, bgc = null, scale = 1, dpr = 1, raf = 0;
   let bodies = [], parts = [], rings = [], pops = [], ghosts = [], flashes = [], sparks = [];
   let st = null;
@@ -235,15 +189,15 @@
     const got = DC.endings.got('merge').length;
     const done = DC.store.get('mergeDaily_' + DC.today(), null);
     // 행성 10단계가 화면 폭을 채우게: 가장 큰 것 = 폭의 약 1/5
-    const gap = innerWidth >= 900 ? 14 : 6, wide = Math.min(document.documentElement.clientWidth, 1180) - (innerWidth >= 900 ? 80 : 40) - gap * 9, big = Math.min(150, wide / 4.45), k = big / Math.pow(1.255, 9);
+    const gap = innerWidth >= 900 ? 14 : 6, wide = Math.min(document.documentElement.clientWidth, 1180) - (innerWidth >= 900 ? 80 : 40) - gap * 9, big = Math.min(150, wide / 4.45), k = big / Math.pow(RG, 9);
     box.classList.add('gx-wide');
     box.append(
       el('section', { class: 'gx-hero m-hero' },
-        el('div', { class: 'chain', 'aria-hidden': 'true' }, TIERS.map(t => { const d = Math.round(k * Math.pow(1.255, t.i)), z = t.cut ? Math.round(d * 50 / 41) : d, m = (d - z) / 2; /* 모양 행성 아이콘은 칸 안에 작게 그려 두었으니(네모 잘림 방지) 칸을 키워 같은 크기로 보이게 */ return el('span', { class: 'chip', title: t.name, 'data-tier': t.i, style: `background-image:url(${t.icon});width:${z}px;height:${z}px;margin:0 ${m}px ${m}px` }); })),
+        el('div', { class: 'chain', 'aria-hidden': 'true' }, TIERS.map(t => { const d = Math.round(k * Math.pow(RG, t.i)), z = Math.round(d * 1.1), m = (d - z) / 2; /* 5차: 아이콘은 그림 끝까지 담아 두었으니 칸을 조금 키워 몸통 크기가 단계 크기와 맞게 */ const met = t.i <= SPAWN_MAX || DC.endings.got('merge').includes('tier' + t.i); /* 5차 6회: 못 만난 행성은 그림자로(검수 6회 「다 보이는데 만난 행성 5/10」) */ return el('span', { class: 'chip', title: met ? t.name : '???', 'data-tier': t.i, style: `background-image:url(${t.icon});width:${z}px;height:${z}px;margin:0 ${m}px ${m}px${met ? '' : ';filter:brightness(0) drop-shadow(0 0 1px rgba(240,240,250,.55));opacity:.75'}` }); })),
         el('div', { class: 'gx-cap' },
-          el('p', { class: 'gx-eyebrow' }, el('span', {}, '01'), '1분 게임'),
+          el('p', { class: 'gx-eyebrow' }, el('span', {}, '01'), '1~2분 게임'),
           el('h1', { class: 'gx-h1' }, '행성 합치기'),
-          el('p', { class: 'gx-sub' }, '같은 행성끼리 닿으면 한 단계 큰 행성이 돼. 25초가 지나면 빨간 선이 점점 내려와. ', el('b', {}, '선 위로 넘치면 끝.')),
+          el('p', { class: 'gx-sub' }, '같은 행성끼리 닿으면 한 단계 큰 행성이 돼. 8초 뒤부터 떨어뜨릴 때마다 빨간 선이 조금씩 내려오고, 합칠 때마다 밀려 올라가. ', el('b', {}, '선 위로 넘치면 끝.')),
           el('div', { class: 'gx-acts' },
             el('button', { class: 'gx-btn main', type: 'button', onclick: () => start(false) }, '시작', el('i')),
             el('button', { class: 'gx-btn', type: 'button', onclick: () => start(true) }, done ? '오늘 문제 다시' : '오늘 문제')),
@@ -255,21 +209,33 @@
     scrollTo(0, 0);
   }
 
-  function start(daily) {
-    cancelAnimationFrame(raf);
-    const rnd = daily ? DC.rng(DC.seed('merge' + DC.today())) : Math.random;
+  // 5차: 한 판의 상태·물리·시작 더미(그림·화면 없음) — 실제 판과 모의 실험이 함께 쓴다
+  function begin(daily, rnd) {
     // 난이도 곡선(떨어뜨린 개수 기준 — 오늘 문제는 모두 같은 순서): 첫 둘은 같은 행성(바로 합쳐 보며 규칙을 안다) → 작은 것 위주 → 점점 큰 것도
     // 3차: 첫 손에 든 행성은 1단계(조금 더 크게) — 판에 미리 깔린 1단계 위에 놓으면 바로 합쳐지고, 옆의 2단계와 이어 합쳐질 수 있다
     const spawn = (k) => {
       const r = rnd();
+      // 5차 4회: 큰 행성이 조금 더 일찍·자주 나온다(검수 2·4회 「위 단계까지 못 닿음 · 판이 비어 보임」, 빈 판 시작이라 초반이 길어짐)
       if (k < 2) return 1;
-      if (k < 12) return r < 0.45 ? 0 : r < 0.8 ? 1 : 2;
-      if (k < 30) return r < 0.32 ? 0 : r < 0.62 ? 1 : r < 0.85 ? 2 : 3;
-      return r < 0.26 ? 0 : r < 0.52 ? 1 : r < 0.74 ? 2 : r < 0.9 ? 3 : 4;
+      if (k < 8) return r < 0.35 ? 0 : r < 0.75 ? 1 : 2;
+      if (k < 20) return r < 0.25 ? 0 : r < 0.55 ? 1 : r < 0.82 ? 2 : 3;
+      return r < 0.2 ? 0 : r < 0.45 ? 1 : r < 0.7 ? 2 : r < 0.88 ? 3 : 4;
     };
     st = { daily, spawn, k: 2, score: 0, combo: 0, comboT: 0, cur: spawn(0), next: spawn(1), x: W / 2, canDrop: true, holdPop: 1, grip: 0, down: false,
       over: false, reason: '', overT: 0, warnT: 0, maxTier: 0, drops: 0, merges: 0, galaxies: 0,
-      shake: 0, flash: 0, freeze: 0, slow: 0, started: false, el: 0, lastSec: 0, dz: DANGER, dzT: DANGER, lineOn: false, lineSoon: false, intro: 1, endT: 0, declared: false, banner: null, firstMerge: false, t0: 0 };
+      shake: 0, flash: 0, freeze: 0, slow: 0, started: false, el: 0, lastSec: 0, dz: DANGER + TUNE.BASE, dzT: DANGER + TUNE.BASE, lineOn: false, lineSoon: false, intro: 1, endT: 0, declared: false, banner: null, firstMerge: false, t0: 0 };
+    setupPhysics();
+    // 3차: 판이 빈 채로 시작하지 않게 — 시작하자마자 작은 행성이 위에서 차례로 쏟아져 바닥을 채운다(5차: 두 줄 13개 → 아랫줄 7개).
+    // 이웃끼리는 다른 단계라 저절로 합쳐지지 않는다(아랫줄 이웃·윗줄 이웃·위아래로 닿는 둘 모두). 1단계는 첫 손 행성과 같아 바로 합칠 자리, 그 곁 2단계·3단계는 이어 합쳐질 자리.
+    const PILE = [[0, 33], [3, 89], [2, 155], [1, 207], [0, 249], [3, 304], [0, 358], // 아랫줄: 지름 합 361 ≤ 판 안쪽 폭 372
+    ]; // 5차: 윗줄 6개는 뺐다(검수: 처음부터 판이 차 있어 빈 통에서 시작하는 맛이 없다) — 아랫줄만 깔아 첫 합치기 자리는 그대로
+    // 5차 4회: 미리 깔린 행성을 뺐다(검수 1·4회 「내가 놓지 않은 행성이 깔려 있어 헷갈림 · 빈 통에서 시작하는 맛이 없음」) — 수박 게임처럼 빈 판에서. 첫 두 행성은 같은 단계라 둘째 행성으로 바로 합쳐 본다
+    st.pileQ = []; void PILE; // 예전 시작 더미(PILE)는 기록으로만 남기고 쓰지 않는다
+  }
+  function start(daily) {
+    cancelAnimationFrame(raf);
+    window.dwkT?.gameStart('merge', { mode: daily ? 'daily' : 'free' });
+    begin(daily, daily ? DC.rng(DC.seed('merge' + DC.today())) : Math.random);
     const box = $('#stage'); box.replaceChildren(); box.classList.remove('gx-wide'); hwLast = '';
     cv = el('canvas', { id: 'board', 'aria-label': '행성 합치기 판' });
     const best = DC.store.get('best_merge', 0);
@@ -283,15 +249,9 @@
       el('div', { class: 'boardwrap' }, cv),
       el('div', { class: 'ladder', id: 'ladder', 'aria-label': '행성 단계' })));
     renderLadder();
-    setupPhysics();
     fit(); addEventListener('resize', fit);
     bindInput();
     if (!DC.store.get('seen_merge', false)) { box.querySelector('.boardwrap').append(el('div', { class: 'coach', id: 'coach' }, el('div', { class: 'hand' }, DI.ic('tap')))); placeCoach(); }
-    // 3차: 판이 빈 채로 시작하지 않게 — 시작하자마자 작은 행성 13개가 위에서 차례로 쏟아져 바닥 두 줄을 채운다(첫 1.5초 안에 판 아래 약 3분의 1이 찬다).
-    // 이웃끼리는 다른 단계라 저절로 합쳐지지 않는다(아랫줄 이웃·윗줄 이웃·위아래로 닿는 둘 모두). 1단계는 첫 손 행성과 같아 바로 합칠 자리, 그 곁 2단계·3단계는 이어 합쳐질 자리.
-    const PILE = [[0, 33], [3, 89], [2, 155], [1, 207], [0, 249], [3, 304], [0, 358], // 아랫줄: 지름 합 361 ≤ 판 안쪽 폭 372
-      [2, 61], [1, 122], [0, 181], [3, 228], [1, 276], [2, 331]];                     // 윗줄: 아랫줄 두 행성 사이 골에 앉는다
-    PILE.forEach(([tier, x], i) => setTimeout(() => { if (!st || st.over || cv !== $('#board')) return; const b = addPlanet(tier, x, st.dz + 24 + (i % 2) * 18); M.Body.setVelocity(b, { x: 0, y: 7 }); b.plugin.pre = true; }, 60 + i * 70 + (i >= 7 ? 180 : 0)));
     updHud();
     let last = performance.now(), acc = 0;
     const loop = (t) => {
@@ -315,7 +275,7 @@
     world = engine.world; bodies = []; parts = []; rings = []; pops = []; ghosts = []; flashes = []; sparks = [];
     const opt = { isStatic: true, friction: 0.4, restitution: 0.1 };
     M.Composite.add(world, [
-      M.Bodies.rectangle(W / 2, H + 40 - 2, W + 200, 80, opt),
+      (floorBody = M.Bodies.rectangle(W / 2, H + 40 - 2, W + 200, 80, opt)),
       M.Bodies.rectangle(-40 + WALL, H / 2, 80, H * 3, opt),
       M.Bodies.rectangle(W + 40 - WALL, H / 2, 80, H * 3, opt),
     ]);
@@ -324,7 +284,7 @@
         const a = pr.bodyA, b = pr.bodyB, ta = a.plugin.tier, tb = b.plugin.tier;
         // 부딪힘 손맛: 처음 닿을 때 찌그러짐 + 크기에 맞는 쿵
         const v = Math.hypot(a.velocity.x - b.velocity.x, a.velocity.y - b.velocity.y);
-        for (const o of [a, b]) if (o.plugin.tier !== undefined && (!o.plugin.landed || v > 4)) { o.plugin.landed = true; if (v > 1.2) { o.plugin.sq = Math.min(1, v / 7); SND.land(TIERS[o.plugin.tier].r, v); } }
+        for (const o of [a, b]) if (o.plugin.tier !== undefined && (!o.plugin.landed || v > 4)) { const first = !o.plugin.landed; o.plugin.landed = true; if (v > 1.2) { if (first && o.plugin.dropped) o.plugin.sq = Math.min(1, v / 7); SND.land(TIERS[o.plugin.tier].r, v); } } // 5차 5회: 찌그러짐은 떨어뜨린 행성이 처음 닿을 때만(검수 5회: 큰 합치기에 밀린 이웃이 타원으로 찌그러져 버그처럼 보임)
         if (ta === undefined || tb === undefined) continue;
         if (ta !== tb || a.plugin.gone || b.plugin.gone || st.over) continue;
         a.plugin.gone = b.plugin.gone = true;
@@ -335,25 +295,31 @@
   function addPlanet(tier, x, y, born = 0) {
     const t = TIERS[tier];
     const body = M.Bodies.circle(x, y, t.r, { restitution: 0.14, friction: 0.12, frictionStatic: 0.4, frictionAir: 0.004, density: 0.0012 + tier * 0.0002 });
-    body.plugin = { tier, born: performance.now() + born, pop: 1, sq: 0, landed: false };
+    body.plugin = { tier, born: NOW() + born, pop: 1, sq: 0, landed: false };
     M.Composite.add(world, body); bodies.push(body);
     return body;
   }
 
   // 실제 시간으로 흐르는 것(시간·연출)
+  function timers() {
+    const t = NOW();
+    while (st.pileQ && st.pileQ.length && t >= st.pileQ[0].at) { const p = st.pileQ.shift(); const b = addPlanet(p.tier, p.x, DANGER + 24 + (p.i % 2) * 18); M.Body.setVelocity(b, { x: 0, y: 7 }); b.plugin.pre = true; }
+    if (!st.canDrop && st.readyAt && t >= st.readyAt) { st.readyAt = 0; st.canDrop = true; st.holdPop = 0; st.x = clampX(st.x); }
+  }
   function frame(dt) {
+    if (!st.over) timers();
     if (st.over) {
-      if (!st.declared && performance.now() - st.endT > STOP_MS) { st.declared = true; DC.sfx('die'); DC.buzz(120); }
+      if (!st.declared && NOW() - st.endT > STOP_MS) { st.declared = true; DC.sfx('die'); DC.buzz(120); }
       tickFx(dt); return;
     }
     if (st.started) {
       st.el += dt;
       const sec = Math.floor(st.el / 1000);
       if (sec !== st.lastSec) { st.lastSec = sec; updTime(); }
-      // 3차: 시계로 끝내지 않는다. LINE_T0가 지나면 빨간 선이 내려오며 판을 조인다(큰 합치기는 선을 밀어 올림)
-      if (!st.lineSoon && st.el > LINE_T0 - 3000) { st.lineSoon = true; say('3초 뒤 빨간 선이 내려와!', '#ff8a92'); }
-      if (!st.lineOn && st.el > LINE_T0) { st.lineOn = true; SND.lineDown(); DC.buzz([15, 40, 15]); say('빨간 선이 내려온다 · 합쳐서 버텨!', '#ff8a92'); updTime(); }
-      if (st.lineOn && st.freeze <= 0) st.dzT = Math.min(LINE_MAX, st.dzT + LINE_V * dt / 1000);
+      // 3차: 시계로 끝내지 않는다. T0가 지나면 빨간 선이 내려오며 판을 조인다 · 5차: 점점 빨라지고, 모든 합치기가 밀어 올린다
+      if (!st.lineSoon && st.el > TUNE.T0 - 3000) { st.lineSoon = true; say('3초 뒤 빨간 선이 내려오기 시작해!', '#ff8a92'); }
+      if (!st.lineOn && st.el > TUNE.T0) { st.lineOn = true; SND.lineDown(); DC.buzz([15, 40, 15]); say('이제 놓을 때마다 선이 내려와 · 합치면 올라가!', '#ff8a92'); updTime(); }
+      if (st.lineOn && st.freeze <= 0) st.dzT = Math.min(TUNE.MAX, st.dzT + (TUNE.V0 + TUNE.ACC * (st.el - TUNE.T0) / 1000) * dt / 1000);
       st.dz += (st.dzT - st.dz) * Math.min(1, dt / 160);
     }
     st.intro = st.started ? Math.max(0, st.intro - dt / 350) : 1;
@@ -379,7 +345,7 @@
 
   // 3차: 불꽃·즙은 판 벽·바닥에 닿으면 잘려 사라지는 대신 튕겨 나온다(바닥·왼쪽 벽 합치기에서 연출이 잘린다는 지적)
   function bounce(p) {
-    const lo = BX + 4, hi = BX + BW - 4, fl = H - 4;
+    const lo = BX + 4, hi = BX + BW - 4, fl = FY() - 4;
     if (p.x < lo) { p.x = lo + (lo - p.x); p.vx = Math.abs(p.vx) * 0.6; p.px = p.x; }
     else if (p.x > hi) { p.x = hi - (p.x - hi); p.vx = -Math.abs(p.vx) * 0.6; p.px = p.x; }
     if (p.y > fl) { p.y = fl - (p.y - fl); p.vy = -Math.abs(p.vy) * 0.45; p.vx *= 0.8; p.py = p.y; }
@@ -388,12 +354,13 @@
   function say(txt, col = '#ffe066', life = 2200) { st.msg = { txt, col, t: 0, life }; }
 
   function step(dt) {
+    if (floorBody) M.Body.setPosition(floorBody, { x: W / 2, y: FY() + 40 - 2 }); // 5차 3회: 올라온 바닥
     M.Engine.update(engine, dt);
     if (st.pending && st.pending.length) { for (const [a, b] of st.pending) merge(a, b); st.pending = []; }
     if (st.comboT > 0) { st.comboT -= dt; if (st.comboT <= 0) st.combo = 0; }
     // 끝 판정: 떨어진 지 1초 지난 행성이 빨간 선 위에 2초 머물면 끝(그동안 초읽기)
-    const now = performance.now();
-    st.offenders = bodies.filter(b => now - b.plugin.born > 1000 && b.position.y - TIERS[b.plugin.tier].r < st.dz && Math.abs(b.velocity.y) < 1.2);
+    const now = NOW();
+    st.offenders = bodies.filter(b => now - b.plugin.born > 1000 && b.position.y - TIERS[b.plugin.tier].r < LY() && Math.abs(b.velocity.y) < 1.2);
     st.overT = st.offenders.length ? st.overT + dt : Math.max(0, st.overT - dt * 2);
     if (st.offenders.length) { st.warnT -= dt; if (st.warnT <= 0) { SND.warn(); DC.buzz(10); st.warnT = 420; } } else st.warnT = 0;
     if (st.overT > GRACE && !st.over) finish('over');
@@ -413,7 +380,7 @@
       nt = tier; gain = 500 * st.combo; st.galaxies++;
       burst(x, y, '#ffe17a', 90, 9); burst(x, y, '#ffffff', 40, 6); flashes.push({ x, y, r: 90, t: 0, life: 520, tier: 0 });
       rings.push({ x, y, r0: 20, r1: 260, t: 0, life: 900, col: '#ffe17a', w: 10 });
-      st.shake = 1.6; st.flash = 0.7; st.freeze = 120; st.slow = 900; liftLine(70);
+      st.shake = 1.6; st.flash = 0.7; st.freeze = 120; st.slow = 900; liftLine(70, true);
       DC.sfx('win'); SND.boom(); DC.buzz([30, 50, 30]);
       st.banner = { tier, title: '새 은하 탄생!', sub: `+${gain}`, t: 0, life: 1800 };
       DC.endings.add('merge', 'galaxy', '새 은하 탄생'); DC.rewards.add('badge-galaxy', '은하 배지', '행성 합치기');
@@ -452,12 +419,12 @@
         drops(x, y, t.col, 6 + nt, 1.9 + nt * 0.25, R * 0.9, 190);
         rings.push({ x, y, r0: R * 1.0, r1: R * 1.45 + 4, t: 0, life: 190, col: t.col, w: 2.5 });
       }
-      if (nt >= 8) liftLine(45); else if (nt >= 6) liftLine(24); else if (nt >= 5) liftLine(10);
+      liftLine(lift(nt, st.combo), nt >= 6);
       SND.merge(nt, st.combo); DC.buzz(nt >= 5 ? 30 : 12);
       if (nt > st.maxTier) {
         const first = DC.endings.add('merge', 'tier' + nt, t.name);
         st.maxTier = nt; renderLadder(nt);
-        if (first && nt > SPAWN_MAX) { st.banner = { tier: nt, title: t.name, sub: '새 행성 발견', t: 0, life: 1600 }; DC.sfx('unlock'); }
+        if (first && nt > SPAWN_MAX) { st.banner = { tier: nt, title: t.name, sub: '새 행성 발견', t: 0, life: 1600 }; st.msg = null; DC.sfx('unlock'); } // 5차 3회: 띠가 뜨면 알림 글은 지운다(겹침)
       }
       // 3차: 「이렇게 합쳐져!」는 판 가운데가 아니라 위쪽 알림 띠에
       if (!st.firstMerge && st.started) { st.firstMerge = true; if (st.drops <= 3 && !DC.store.get('seen_merge2', false)) { DC.store.set('seen_merge2', true); say('이렇게 합쳐져! 더 크게 키워 봐'); } }
@@ -469,12 +436,17 @@
     // 4차: 점수 팝업은 늘 하나 — 앞 팝업을 지우고 연쇄 합계(점수판이 이번 연쇄로 오른 만큼)를 새 자리에 띄운다. 콤보 글자도 하나만
     pops = pops.filter(p => !p.kind);
     const chain = st.score - (st.chainBase || 0);
-    pops.push({ kind: 'score', x, y: py, txt: `+${chain.toLocaleString()}`, val: chain, t: 0, life: 900, size: 20 + Math.min(14, nt * 1.6) + Math.min(6, (st.combo - 1) * 2), col: '#ffffff', glow: gcol, fit: true });
+    pops.push({ kind: 'score', x, y: py, txt: `+${chain.toLocaleString()}`, val: chain, t: 0, life: 900, size: 24 + Math.min(14, nt * 1.6) + Math.min(6, (st.combo - 1) * 2), col: '#ffffff', glow: gcol, fit: true });
     if (st.combo > 1) pops.push({ kind: 'combo', x, y: py - 28 - Math.min(9, st.combo * 1.6), txt: `${st.combo}콤보`, t: 0, life: 900, size: 17 + Math.min(9, st.combo * 1.6), col: '#ffe066', glow: '#ff9d2e', fit: true });
     updHud(true);
   }
   // 3차: 큰 합치기 보상 = 내려온 빨간 선을 밀어 올림(예전의 「+초」 보상 자리). 선이 아직 안 내려왔으면 아무것도 안 한다
-  function liftLine(u) { if (!st.started || st.over || st.dzT <= DANGER + 1) return; st.dzT = Math.max(DANGER, st.dzT - u); say('빨간 선이 올라갔어!', '#9fe8b4', 1400); SND.bonus(); }
+  // 5차: 모든 합치기가 선을 조금씩 밀어 올린다(큰 단계·콤보일수록 많이). 올라간 만큼 선 위에 초록 ▲가 잠깐 흐르고, 큰 것(6단계~)만 알림·소리
+  function liftLine(u, loud) {
+    if (!st.started || st.over || !st.lineOn || st.dzT <= DANGER + TUNE.BASE + 0.5) return;
+    const before = st.dzT; st.dzT = Math.max(DANGER + TUNE.BASE, st.dzT - u); /* 5차 4회: 처음 바닥판 두께(BASE) 아래로는 안 내려간다 */ st.lifted = (st.lifted || 0) + (before - st.dzT); st.liftT = NOW();
+    if (loud) { if (!st.banner) say('빨간 선이 올라갔어!', '#9fe8b4', 1400); SND.bonus(); } // 5차 3회: 「새 행성 발견」 띠와 같은 때 글자가 겹쳐 쌓여(검수) 띠가 있으면 알림 글은 생략
+  }
   function burst(x, y, col, n, sp, r0 = 0) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.283, s = (0.4 + Math.random()) * sp, ox = x + Math.cos(a) * r0, oy = y + Math.sin(a) * r0; parts.push({ x: ox, y: oy, px: ox, py: oy, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 1.2, life: 480 + Math.random() * 460, max: 940, col, w: 2 + Math.random() * 2.8, g: 0.13 }); } }
   // 4차: 작은 합치기의 즙 — 가장자리에서 짧게 튀고 life 안에 사라진다(불꽃 꼬리보다 짧은 방울)
   function drops(x, y, col, n, sp, r0, life) { for (let i = 0; i < n; i++) { const a = (i / n) * 6.283 + Math.random() * 0.5, s = (0.7 + Math.random() * 0.5) * sp, ox = x + Math.cos(a) * r0, oy = y + Math.sin(a) * r0; parts.push({ x: ox, y: oy, px: ox, py: oy, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 0.6, life: life * (0.75 + Math.random() * 0.25), max: life, col, w: 2.2 + Math.random() * 1.2, g: 0.1, drop: true }); } }
@@ -505,14 +477,16 @@
   function placeCoach() { const c = $('#coach'); if (!c || !cv) return; c.style.inset = 'auto 0 auto'; c.style.top = Math.round((holdY() + EX) * scale - 26) + 'px'; }
   function drop() {
     if (!st.canDrop || st.over) return;
-    if (!st.started) { st.started = true; st.t0 = performance.now(); }
+    if (!st.started) { st.started = true; st.t0 = NOW(); }
     st.canDrop = false; st.drops++; hideCoach();
+    st.combo = 0; st.comboT = 0; // 5차: 콤보는 「한 번 떨어뜨려 이어진 연쇄」만 — 예전엔 1초 안 아무 합치기나 이어져 막 빨리 던지면(0.5초 간격) 점수가 거의 두 배였다(모의 실험)
+    if (st.lineOn) { st.dzT = Math.min(TUNE.MAX, st.dzT + TUNE.D); st.pushT = NOW(); } // 5차: 떨어뜨릴 때마다 선이 D만큼 내려온다(빨리 막 던져도 이득이 없게)
     st.x = clampX(st.x);
-    const b = addPlanet(st.cur, st.x, holdY()); M.Body.setVelocity(b, { x: 0, y: 5 }); M.Body.setAngle(b, st.holdAng || 0); // 3차: 처음 속도 3 → 5
+    const b = addPlanet(st.cur, st.x, holdY()); b.plugin.dropped = true; M.Body.setVelocity(b, { x: 0, y: 5 }); M.Body.setAngle(b, st.holdAng || 0); // 3차: 처음 속도 3 → 5
     SND.drop(st.cur); DC.buzz(8);
     st.cur = st.next; st.next = st.spawn(st.k++);
     updHud();
-    setTimeout(() => { if (!st.over) { st.canDrop = true; st.holdPop = 0; st.x = clampX(st.x); } }, 420);
+    st.readyAt = NOW() + 420; // 5차: setTimeout 대신 시계로(모의 실험이 같은 코드를 쓰게)
   }
 
   // ── 그리기 ──
@@ -522,12 +496,14 @@
     const lad = $('#ladder'), ladH = lad ? lad.offsetHeight + 12 : 40; // 판 아래 사다리 자리
     const padB = parseFloat(getComputedStyle($('#stage')).paddingBottom) || 0;
     // 3차: 판 위쪽(떨어뜨리는 자리)을 판 좌표로 최소 80 남긴다 — 안내 띠가 빨간 선 아래(쌓이는 자리)로 내려오지 않게(컴퓨터 판이 그만큼 조금 좁아진다)
-    const room = innerHeight - (cv.getBoundingClientRect().top + scrollY) - ladH - padB - 4; if (room > 300) cw = Math.min(cw, room * W / (H + 80));
+    const mt0 = parseFloat(wrap.style.marginTop) || 0;
+    const room = innerHeight - (cv.getBoundingClientRect().top - mt0 + scrollY) - ladH - padB - 4; if (room > 300) cw = Math.min(cw, room * W / (H + 80));
     scale = cw / W; dpr = Math.min(2, devicePixelRatio || 1);
-    EX = room > 300 ? Math.max(0, Math.min(110, Math.floor(room / scale - H))) : 0;
+    EX = room > 300 ? Math.max(0, Math.min(110, Math.floor(room / scale - H))) : 0; // 총괄 11-29: 상한 30 → 110 (비교 검수 「판이 작고 위아래가 빈다」)
     BY = 6 - EX; BH = H - 8 + EX;
     const LH = H + EX;
     cv.style.width = cw + 'px'; cv.style.height = (LH * scale) + 'px';
+    { const left = room - LH * scale; wrap.style.marginTop = room > 300 && left > 8 ? Math.round(left / 2) + 'px' : ''; } // 남는 세로 공간은 판 위아래로 나눠 판을 가운데로
     cv.width = Math.round(W * scale * dpr); cv.height = Math.round(LH * scale * dpr);
     cx = cv.getContext('2d'); cx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, EX * scale * dpr);
     buildBg(); placeCoach();
@@ -536,7 +512,7 @@
   function buildBg() {
     bgc = mk(cv.width, cv.height); const x = bgc.getContext('2d'); x.setTransform(scale * dpr, 0, 0, scale * dpr, 0, EX * scale * dpr);
     const rr = (px, py, w, h, r) => { x.beginPath(); x.moveTo(px + r, py); x.arcTo(px + w, py, px + w, py + h, r); x.arcTo(px + w, py + h, px, py + h, r); x.arcTo(px, py + h, px, py, r); x.arcTo(px, py, px + w, py, r); x.closePath(); };
-    x.save(); rr(BX, BY, BW, BH, 14); x.clip();
+    x.save(); rr(BX, BY, BW, BH, 6); x.clip();
     let g = x.createLinearGradient(0, BY, 0, H); g.addColorStop(0, '#0b0d26'); g.addColorStop(0.6, '#080a1c'); g.addColorStop(1, '#0d0f24'); x.fillStyle = g; x.fillRect(BX, BY, BW, BH);
     const neb = (px, py, r, c) => { const gg = x.createRadialGradient(px, py, 0, px, py, r); gg.addColorStop(0, c); gg.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = gg; x.fillRect(BX, BY, BW, BH); };
     neb(90, 230, 240, 'rgba(118,74,196,.22)'); neb(330, 470, 260, 'rgba(46,104,214,.18)'); neb(250, 90, 180, 'rgba(196,74,140,.10)');
@@ -550,7 +526,7 @@
     // 유리벽 반사(왼쪽 안쪽 세로 빛 한 줄)
     g = x.createLinearGradient(BX, 0, BX + 26, 0); g.addColorStop(0, 'rgba(255,255,255,.07)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(BX, BY, 26, BH);
     x.restore();
-    rr(BX + 0.5, BY + 0.5, BW - 1, BH - 1, 14); x.strokeStyle = 'rgba(240,240,250,.18)'; x.lineWidth = 1.2; x.stroke();
+    rr(BX + 0.5, BY + 0.5, BW - 1, BH - 1, 6); x.strokeStyle = 'rgba(240,240,250,.18)'; x.lineWidth = 1.2; x.stroke();
     x.strokeStyle = 'rgba(160,175,255,.35)'; x.lineWidth = 1.5; x.beginPath(); x.moveTo(BX + 14, H - 2.5); x.lineTo(BX + BW - 14, H - 2.5); x.stroke();
   }
   // 둥근 사각 경로(roundRect가 없는 옛 사파리에서도 돌게 arcTo로)
@@ -560,18 +536,20 @@
   const backOut = (u) => { const c = 1.9; return 1 + (c + 1) * Math.pow(u - 1, 3) + c * Math.pow(u - 1, 2); };
   // 떨어질 자리: 아래에 있는 행성 위 / 바닥
   function landingY(x, r) {
-    let y = H - r - 2;
+    let y = FY() - r - 2;
     for (const b of bodies) { const rb = TIERS[b.plugin.tier].r * popScale(b), R = r + rb, dx = Math.abs(b.position.x - x); if (dx < R) { const cy = b.position.y - Math.sqrt(R * R - dx * dx); if (cy < y) y = cy; } }
     return Math.max(holdY(), y);
   }
   // 3차: 안내판·알림 띠가 놓일 자리 = 손에 든 행성 아래 ~ 빨간 선 위(떨어뜨리는 자리). 판에 쌓이는 자리를 가리지 않는다.
   // 높이 h가 모자라면(컴퓨터처럼 위쪽이 낮은 판) 위에서부터 놓는다
-  function zone(h) { const top = holdY() + TIERS[st.cur].r * 1.1 + 6, bot = st.dz - 20; return Math.max(top, Math.min((top + bot) / 2 - h / 2, bot - h)); }
+  // 5차: 선이 내려오면 가운데 자리가 판 한가운데(떨어지는 길)로 내려와 조준을 가렸다(검수) — 이제 늘 손에 든 행성 바로 아래 위쪽 띠
+  function zone(h) { const top = holdY() + TIERS[st.cur].r * 1.1 + 6, bot = LY() - 20; return Math.max(top, Math.min(top + 4, bot - h)); }
   // 3차: 행성 둘레 단계 색 대기 빛 — 작은 크기에서도 흰 달·회색 쇼핑몰이 색으로 갈린다(모양 행성은 모양이 달라 빛 무리만)
   function rim(c, tier, x, y, r, sx = 1, sy = 1, a = 1) {
-    const t = TIERS[tier]; if (t.cut) return;
+    // 5차: 새 3D 세트는 단계마다 모양·색이 달라 색 테를 그리지 않는다(도넛·손·양처럼 둥글지 않은 행성에 원 테가 어색했다). 빛 무리(GLOW)는 그대로
+    if (!RIM) return; const t = TIERS[tier];
     // 4차: 작은 단계(0~2)는 테를 얇고 옅게 — 검수: 진한 색 테두리가 스티커처럼 보였다. 3단계는 중간, 4단계부터 예전 굵기
-    const th = tier <= 2 ? 0.45 : tier === 3 ? 0.7 : 1;
+    const th = 0.5;
     c.save(); c.strokeStyle = t.col;
     c.globalAlpha = 0.3 * a * th; c.lineWidth = Math.max(3 * th, r * 0.15 * th); c.beginPath(); c.ellipse(x, y, r * sx + c.lineWidth * 0.35, r * sy + c.lineWidth * 0.35, 0, 0, 6.283); c.stroke();
     c.globalAlpha = (th < 1 ? 0.5 : 0.85) * a; c.lineWidth = th < 1 ? Math.max(0.9, r * 0.035) : Math.max(1.4, r * 0.05); c.beginPath(); c.ellipse(x, y, r * sx + 0.3, r * sy + 0.3, 0, 0, 6.283); c.stroke();
@@ -582,13 +560,15 @@
     const sh = RM ? 0 : st.shake, sx = sh ? (Math.random() - 0.5) * 10 * sh : 0, sy = sh ? (Math.random() - 0.5) * 10 * sh : 0;
     cx.save(); cx.clearRect(-30, -30 - EX, W + 60, H + 60 + EX); cx.translate(sx, sy);
     cx.drawImage(bgc, 0, -EX, W, H + EX);
-    const DZ = st.dz, live = !st.over;
+    // 5차 5회: 선이 내려온 만큼 선 위(떨어뜨리는 자리)를 아주 옅게 어둡게 — 쌓을 수 있는 칸이 줄었다는 것만 보이게(빗금·두꺼운 판 없음)
+    if (st.dz > DANGER + 1) { cx.save(); cx.fillStyle = 'rgba(0,0,8,0.18)'; cx.fillRect(BX, DANGER, BW, st.dz - DANGER); cx.restore(); }
+    const DZ = LY(), live = !st.over;
     // 위험: 선에 가까울수록 선이 진해지고, 넘으면 위쪽이 붉게 숨 쉬며 초읽기. 3차: 끝난 뒤(멈춤·선언)에는 붉은 번짐을 끈다 — 선언 글자만 읽히게
     const warn = live ? Math.min(1, st.overT / GRACE) : 0, pulse = 0.5 + 0.5 * Math.sin(now / 90);
     let near = 0; for (const b of bodies) if (now - b.plugin.born > 600) near = Math.max(near, Math.min(1, (DZ + 110 - (b.position.y - TIERS[b.plugin.tier].r)) / 110));
     const alarm = live ? Math.max(warn, near > 0.55 ? (near - 0.55) / 0.45 : 0) : 0;
     st.near = near;
-    const falling = live && st.lineOn && st.dzT > DANGER + 1;
+    const falling = live && st.lineOn && st.dzT > DANGER + TUNE.BASE + 1;
     // 4차: 붉음은 선 근처 띠(선 위 30 · 아래 22)만 — 검수: 위험 순간 판 전체가 붉게 물들어 행성이 안 보였다
     { const ra = 0.05 + (falling ? 0.07 : 0) + 0.22 * alarm + (warn > 0 ? 0.22 * warn + 0.14 * pulse * warn : 0);
       let g = cx.createLinearGradient(0, DZ - 30, 0, DZ); g.addColorStop(0, 'rgba(255,50,60,0)'); g.addColorStop(1, `rgba(255,50,60,${ra})`); cx.fillStyle = g; cx.fillRect(BX, DZ - 30, BW, 30);
@@ -599,11 +579,20 @@
     cx.setLineDash(warn > 0 ? [] : [12, 8]); cx.lineDashOffset = (alarm > 0 || falling) && !RM ? -now / 25 : 0;
     cx.strokeStyle = `rgba(255,96,104,${la})`; cx.lineWidth = 2.2 + 1.6 * alarm + warn * 1.4 + (falling ? 0.8 : 0);
     cx.beginPath(); cx.moveTo(WALL + 2, DZ); cx.lineTo(W - WALL - 2, DZ); cx.stroke(); cx.setLineDash([]);
-    // 선이 내려오는 중: 선 아래로 작은 ▼ 셋이 흐른다
-    if (falling) { const o = RM ? 4 : (now / 40) % 12; cx.fillStyle = 'rgba(255,110,120,.75)'; for (const ax of [W * 0.25, W * 0.5, W * 0.75]) { const ay = DZ + 6 + o; cx.globalAlpha = 1 - o / 12; cx.beginPath(); cx.moveTo(ax - 6, ay); cx.lineTo(ax + 6, ay); cx.lineTo(ax, ay + 6); cx.closePath(); cx.fill(); } cx.globalAlpha = 1; }
+    // 5차 5회: 놓아서 선이 내려오면 선 아래 붉은 ▼ 셋(0.45초) · 합쳐서 선이 올라가면 선 위 초록 ▲ 셋(0.45초) — 줄다리기를 눈으로
+    if (falling && st.pushT && now - st.pushT < 450) {
+      const o = RM ? 4 : (now - st.pushT) / 450 * 12; cx.fillStyle = 'rgba(255,110,120,.8)';
+      for (const ax of [W * 0.12, W * 0.27, W * 0.42]) { const ay = DZ + 6 + o; cx.globalAlpha = 1 - o / 12; cx.beginPath(); cx.moveTo(ax - 6, ay); cx.lineTo(ax + 6, ay); cx.lineTo(ax, ay + 6); cx.closePath(); cx.fill(); }
+      cx.globalAlpha = 1;
+    }
+    if (live && st.liftT && now - st.liftT < 450) {
+      const u = (now - st.liftT) / 450; cx.fillStyle = '#9fe8b4';
+      for (const ax of [W * 0.12, W * 0.27, W * 0.42]) { const ay = DZ - 8 - u * 14; cx.globalAlpha = 1 - u; cx.beginPath(); cx.moveTo(ax - 6, ay); cx.lineTo(ax + 6, ay); cx.lineTo(ax, ay - 7); cx.closePath(); cx.fill(); }
+      cx.globalAlpha = 1;
+    }
     if (live && warn <= 0) { // 4차: 초읽기 중에는 판 위 선 글씨를 끈다(점수줄이 말한다 · 행성에 반쯤 가려 「다」만 보였다)
       cx.textAlign = 'right'; cx.textBaseline = 'bottom'; cx.font = '700 12px "Pretendard Variable", Pretendard, sans-serif'; cx.fillStyle = `rgba(255,120,128,${0.75 + 0.25 * alarm})`;
-      cx.fillText(st.offenders && st.offenders.length ? '넘칠 것 같아' : falling ? '선이 내려온다' : alarm > 0 ? '꽉 차 간다' : '이 선 넘으면 끝', W - WALL - 8, DZ - 5);
+      cx.fillText(st.offenders && st.offenders.length ? '넘칠 것 같아' : alarm > 0 ? '꽉 차 간다' : '이 선 넘으면 끝', W - WALL - 8, DZ - 5);
     }
     cx.restore();
     // 조준선 + 떨어질 자리(안내판은 이 위에 불투명하게 덮어 글자를 가로지르지 않는다)
@@ -625,16 +614,16 @@
     // 들고 있는 것과 같은 행성은 은은하게 빛남(어디에 놓으면 합쳐지는지)
     if (holding) for (const b of bodies) if (b.plugin.tier === st.cur && now - b.plugin.born > 300) { const r = TIERS[b.plugin.tier].r; cx.globalAlpha = 0.25 + 0.2 * Math.sin(now / 220); cx.drawImage(GLOW[b.plugin.tier], b.position.x - r * 1.45, b.position.y - r * 1.45, r * 2.9, r * 2.9); cx.globalAlpha = 1; }
     // 3차: 번쩍·고리·연기는 행성 「뒤」에 — 합쳐진 새 행성이 늘 맨 위에 보인다. 빛 무리는 판 끝까지의 거리만큼만 퍼져 벽·바닥에서 잘린 가장자리가 안 생긴다
-    cx.save(); rpath(cx, BX, BY, BW, BH, 14); cx.clip(); cx.globalCompositeOperation = 'lighter';
+    cx.save(); rpath(cx, BX, BY, BW, BH, 6); cx.clip(); cx.globalCompositeOperation = 'lighter';
     for (const f of flashes) {
-      const u = f.t / f.life, a = Math.pow(1 - u, 1.4), r = f.r * (0.9 + 1.3 * easeOut(u)), dE = Math.min(f.x - BX, BX + BW - f.x, H - f.y) + 2;
+      const u = f.t / f.life, a = Math.pow(1 - u, 1.4), r = f.r * (0.9 + 1.3 * easeOut(u)), dE = Math.min(f.x - BX, BX + BW - f.x, FY() - f.y) + 2;
       const gr = Math.max(f.r * 1.05, Math.min(r * 1.6, dE * 1.25));
       cx.globalAlpha = a * (f.soft ? 0.6 : 1); cx.drawImage(GLOW[f.tier], f.x - gr, f.y - gr, gr * 2, gr * 2); if (f.soft) continue; cx.globalAlpha = a * 0.8; const wr = Math.min(gr, r * (0.9 - 0.4 * u)); cx.drawImage(WGLOW, f.x - wr, f.y - wr, wr * 2, wr * 2);
     }
     // 고리: 벽·바닥에 닿으면 안쪽으로 밀려 늘 온전한 원(잘린 반원 없음) · 행성 뒤라 합쳐진 결과를 가로지르지 않는다
     for (const r of rings) {
       if (r.t < 0) continue; const u = r.t / r.life, e = easeOut(u), lw = r.w * (1 - u) + 0.5, m = 4 + lw / 2;
-      const rr = Math.min(r.r0 + (r.r1 - r.r0) * e, BW / 2 - m), x = Math.max(BX + m + rr, Math.min(BX + BW - m - rr, r.x)), y = Math.max(BY + m + rr, Math.min(H - m - rr, r.y));
+      const rr = Math.min(r.r0 + (r.r1 - r.r0) * e, BW / 2 - m), x = Math.max(BX + m + rr, Math.min(BX + BW - m - rr, r.x)), y = Math.max(BY + m + rr, Math.min(FY() - m - rr, r.y));
       cx.globalAlpha = (1 - u) * 0.9; cx.strokeStyle = r.col; cx.lineWidth = lw; cx.beginPath(); cx.arc(x, y, rr, 0, 6.283); cx.stroke();
     }
     for (const p of parts) if (p.puff) { const a = Math.min(1, p.life / 300), pr = p.puff * (1.6 - p.life / p.max); cx.globalAlpha = a * 0.35; cx.drawImage(GLOW[p.gi], p.x - pr, p.y - pr, pr * 2, pr * 2); }
@@ -662,7 +651,7 @@
       if (st.down && !st.downSeen) { st.downSeen = true; lat.push(Math.round(now - st.downT)); if (lat.length > 50) lat.shift(); }
     }
     // 불꽃·즙(더하기 합성) — 새 행성 위에. 3차: 새 행성 가장자리에서 출발하고 벽·바닥에서 튕긴다
-    cx.save(); rpath(cx, BX, BY, BW, BH, 14); cx.clip(); cx.globalCompositeOperation = 'lighter';
+    cx.save(); rpath(cx, BX, BY, BW, BH, 6); cx.clip(); cx.globalCompositeOperation = 'lighter';
     for (const p of sparks) { const u = p.t / p.life, s = p.size * (u < 0.15 ? u / 0.15 : 1 - (u - 0.15) / 0.85 * 0.6); cx.globalAlpha = Math.min(1, (1 - u) * 1.6); cx.fillStyle = p.col; cx.save(); cx.translate(p.x, p.y); cx.rotate(p.rot); for (let j = 0; j < 2; j++) { cx.beginPath(); cx.moveTo(0, -s); cx.lineTo(s * 0.22, 0); cx.lineTo(0, s); cx.lineTo(-s * 0.22, 0); cx.closePath(); cx.fill(); cx.rotate(Math.PI / 2); } cx.restore(); }
     for (const p of parts) if (p.drop) { const u = 1 - p.life / p.max; cx.globalAlpha = Math.min(1, (1 - u) * 1.8); cx.fillStyle = p.col; cx.beginPath(); cx.arc(p.x, p.y, p.w * (1 - 0.5 * u), 0, 6.283); cx.fill(); }
     for (const p of parts) if (!p.puff && !p.drop) { cx.globalAlpha = Math.min(1, p.life / 300); cx.strokeStyle = p.col; cx.lineWidth = p.w; cx.lineCap = 'round'; cx.beginPath(); cx.moveTo(p.px - (p.x - p.px) * 1.5, p.py - (p.y - p.py) * 1.5); cx.lineTo(p.x, p.y); cx.stroke(); }
@@ -679,7 +668,7 @@
       const u = p.t / p.life, k = p.still ? 1 : backOut(Math.min(1, p.t / 220));
       cx.save(); cx.font = `800 ${p.size}px "Pretendard Variable", Pretendard, sans-serif`; cx.lineJoin = 'round';
       let x = p.x, y = p.y - (p.still ? 0 : 34 * easeOut(u));
-      if (p.fit) { const hw = cx.measureText(p.txt).width / 2 + 8; x = Math.max(BX + 6 + hw, Math.min(BX + BW - 6 - hw, x)); y = Math.max(BY + p.size, Math.min(H - p.size, y)); }
+      if (p.fit) { const hw = cx.measureText(p.txt).width / 2 + 8; x = Math.max(BX + 6 + hw, Math.min(BX + BW - 6 - hw, x)); y = Math.max(BY + p.size, Math.min(FY() - p.size, y)); }
       cx.globalAlpha = Math.min(1, (1 - u) * 3); cx.translate(x, y); cx.scale(k, k);
       if (p.glow) { cx.lineWidth = 10; cx.strokeStyle = hexA(p.glow, 0.55); cx.strokeText(p.txt, 0, 0); }
       cx.lineWidth = 5; cx.strokeStyle = 'rgba(5,6,16,.9)'; cx.strokeText(p.txt, 0, 0); cx.fillStyle = p.col; cx.fillText(p.txt, 0, 0); cx.restore();
@@ -693,17 +682,18 @@
   const popScale = (b) => 0.72 + 0.28 * elastic(1 - b.plugin.pop);
   // 3차: 시작 안내 — 판 가운데 큰 카드 대신, 손에 든 행성 아래 떨어뜨리는 자리에 한 줄 판. 왼쪽 작은 그림에서 두 행성이 닿아 한 단계 큰 행성이 된다(2.4초 반복)
   function drawIntro(a, now) {
-    const ph = 58, px = 28, pw = W - 56, py = zone(ph), cyy = py + ph / 2, ax = px + 44;
+    // 5차 5회(검수 5회 「안내 카드가 떨어뜨리는 자리를 가림 · 카드 속 행성이 손에 든 것과 다름」): 카드는 판 아래쪽(빈 바닥 위)에, 그림은 손에 든 행성 → 한 단계 큰 행성
+    const ph = 58, px = 28, pw = W - 56, py = FY() - ph - 22, cyy = py + ph / 2, ax = px + 44, t0 = st.cur, t1 = Math.min(9, st.cur + 1);
     cx.save(); cx.globalAlpha = a;
     cx.fillStyle = 'rgba(6,8,24,.95)'; rpath(cx, px, py, pw, ph, ph / 2); cx.fill(); cx.strokeStyle = 'rgba(255,224,102,.45)'; cx.lineWidth = 1.2; cx.stroke();
     const T = (now % 2400) / 2400, r0 = 11, r1 = 16;
-    if (T < 0.42) { const u = easeOut(T / 0.42), d = 26 - (26 - r0) * u; drawPlanet(cx, 1, ax - d, cyy, r0, -u * 2.2); drawPlanet(cx, 1, ax + d, cyy, r0, u * 2.2); }
+    if (T < 0.42) { const u = easeOut(T / 0.42), d = 26 - (26 - r0) * u; drawPlanet(cx, t0, ax - d, cyy, r0, -u * 2.2); drawPlanet(cx, t0, ax + d, cyy, r0, u * 2.2); }
     else {
       const u = (T - 0.42) / 0.58, k = backOut(Math.min(1, u / 0.22));
       cx.save(); cx.globalCompositeOperation = 'lighter';
-      if (u < 0.45) { const fa = 1 - u / 0.45, fr = r1 * (1 + u * 1.2); cx.globalAlpha = a * fa; cx.drawImage(GLOW[2], ax - fr * 1.4, cyy - fr * 1.4, fr * 2.8, fr * 2.8); cx.strokeStyle = '#ffffff'; cx.lineWidth = 3 * fa + 0.5; cx.beginPath(); cx.arc(ax, cyy, r1 * (1 + u * 0.7), 0, 6.283); cx.stroke(); }
+      if (u < 0.45) { const fa = 1 - u / 0.45, fr = r1 * (1 + u * 1.2); cx.globalAlpha = a * fa; cx.drawImage(GLOW[t1], ax - fr * 1.4, cyy - fr * 1.4, fr * 2.8, fr * 2.8); cx.strokeStyle = '#ffffff'; cx.lineWidth = 3 * fa + 0.5; cx.beginPath(); cx.arc(ax, cyy, r1 * (1 + u * 0.7), 0, 6.283); cx.stroke(); }
       cx.restore(); cx.globalAlpha = a;
-      drawPlanet(cx, 2, ax, cyy, r1 * Math.max(0.01, k));
+      drawPlanet(cx, t1, ax, cyy, r1 * Math.max(0.01, k));
     }
     cx.textAlign = 'left'; cx.textBaseline = 'middle';
     cx.fillStyle = '#ffffff'; cx.font = '800 16px "Pretendard Variable", Pretendard, sans-serif'; cx.fillText('같은 행성끼리 닿으면 합쳐져', px + 88, cyy - 10);
@@ -724,14 +714,15 @@
     pill(tgt ? '같은 행성 위에 떨어뜨려 봐' : '하나 더 떨어뜨려 봐', '#ffe066');
     if (tgt) { const r = TIERS[tgt.plugin.tier].r, bob = Math.sin(now / 160) * 5, ay = tgt.position.y - r - 16 + bob; cx.save(); cx.fillStyle = '#ffe066'; cx.strokeStyle = 'rgba(6,8,24,.9)'; cx.lineWidth = 3; cx.beginPath(); cx.moveTo(tgt.position.x, ay + 10); cx.lineTo(tgt.position.x - 10, ay - 4); cx.lineTo(tgt.position.x + 10, ay - 4); cx.closePath(); cx.stroke(); cx.fill(); cx.restore(); }
   }
+  // 5차 4회: 「새 행성 발견」은 큰 행성 그림 대신 위쪽 알림 띠 자리의 알약(작은 행성 + 이름) — 검수 3회 「띠가 빨간 선 위에 떠 선을 넘은 것처럼 보임」
   function drawBanner(b) {
     const u = b.t / b.life, inK = backOut(Math.min(1, b.t / 260)), a = u > 0.8 ? (1 - u) / 0.2 : 1;
-    cx.save(); cx.globalAlpha = a; cx.translate(W / 2, 228); cx.scale(inK, inK);
-    const gr = 90; cx.globalAlpha = a * 0.5; cx.drawImage(GLOW[b.tier], -gr, -gr - 10, gr * 2, gr * 2); cx.globalAlpha = a;
-    drawPlanet(cx, b.tier, 0, -16, 30, b.t / 900);
-    cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.lineJoin = 'round';
-    cx.font = '600 13px "Pretendard Variable", Pretendard, sans-serif'; cx.lineWidth = 4; cx.strokeStyle = 'rgba(5,6,16,.85)'; cx.strokeText(b.sub, 0, 32); cx.fillStyle = 'rgba(240,240,250,.8)'; cx.fillText(b.sub, 0, 32);
-    cx.font = '800 26px "Pretendard Variable", Pretendard, sans-serif'; cx.lineWidth = 6; cx.strokeText(b.title, 0, 58); cx.fillStyle = '#ffffff'; cx.fillText(b.title, 0, 58);
+    cx.save(); cx.font = '800 16px "Pretendard Variable", Pretendard, sans-serif';
+    const txt = `새 행성 발견 · ${b.title}`, tw = cx.measureText(txt).width, h = 40, w = tw + 62, y = zone(h) + h / 2;
+    cx.globalAlpha = a; cx.translate(W / 2, y); cx.scale(inK, inK);
+    cx.fillStyle = 'rgba(6,8,24,.94)'; rpath(cx, -w / 2, -h / 2, w, h, h / 2); cx.fill(); cx.strokeStyle = hexA(TIERS[b.tier].col, 0.8); cx.lineWidth = 1.5; cx.stroke();
+    drawPlanet(cx, b.tier, -w / 2 + 24, 0, 14, b.t / 900);
+    cx.textAlign = 'left'; cx.textBaseline = 'middle'; cx.fillStyle = '#ffffff'; cx.fillText(txt, -w / 2 + 46, 1);
     cx.restore();
   }
   // 3차: 넘친 뒤 순서 — ① 멈춤(STOP_MS): 판은 그대로 서고, 마지막 합치기 연출만 마저 끝나며, 넘친 행성에 붉은 테 → ② 선언: 판을 어둡게 하고 받침판 위에 「넘쳤어!」
@@ -743,7 +734,7 @@
     // 4차: 받침판이 크기·진하기 모두 다 찬 첫 프레임을 적어 두고, 그 뒤 실제로 그린 프레임 수를 센다(결과 화면 전환 조건)
     if (t - STOP_MS >= POP_MS) { if (!st.fullT) st.fullT = now; st.fullFr = (st.fullFr || 0) + 1; }
     cx.fillStyle = `rgba(2,3,10,${0.58 * u})`; cx.fillRect(BX, BY, BW, BH);
-    const pw = 270, ph = 138, cyy = (BY + H) / 2 - 10;
+    const pw = 270, ph = 138, cyy = Math.max(BY + ph / 2 + 8, LY() - ph / 2 - 24); // 5차 6회: 받침판은 빨간 선 위 빈 곳에 — 선을 넘은 행성(붉은 테)이 가려지지 않게(검수 6회)
     cx.save(); cx.globalAlpha = Math.min(1, u * 1.5); cx.translate(W / 2, cyy); cx.scale(k, k);
     cx.fillStyle = 'rgba(14,6,14,.96)'; rpath(cx, -pw / 2, -ph / 2, pw, ph, 20); cx.fill();
     cx.strokeStyle = 'rgba(255,90,100,.85)'; cx.lineWidth = 2; cx.stroke();
@@ -774,14 +765,16 @@
     l.replaceChildren(...TIERS.map((t, i) => {
       const seen = i <= SPAWN_MAX || got.has('tier' + i) || (st && st.maxTier >= i);
       const cls = 'step' + (seen ? '' : ' unknown') + (st && i <= st.maxTier ? ' reached' : '') + (st && i === st.maxTier ? ' now' : '') + (fresh === i ? ' new' : '');
-      return el('span', { class: cls, title: seen ? t.name : '???' }, el('i', seen ? { 'data-tier': i, style: `background-image:url(${t.icon});--tc:${t.col}` } : { class: 'unknown-i' }), i < TIERS.length - 1 ? el('em', {}, '›') : null);
+      const sz = Math.round(17 + i * 1.5); /* 5차 5회: 칸이 단계마다 조금씩 커진다(검수 5회 「모든 칸이 같은 크기라 커지는 순서가 안 보임」) */
+      return el('span', { class: cls, title: seen ? t.name : '???' }, el('i', seen ? { 'data-tier': i, style: `background-image:url(${t.icon});--tc:${t.col};width:${sz}px;height:${sz}px` } : { class: 'unknown-i', style: `width:${sz}px;height:${sz}px` }), i < TIERS.length - 1 ? el('em', {}, '›') : null);
     }));
   }
 
   // ── 끝 ──
   function finish(reason) {
     if (st.over) return;
-    st.over = true; st.reason = reason; st.endT = performance.now(); st.down = false;
+    st.over = true; st.reason = reason; st.endT = NOW(); st.down = false;
+    if (!SIM) window.dwkT?.gameEnd('merge', { score: st.score, why: reason, at: `t${st.maxTier + 1}·d${st.drops}` }); // 방문 기록: 넘친 때 최고 단계·떨어뜨린 수
     // 3차: 넘친 순간엔 「뚝」 멈춤만(흔들림·붉은 번짐 없음). 「넘쳤어!」 소리·진동은 STOP_MS 뒤 선언 때(frame)
     st.shake = 0; st.flash = 0; st.banner = null; st.msg = null; SND.stop(); DC.buzz(30);
     removeEventListener('keydown', onKey); removeEventListener('resize', fit);
@@ -844,8 +837,60 @@
   }
   async function share() { await DC.shareCanvas($('#card'), `돈워너노우_행성합치기_${st.score}점.png`, `행성 합치기 ${st.score}점! 너는? @${D.site.handle}`); }
 
+  // ── 5차: 모의 실험(?sim=1) — window.__mergeSim(봇, 판 수, 떨어뜨리는 간격ms, 조정값) → 판마다 {버틴 초·점수·합친 수·떨어뜨린 수·최고 단계} ──
+  //   봇: random = 아무 데나 · smart = 같은 행성 위·옆(없으면 낮은 곳)에 놓음 · mid = 반반. 같은 물리·같은 선 규칙·같은 행성 순서 규칙(실제 코드 그대로)
+  function landHit(x, cr) {
+    let y = FY() - cr - 2, hit = null;
+    for (const b of bodies) { const rb = TIERS[b.plugin.tier].r, R = cr + rb, dx = Math.abs(b.position.x - x); if (dx < R) { const cy = b.position.y - Math.sqrt(R * R - dx * dx); if (cy < y) { y = cy; hit = b; } } }
+    return [y, hit];
+  }
+  function bestX(r) {
+    const cr = TIERS[st.cur].r; let best = W / 2, bs = -1e9;
+    for (let i = 0; i <= 32; i++) {
+      const x = clampX(WALL + cr + (W - 2 * WALL - 2 * cr) * i / 32), [y, hit] = landHit(x, cr);
+      let sc = y / H * 60;
+      if (hit) { const ht = hit.plugin.tier; if (ht === st.cur) sc += 100 + ht * 8; else if (ht < st.cur) sc -= 30 + (st.cur - ht) * 8; else if (ht === st.cur + 1) sc += 12; else sc -= (ht - st.cur) * 3; }
+      for (const b of bodies) if (b !== hit && b.plugin.tier === st.cur && Math.hypot(b.position.x - x, b.position.y - y) < cr + TIERS[b.plugin.tier].r + 8) sc += 50;
+      if (y - cr < LY() + 30) sc -= 80;
+      sc += r() * 4;
+      if (sc > bs) { bs = sc; best = x; }
+    }
+    return best;
+  }
+  const BOTS = {
+    random: (r) => { const cr = TIERS[st.cur].r; return WALL + cr + r() * (W - 2 * WALL - 2 * cr); },
+    smart: (r) => bestX(r),
+    mid: (r) => r() < 0.5 ? bestX(r) : BOTS.random(r),
+  };
+  function simGame(bot, seed, gap) {
+    SIM = true; VT = 1000;
+    const br = DC.rng(seed * 7919 + 17);
+    begin(false, DC.rng(seed));
+    let acc = 0, nextAt = VT + 600, n = 0;
+    while (!st.over && n++ < 60 * 600) {
+      VT += STEP; frame(STEP);
+      if (!st.over) { if (st.freeze > 0) st.freeze -= STEP; else { acc += STEP * (st.slow > 0 ? 0.35 : 1); while (acc >= STEP) { step(STEP); acc -= STEP; } } }
+      if (!st.over && st.canDrop && VT >= nextAt) { st.x = clampX(BOTS[bot](br)); drop(); nextAt = VT + gap * (0.75 + 0.5 * br()); }
+    }
+    return { bot, seed, sec: +(st.el / 1000).toFixed(1), score: st.score, merges: st.merges, drops: st.drops, top: st.maxTier + 1, gal: st.galaxies, lifted: Math.round(st.lifted || 0), dz: Math.round(st.dzT), m5: st.m5 || 0, over: st.over };
+  }
+  window.__mergeSim = async (bot, n = 20, gap = 900, tune = null, seed0 = 1) => {
+    const keep = { ...TUNE }; if (tune) Object.assign(TUNE, tune);
+    const out = [];
+    for (let i = 0; i < n; i++) { out.push(simGame(bot, seed0 + i, gap)); await new Promise((r) => setTimeout(r, 0)); }
+    Object.assign(TUNE, keep); SIM = false;
+    return out;
+  };
+  if (SIMN) {
+    // 저장·진동·소리·보상 기록을 이 페이지에서만 끈다(모의 실험이 내 기록을 건드리지 않게)
+    DC.store = { get: (k, d) => d, set: () => {} }; DC.buzz = () => {}; DC.sfx = Object.assign(() => {}, { on: () => false });
+    DC.endings = { add: () => false, got: () => [] }; DC.rewards = { add: () => {} };
+    $('#stage').replaceChildren(el('div', { class: 'gx-state' }, el('p', { id: 'simstate' }, '모의 실험 모드 — window.__mergeSim(봇, 판 수, 간격)')));
+    return;
+  }
+
   if (!M) { $('#stage').replaceChildren(el('div', { class: 'gx-state', role: 'alert' }, el('p', {}, '게임 엔진을 불러오지 못했어. 인터넷 연결을 확인하고 다시 열어 줘.'), el('button', { class: 'gx-btn', type: 'button', onclick: () => location.reload() }, '다시 불러오기'), el('a', { class: 'gx-txt', href: 'arcade.html' }, '다른 게임 하기'))); return; }
   DI.sound($('#snd'));
   home();
-  window.__merge = { get st() { return st; }, near: () => (st && st.near) || 0, get bodies() { return bodies.map(b => ({ x: b.position.x, y: b.position.y, tier: b.plugin.tier, r: TIERS[b.plugin.tier].r })); }, get n() { return bodies.length; }, dz: () => (st && st.dz) || DANGER, rim, TIERS, lat, drawPlanet, get sprites() { return SPRITES.filter(Boolean).length; }, get pops() { return pops.map(p => ({ kind: p.kind || null, txt: p.txt, val: p.val, t: Math.round(p.t) })); }, fxN: () => rings.length + parts.length + sparks.length + flashes.length, geo: () => ({ EX, BY, scale, holdY: st ? holdY() : null, hold: st ? TIERS[st.cur].r : null }) };
+  window.__merge = { get st() { return st; }, near: () => (st && st.near) || 0, get bodies() { return bodies.map(b => ({ x: b.position.x, y: b.position.y, tier: b.plugin.tier, r: TIERS[b.plugin.tier].r })); }, get n() { return bodies.length; }, dz: () => (st && st.dz) || DANGER, rim, ladder: (n) => renderLadder(n), aim: () => (st ? bestX(Math.random) : W / 2), TIERS, lat, drawPlanet, get sprites() { return SPRITES.filter(Boolean).length; }, get pops() { return pops.map(p => ({ kind: p.kind || null, txt: p.txt, val: p.val, t: Math.round(p.t) })); }, fxN: () => rings.length + parts.length + sparks.length + flashes.length, geo: () => ({ EX, BY, scale, holdY: st ? holdY() : null, hold: st ? TIERS[st.cur].r : null }) };
 })();

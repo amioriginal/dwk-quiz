@@ -2,6 +2,7 @@
    판 안: 3D 렌더 장면 + 빛·그림자(가장자리 어둠) · 누르는 즉시 손끝 표시 · 확대 · 찾으면 동그라미·주변 어둡게·불꽃 · 틀리면 X·붉은 테
    금지 지킴: 모서리 꺾쇠·청록 빛·도트 글꼴 없음
    3차(2026-11-28): 장면 그림 캔버스(.f-pic) · 소개 덮개가 걷힌 뒤 시간 시작 · 힌트 줄 처음엔 안내만 · 누른 자리 오답 표시 · 끝 화면 공유 카드 주인공
+   5차(2026-11-28): 판 = 새 3D 장면과 같은 세로 비율(1080×1500) · 확대 1배에서 그림 전체가 보임
    4차(2026-11-28): 폰 세로 화면은 판이 화면 높이만큼(.f-play.tall) · 해설은 판 아래쪽 위에 덮개로 · 옆으로 둘러보기 위치 줄 · 찾은 자리 금빛 두 겹 고리 · 소개는 누를 때까지 */
 #app { touch-action: manipulation; }
 /* 보상 칩(dwk-prog.js)이 끝 화면 등급 글자를 덮지 않게 이 게임에서만 화면 아래로 */
@@ -56,7 +57,7 @@ body.gx.f-page .dp-stack { top: auto; bottom: calc(14px + env(safe-area-inset-bo
 .f-clockpop { position: absolute; right: 56px; top: -4px; z-index: 3; pointer-events: none; font: 800 15px/1 var(--sans); color: #ff8f8f; text-shadow: 0 1px 0 rgba(0, 0, 0, .6); animation: fClockPop .9s ease-out forwards; }
 @keyframes fClockPop { 0% { opacity: 0; transform: translateY(6px) scale(.7); } 20% { opacity: 1; transform: translateY(-8px) scale(1.2); } 70% { opacity: 1; } 100% { opacity: 0; transform: translateY(-22px) scale(1); } }
 
-.f-stage { position: relative; width: min(100%, 62svh); aspect-ratio: 1; margin: 0 auto; border-radius: 4px; overflow: hidden; border: 1px solid var(--line); background: #07080c;
+.f-stage { position: relative; width: min(100%, calc(62svh * 1080 / 1500)); aspect-ratio: 1080 / 1500; margin: 0 auto; border-radius: 4px; overflow: hidden; border: 1px solid var(--line); background: #07080c;
   touch-action: none; cursor: crosshair; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; isolation: isolate; }
 .f-stage::before { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; /* 빛·깊이: 가운데 밝고 가장자리 어둡게 */
   background: radial-gradient(115% 95% at 50% 42%, transparent 55%, rgba(0, 0, 0, .42) 100%); }
@@ -131,7 +132,7 @@ body.gx.f-page .dp-stack { top: auto; bottom: calc(14px + env(safe-area-inset-bo
 @property --hy { syntax: '<percentage>'; inherits: false; initial-value: 50%; }
 @property --hr { syntax: '<percentage>'; inherits: false; initial-value: 75%; }
 @property --hd { syntax: '<number>'; inherits: false; initial-value: 0; }
-.f-hintdim { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse var(--hr) var(--hr) at var(--hx) var(--hy), transparent 97%, rgba(0, 0, 0, var(--hd)) 100%);
+.f-hintdim { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse var(--hr) var(--hry, var(--hr)) at var(--hx) var(--hy), transparent 97%, rgba(0, 0, 0, var(--hd)) 100%);
   transition: --hx .5s cubic-bezier(.2, .9, .2, 1), --hy .5s cubic-bezier(.2, .9, .2, 1), --hr .5s cubic-bezier(.2, .9, .2, 1), --hd .5s ease; }
 .f-hintring { position: absolute; border-radius: 50%; pointer-events: none; border: 2px dashed rgba(255, 228, 150, .95); box-shadow: 0 0 22px rgba(255, 214, 110, .55), inset 0 0 22px rgba(255, 214, 110, .25);
   transition: left .5s cubic-bezier(.2, .9, .2, 1), top .5s cubic-bezier(.2, .9, .2, 1), width .5s cubic-bezier(.2, .9, .2, 1), height .5s cubic-bezier(.2, .9, .2, 1), border-color .3s; }
@@ -304,7 +305,6 @@ body.gx.f-page .dp-stack { top: auto; bottom: calc(14px + env(safe-area-inset-bo
 /* 폰 세로 화면: 판을 아래 단추 줄 바로 위까지(높이는 find.js fitStage가 px로) · 단추 줄 높이 고정 · 해설은 판 아래쪽 위에 덮개로 올라온다 */
 .f-play.tall { padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
 #app.gx-main:has(> .f-play.tall) { padding-bottom: 0; } /* 바깥 틀의 아래 여백 40px(game-ui.css)은 이 판에서만 뺀다 — 그 자리를 판이 쓴다 */
-.f-play.tall .f-stage { aspect-ratio: auto; }
 .f-play.tall .f-under { position: relative; min-height: 0; z-index: 6; }
 .f-play.tall .f-explain { position: absolute; left: -20px; right: -20px; bottom: 0; padding: 44px 20px 0; border-top: 0; gap: 6px;
   background: linear-gradient(180deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, .86) 40px, #000 72%); }
@@ -327,3 +327,8 @@ body.gx.f-page .dp-stack { top: auto; bottom: calc(14px + env(safe-area-inset-bo
 @media (prefers-reduced-motion: reduce) {
   .f-ring.found, .f-ring.found::after, .f-intro-go { animation: none; }
 }
+
+/* 5차: 끝 화면 장면 칸 색 뜻(검수 2회 「밑줄 색 뜻이 설명 없다」) */
+.f-legend { margin: 6px 0 0; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; font: 500 12px/1.4 var(--sans); color: var(--fg3); }
+.f-legend i { display: inline-block; width: 14px; height: 4px; border-radius: 2px; margin-right: 4px; vertical-align: middle; background: var(--good); }
+.f-legend i.y { background: #ffd34d; } .f-legend i.r { background: var(--bad); }

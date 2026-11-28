@@ -1,0 +1,116 @@
+{
+ "made": "2026-11-28",
+ "about": "행성 착륙 3D 그림 — Blender 5.3 Cycles(캐글 CPU) · 우주선 = Kenney Space Kit 로켓 부품 조립·도장 색 변주 · 효과 = 노이즈 볼륨(시뮬레이션 없음) + Kenney 부품 파편. 앵커는 그림 비율(0~1).",
+ "ships": [
+  {
+   "id": "s1",
+   "files": {
+    "l": "ship_s1_l.webp",
+    "c": "ship_s1_c.webp",
+    "r": "ship_s1_r.webp"
+   },
+   "cx": 0.5,
+   "top": 0.0964,
+   "base": 0.9281
+  },
+  {
+   "id": "s2",
+   "files": {
+    "l": "ship_s2_l.webp",
+    "c": "ship_s2_c.webp",
+    "r": "ship_s2_r.webp"
+   },
+   "cx": 0.5,
+   "top": 0.0993,
+   "base": 0.9227
+  },
+  {
+   "id": "s3",
+   "files": {
+    "l": "ship_s3_l.webp",
+    "c": "ship_s3_c.webp",
+    "r": "ship_s3_r.webp"
+   },
+   "cx": 0.5,
+   "top": 0.1032,
+   "base": 0.9159
+  },
+  {
+   "id": "s4",
+   "files": {
+    "l": "ship_s4_l.webp",
+    "c": "ship_s4_c.webp",
+    "r": "ship_s4_r.webp"
+   },
+   "cx": 0.5,
+   "top": 0.0897,
+   "base": 0.9401
+  },
+  {
+   "id": "s5",
+   "files": {
+    "l": "ship_s5_l.webp",
+    "c": "ship_s5_c.webp",
+    "r": "ship_s5_r.webp"
+   },
+   "cx": 0.5,
+   "top": 0.101,
+   "base": 0.9197
+  },
+  {
+   "id": "s6",
+   "files": {
+    "l": "ship_s6_l.webp",
+    "c": "ship_s6_c.webp",
+    "r": "ship_s6_r.webp"
+   },
+   "cx": 0.5,
+   "top": 0.0993,
+   "base": 0.9227
+  }
+ ],
+ "fx": {
+  "boom": {
+   "files": [
+    "boom_00.webp",
+    "boom_01.webp",
+    "boom_02.webp",
+    "boom_03.webp",
+    "boom_04.webp",
+    "boom_05.webp",
+    "boom_06.webp",
+    "boom_07.webp",
+    "boom_08.webp",
+    "boom_09.webp"
+   ],
+   "ax": 0.5,
+   "ay": 0.8571,
+   "add": false
+  },
+  "dust": {
+   "files": [
+    "dust_00.webp",
+    "dust_01.webp",
+    "dust_02.webp",
+    "dust_03.webp",
+    "dust_04.webp",
+    "dust_05.webp",
+    "dust_06.webp"
+   ],
+   "ax": 0.5,
+   "ay": 0.81,
+   "add": false
+  },
+  "flame": {
+   "files": [
+    "flame_00.jpg",
+    "flame_01.jpg",
+    "flame_02.jpg",
+    "flame_03.jpg"
+   ],
+   "ax": 0.5,
+   "ay": 0.0652,
+   "add": true
+  }
+ }
+}
