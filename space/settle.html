@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data: https://cdn.jsdelivr.net; img-src 'self' data: blob: https://i.ytimg.com; media-src 'self' data: blob:; connect-src 'self' https://yvjhsqbymgomicjqmuok.supabase.co wss://yvjhsqbymgomicjqmuok.supabase.co wss://dwk-realtime.dwk-plaza.workers.dev https://dwk-feed.dwk-plaza.workers.dev https://cdn.jsdelivr.net ws://127.0.0.1:* ws://localhost:*; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'"><!-- 보안(2026-11-28): 정해 둔 곳에서만 스크립트·연결 · 근거 reports/돈워너노우_사이트보안_20261128/REPORT.md -->
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>내 땅 · 돈워너노우</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:,">
+<meta name="theme-color" content="#000000">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" integrity="sha384-GIdEBaqGN9mNkDkMkzMHW8EKUqtpPIe/sLj1X7DIrnc9uPtLROJgmuDlh+3rBw0j" crossorigin="anonymous">
+<link rel="stylesheet" href="settle.css?v=3">
+</head>
+<body class="settle">
+<!-- 행성 입주(2026-11-28 · 미니게임 「행성 섞기」 · 대표 「이대로 만들어」)
+     릴스에서 고른 번호 → 인포크 DM 버튼 → 이 화면(settle.html?p=<행성id>) → 그 행성에 내 땅(좌석 번호)
+     좌석·입주 인원은 서버(Supabase settle 함수)가 센 실제 값만 보인다. 서버가 안 되면 숫자를 지어내지 않고 「못 받았어」라고 쓴다.
+     설계: reports/돈워너노우_미니게임_디벨롭_20261128/기획/설계_v2_행성섞기_입주.md -->
+<header class="nav">
+  <a class="mark" href="start.html">돈워너노우</a>
+  <span class="here">내 땅</span>
+  <a class="nav-r" href="arcade.html">1분 게임</a>
+</header>
+
+<main id="app" aria-live="polite">
+  <section class="hero" id="hero">
+    <div class="orb-wrap" aria-hidden="true"><img class="orb" id="orb" alt="" decoding="async"></div>
+    <div class="cap">
+      <p class="eyebrow" id="eyebrow">입주 중<span class="dots" aria-hidden="true"></span></p>
+      <h1 id="title">네 땅을 찾는 중이야</h1>
+      <div class="seat" id="seatBox" hidden>
+        <small>내 땅 번호</small>
+        <b id="seatNo">No.000000</b>
+        <span id="pop"></span>
+      </div>
+      <p class="sub" id="sub"></p>
+      <div class="acts" id="acts" hidden>
+        <a class="btn" id="play" href="survive.html">이 행성에서 1년 버티기<i aria-hidden="true"></i></a>
+        <button class="txt" id="share" type="button">친구 불러서 이웃 만들기</button>
+      </div>
+      <p class="err" id="err" role="alert" hidden></p>
+      <button class="btn" id="retry" type="button" hidden>땅 번호 다시 받기<i aria-hidden="true"></i></button>
+      <nav class="more" id="more" hidden><a class="txt" href="arcade.html">1분 게임 전부</a><a class="txt" href="start.html">입구로</a></nav>
+    </div>
+  </section>
+
+  <section class="pick" id="pick" hidden aria-labelledby="pickT">
+    <p class="eyebrow" id="pickEp"></p>
+    <h2 id="pickT">어느 행성에 살래?</h2>
+    <p class="sub">영상에서 고른 행성을 눌러. 그 행성에 네 땅 번호가 하나 생겨.</p>
+    <ul class="orbs" id="orbs"></ul>
+    <nav class="more"><a class="txt" href="arcade.html">1분 게임 전부</a><a class="txt" href="start.html">입구로</a></nav>
+  </section>
+</main>
+
+<script src="data.js?v=15"></script>
+<script src="dwk-track.js?v=2"></script><!-- 방문 기록(11-28 · 쿠키 없음 · 설계 reports/돈워너노우_사이트데이터_20261128/REPORT.md) -->
+<script src="settle.js?v=2"></script>
+<script type="module" src="dwk-chat.js?v=7"></script>
+</body>
+</html>

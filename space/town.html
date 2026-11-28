@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<link rel="icon" href="data:,">
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data: https://cdn.jsdelivr.net; img-src 'self' data: blob: https://i.ytimg.com; media-src 'self' data: blob:; connect-src 'self' https://yvjhsqbymgomicjqmuok.supabase.co wss://yvjhsqbymgomicjqmuok.supabase.co wss://dwk-realtime.dwk-plaza.workers.dev https://dwk-feed.dwk-plaza.workers.dev https://cdn.jsdelivr.net ws://127.0.0.1:* ws://localhost:*; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'"><!-- 보안(2026-11-28): 정해 둔 곳에서만 스크립트·연결 · 근거 reports/돈워너노우_사이트보안_20261128/REPORT.md -->
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>내 행성 · 돈워너노우</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="작은 3D 행성에 내 마을을 짓고, 링크로 친구 마을을 구경해">
+<meta property="og:title" content="돈워너노우 · 내 행성">
+<meta property="og:description" content="작은 행성 위 내 마을 구경 와">
+<meta property="og:image" content="img/og.jpg">
+<meta name="theme-color" content="#05060d">
+<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="town.css?v=3">
+<link rel="stylesheet" href="doom.css?v=1">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+} }
+</script>
+</head>
+<body class="town">
+<canvas id="scene" aria-label="3D 내 행성 화면"></canvas>
+
+<header class="t-top">
+  <a class="t-icon t-back k" href="world.html?from=town" aria-label="우주 광장으로" data-ic="back"></a>
+  <div class="t-mid">
+    <button class="t-name k" id="nameBtn" type="button" aria-label="내 행성 이름 바꾸기"><span class="t-namebox"><small id="nameKind">내 행성</small><span id="nameText">내 행성</span></span><i aria-hidden="true" data-ic="pencil"></i></button>
+    <p class="t-shield hidden" id="shieldPill" role="status"></p>
+  </div>
+  <button class="t-icon k" id="snd" type="button" aria-label="소리"></button>
+</header>
+
+<!-- 오른쪽 세로 단추: 우주선(둘 다) · 기록·방어막(내 행성) · 장난(남의 행성) -->
+<div class="t-side" id="side">
+  <button type="button" class="k sky" id="shipBtn" data-ic="ship" aria-label="우주선 타고 광장으로"><span>광장으로</span></button>
+  <button type="button" class="k own net-only" id="logBtn" data-ic="log" aria-label="누가 다녀갔나"><span>기록</span></button>
+  <button type="button" class="k own net-only" id="shieldBtn" data-ic="shield" aria-label="방어막·공격권 퀴즈"><span>방어막</span></button>
+  <button type="button" class="k rose visit-only net-only" id="prankBtn" data-ic="wand" aria-label="장난치기"><span>장난</span></button>
+</div>
+
+<!-- 장난 도구를 든 상태 표시 -->
+<div class="t-tool hidden" id="toolChip" role="status"><span id="toolIc"></span><b id="toolText"></b><button type="button" class="k" id="toolX" aria-label="그만하기" data-ic="x"></button></div>
+<!-- 흔적 치우기 · 잔해 고치기 · 우주선 출발 -->
+<div class="t-act hidden" id="actBar" role="toolbar"><b id="actName"></b><button type="button" class="k sun" id="actGo"></button><button type="button" class="k" id="actX" aria-label="닫기" data-ic="x"></button></div>
+
+<div class="t-visit" id="visitBar">
+  <p class="t-visit-title"><b id="visitName">친구 행성</b> 구경 중</p>
+  <p class="t-visit-note" id="visitNote">구경만 할 수 있어</p>
+  <a class="btn primary t-big" href="town.html">내 행성 꾸미기</a>
+</div>
+
+<p class="t-hint hidden" id="hint" role="status"></p>
+
+<div class="t-sel hidden" id="selBar" role="toolbar" aria-label="고른 소품">
+  <b id="selName"></b>
+  <button type="button" class="k" data-act="rot" aria-label="돌리기" data-ic="rotate"></button>
+  <button type="button" class="k rose" data-act="del" aria-label="치우기" data-ic="trash"></button>
+  <button type="button" class="k" data-act="close" aria-label="닫기" data-ic="x"></button>
+</div>
+
+<section class="t-sheet hidden" id="sheet" aria-live="polite">
+  <div class="t-sheet-head"><b id="sheetTitle"></b><button type="button" class="k" id="sheetClose" aria-label="닫기" data-ic="x"></button></div>
+  <div class="t-sheet-body" id="sheetBody"></div>
+</section>
+
+<nav class="t-bar" id="bar" aria-label="내 행성 메뉴">
+  <button type="button" data-sheet="build" class="own" data-ic="build"><span>꾸미기</span></button>
+  <button type="button" data-sheet="char" class="own" data-ic="user"><span>캐릭터</span></button>
+  <button type="button" data-sheet="planet" class="own" data-ic="planet"><span>행성</span></button>
+  <button type="button" data-sheet="photo" data-ic="photo"><span>사진</span></button>
+  <button type="button" data-sheet="share" class="own" data-ic="share"><span>자랑</span></button>
+  <button type="button" data-sheet="code" data-ic="gift"><span>코드</span></button>
+  <button type="button" data-go="home" class="visit-only" data-ic="home"><span>내 행성</span></button>
+</nav>
+
+<!-- 첫 진입 조작 안내: 그림 셋, 탭하면 사라짐 -->
+<div class="t-coach hidden" id="coach" role="dialog" aria-label="조작 안내">
+  <div class="t-coach-row">
+    <div class="t-coach-cell"><div class="t-finger tap" aria-hidden="true" data-ic="tap"></div><b>탭</b><small>거기로 걸어가</small></div>
+    <div class="t-coach-cell"><div class="t-finger drag" aria-hidden="true" data-ic="tap"></div><b>끌기</b><small>행성 돌려 보기</small></div>
+    <div class="t-coach-cell"><div class="t-finger pinch" aria-hidden="true" data-ic="pinch"></div><b>꼬집기</b><small>멀리·가까이</small></div>
+  </div>
+  <p class="t-coach-go">아무 데나 눌러서 시작</p>
+</div>
+
+<div class="t-loading" id="loading">
+  <div class="t-load-orb" aria-hidden="true"></div>
+  <p id="loadText">행성 짓는 중…</p>
+  <div class="t-progress"><i id="loadBar"></i></div>
+</div>
+
+<div class="t-fail hidden" id="fail" role="alert">
+  <h2>문제가 생겼어</h2>
+  <p id="failText"></p>
+  <a class="btn primary t-big" href="world.html?from=town">우주 광장으로</a>
+</div>
+
+<noscript><p class="t-noscript">이 화면은 자바스크립트가 켜져 있어야 열려.</p></noscript>
+<script src="data.js?v=15"></script>
+<script src="dwk-track.js?v=2"></script><!-- 방문 기록(11-28 · 쿠키 없음 · 설계 reports/돈워너노우_사이트데이터_20261128/REPORT.md) -->
+<script src="wait-gate.js?v=1"></script><!-- 11-28 탑승 대기실 잠금: 3만 명 전엔 start.html#wait 로 -->
+<script src="dwk-core.js?v=5"></script>
+<script src="dwk-prog.js?v=14"></script>
+<script>
+  // 3D 부품(three.js)을 못 받으면 빈 화면 대신 안내를 띄운다
+  setTimeout(() => {
+    if (window.__townReady || !document.getElementById('fail').classList.contains('hidden')) return;
+    if (!window.__townBoot) {
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('fail').classList.remove('hidden');
+      document.getElementById('failText').textContent = '3D 부품을 못 불러왔어. 인터넷 연결을 확인하고 새로고침해 줘.';
+    }
+  }, 20000);
+</script>
+<script type="module" src="town.js?v=7"></script>
+<script type="module" src="dwk-chat.js?v=7"></script><!-- 다 같이 수다(모든 화면 · 2026-11-28 대표 「픽세처럼 채팅방도」) -->
+</body>
+</html>

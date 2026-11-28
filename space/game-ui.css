@@ -1,0 +1,150 @@
+/* game-ui.css — 「1분 게임」 안쪽 화면의 바깥 틀(2026-11-28 대표 「행성고르기랑 1분게임 왜 내부는 디자인이랑 디테일 디벨롭 안해놓은거야?」)
+   입구(start-doors.css)와 같은 문법: SpaceX 실측 — 검은 바탕 · 꽉 찬 장면 · 글은 왼쪽 · 제목 #f0f0fa Pretendard 700 ·
+   단추 = 1px rgba(240,240,250,.35) 테 + rgba(0,0,0,.5) 바탕 + 4px 모서리(누르면 흰 바탕으로 뒤집힘) · 목록은 가는 선으로 나눈 글자 줄.
+   NASA 실측 — 굵고 큰 숫자 · 높은 흑백 대비.
+   뺀 것: 모서리 꺾쇠 · 청록 빛 · 도트 글꼴 · 노란 단추 · 칸 안의 칸 · 두꺼운 잉크 테 · 눌리는 그림자.
+   남긴 것: 게임판 안(행성 그림 · 물리 · 위험 빨강 · 게이지 색)은 놀이의 신호라 그대로.
+   걸리는 곳: <body class="gx"> 인 게임 화면(arcade · merge · survive · land · find)만. style.css·paper.css는 건드리지 않고 여기서 덮는다. */
+body.gx {
+  --fg: #f0f0fa; --fg2: rgba(240, 240, 250, .72); --fg3: rgba(240, 240, 250, .5); --hair: rgba(240, 240, 250, .35); --line: rgba(240, 240, 250, .14);
+  --good: #5be08a; --bad: #ff6b6b;
+  --sans: 'Pretendard Variable', Pretendard, -apple-system, 'Apple SD Gothic Neo', 'Helvetica Neue', system-ui, sans-serif;
+  /* style.css 옛 변수도 흑백으로 — 남아 있는 옛 규칙이 노랑·청록을 꺼내지 않게 */
+  --bg: #000; --panel: transparent; --text: var(--fg); --muted: var(--fg2); --accent: var(--fg); --accent2: var(--fg2); --danger: var(--bad); --radius: 4px;
+  margin: 0; padding: 0; min-height: 100svh; background: #000; color: var(--fg); font-family: var(--sans); letter-spacing: -.01em;
+  -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; font-variant-numeric: tabular-nums;
+}
+html:has(body.gx) { background: #000; }
+body.gx #stars { display: none; }
+body.gx a { color: inherit; text-decoration: none; }
+body.gx button { font-family: var(--sans); }
+body.gx .ic { display: inline-block; width: 18px; height: 18px; flex: 0 0 auto; vertical-align: middle; }
+body.gx .ic svg { width: 100%; height: 100%; display: block; }
+
+/* ── 머리 줄: 글자 표지 하나 + 오른쪽에 「게임 목록」·소리 (SpaceX처럼 적게) ── */
+.gx-nav { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 14px; height: calc(56px + env(safe-area-inset-top)); padding: env(safe-area-inset-top) 20px 0;
+  background: linear-gradient(rgba(0, 0, 0, .86), rgba(0, 0, 0, .6) 70%, rgba(0, 0, 0, 0)); }
+.gx-mark { font: 800 17px/1 var(--sans); letter-spacing: .02em; color: var(--fg); white-space: nowrap; }
+.gx-here { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 500 13px/1 var(--sans); color: var(--fg3); }
+.gx-here::before { content: '/'; margin-right: 10px; color: rgba(240, 240, 250, .25); }
+.gx-navr { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.gx-navr a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 6px; font: 500 13px/1 var(--sans); letter-spacing: .02em; color: var(--fg2); white-space: nowrap; }
+.gx-navr a:hover { color: var(--fg); }
+.gx-icon, body.gx .kbtn { display: inline-grid; place-items: center; width: 40px; height: 40px; padding: 0; color: var(--fg); background: rgba(0, 0, 0, .5); border: 1px solid var(--hair); border-radius: 4px; box-shadow: none; cursor: pointer; transition: background .2s, color .2s; }
+.gx-icon:hover, .gx-icon:active, body.gx .kbtn:hover, body.gx .kbtn:active { background: var(--fg); color: #000; transform: none; box-shadow: none; }
+body.gx .kbtn .ic { width: 18px; height: 18px; }
+
+/* ── 글자 ── */
+.gx-main { position: relative; z-index: 1; max-width: 560px; margin: 0 auto; padding: 0 20px 40px; }
+.gx-eyebrow { margin: 0; display: flex; align-items: center; gap: 10px; font: 600 11px/1 var(--sans); letter-spacing: .08em; color: var(--fg2); }
+.gx-eyebrow span { color: var(--fg); }
+.gx-eyebrow span::after { content: ''; display: inline-block; width: 18px; height: 1px; margin-left: 10px; background: var(--fg3); vertical-align: middle; }
+.gx-h1 { margin: 0; font: 700 34px/1.15 var(--sans); letter-spacing: -.02em; color: var(--fg); word-break: keep-all; }
+.gx-sub { margin: 0; font: 400 15px/1.5 var(--sans); color: var(--fg2); word-break: keep-all; }
+.gx-sub b { color: var(--fg); font-weight: 600; }
+.gx-note { margin: 0; font: 400 13px/1.5 var(--sans); color: var(--fg3); word-break: keep-all; }
+
+/* ── 단추: SpaceX 실측 그대로 · 누르면 흰 바탕으로 뒤집힌다 ── */
+.gx-btn, body.gx .btn { display: inline-flex; align-items: center; justify-content: center; gap: 12px; min-height: 48px; padding: 0 20px; border: 1px solid var(--hair); border-radius: 4px;
+  background: rgba(0, 0, 0, .5); color: var(--fg); font: 600 14px/1.2 var(--sans); letter-spacing: .02em; text-align: center; box-shadow: none; cursor: pointer;
+  transition: background .2s, color .2s, border-color .2s; -webkit-tap-highlight-color: transparent; }
+.gx-btn i, body.gx .btn i.arw { width: 14px; height: 10px; flex: none; background: currentColor; clip-path: polygon(0 45%, 78% 45%, 55% 0, 66% 0, 100% 50%, 66% 100%, 55% 100%, 78% 55%, 0 55%); }
+.gx-btn:hover, .gx-btn:active, body.gx .btn:hover, body.gx .btn:active { background: var(--fg); color: #000; border-color: var(--fg); transform: none; box-shadow: none; }
+.gx-btn.main { font-size: 15px; }
+.gx-btn[disabled], body.gx .btn[disabled] { opacity: .4; cursor: not-allowed; background: rgba(0, 0, 0, .5); color: var(--fg); }
+body.gx .btn.primary, body.gx .btn.ghost { background: rgba(0, 0, 0, .5); color: var(--fg); border-color: var(--hair); }
+body.gx .btn.primary:hover, body.gx .btn.primary:active, body.gx .btn.ghost:hover, body.gx .btn.ghost:active { background: var(--fg); color: #000; border-color: var(--fg); }
+body.gx .btn .ic { width: 16px; height: 16px; }
+.gx-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+.gx-acts .gx-btn { flex: 0 0 auto; }
+.gx-txt { display: inline-flex; align-items: center; min-height: 44px; font: 500 14px/1 var(--sans); color: var(--fg2); text-decoration: underline; text-decoration-color: var(--fg3); text-underline-offset: 4px; background: none; border: 0; padding: 0; cursor: pointer; }
+.gx-txt:hover, .gx-txt:active { color: var(--fg); }
+
+/* ── 꽉 찬 장면 위 글(시작 화면) — 글은 왼쪽 아래 ── */
+.gx-main.gx-wide { max-width: none; padding: 0; }
+.gx-endwrap { display: grid; max-width: 560px; margin: 0 auto; padding: 8px 20px 48px; }
+.gx-hero { position: relative; isolation: isolate; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; min-height: 100svh;
+  margin-top: calc(-56px - env(safe-area-inset-top)); padding: calc(84px + env(safe-area-inset-top)) 20px 28px; }
+.gx-bg { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
+.gx-hero::before { content: ''; position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(180deg, rgba(0, 0, 0, .55) 0%, rgba(0, 0, 0, .35) 22%, rgba(0, 0, 0, .7) 52%, rgba(0, 0, 0, .94) 78%, #000 100%); }
+.gx-cap { position: relative; display: grid; gap: 12px; width: 100%; max-width: 560px; }
+.gx-cap .gx-acts { margin-top: 6px; }
+
+/* ── 가는 선 목록(내 기록 · 다음 게임) — SpaceX 「다가오는 발사」 줄 ── */
+.gx-rows { margin: 0; padding: 0; list-style: none; display: grid; border-top: 1px solid var(--line); }
+.gx-rows > * { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; min-height: 44px; padding: 12px 0; border-bottom: 1px solid var(--line); margin: 0; }
+.gx-rows dt, .gx-rows .k { font: 500 13px/1.3 var(--sans); color: var(--fg2); }
+.gx-rows dd, .gx-rows .v { margin: 0; font: 700 15px/1.3 var(--sans); color: var(--fg); text-align: right; }
+.gx-rows a, .gx-rows button { width: 100%; display: flex; align-items: baseline; justify-content: space-between; gap: 14px; background: none; border: 0; padding: 0; color: var(--fg); font: 600 16px/1.3 var(--sans); text-align: left; cursor: pointer; }
+.gx-rows a::after, .gx-rows button::after { content: '→'; color: var(--fg3); transition: transform .2s, color .2s; }
+.gx-rows a small, .gx-rows button small { margin-left: auto; font: 500 12px/1.3 var(--sans); color: var(--fg2); white-space: nowrap; }
+.gx-rows a:hover::after, .gx-rows button:hover::after, .gx-rows a:active::after { color: var(--fg); transform: translateX(3px); }
+.gx-rows > *:has(> a:active), .gx-rows > *:has(> button:active) { background: rgba(240, 240, 250, .06); }
+.gx-label { margin: 28px 0 0; padding-bottom: 10px; font: 600 11px/1 var(--sans); letter-spacing: .08em; color: var(--fg3); }
+
+/* ── 진행 중 점수판: 가는 선 아래 숫자 몇 개 ── */
+.gx-hud { display: flex; align-items: flex-end; gap: 22px; padding: 6px 0 12px; border-bottom: 1px solid var(--line); text-align: left; }
+.gx-hud small { display: block; margin-bottom: 6px; font: 600 10px/1 var(--sans); letter-spacing: .08em; color: var(--fg3); }
+.gx-hud b { display: block; font: 700 30px/1 var(--sans); letter-spacing: -.02em; color: var(--fg); }
+.gx-hud .dim b { color: var(--fg3); }
+.gx-hud .push { margin-left: auto; }
+
+/* ── 끝난 화면: 큰 숫자(NASA) + 가는 선 목록 + 단추 ── */
+.gx-end { display: grid; gap: 14px; padding-top: 18px; animation: gxIn .5s cubic-bezier(.2, .7, .2, 1) both; }
+.gx-score { margin: 4px 0 0; font: 800 76px/.95 var(--sans); letter-spacing: -.04em; color: var(--fg); }
+.gx-score small { margin-left: 6px; font: 700 22px/1 var(--sans); letter-spacing: -.01em; color: var(--fg2); }
+.gx-flag { justify-self: start; margin: 0; font: 700 11px/1 var(--sans); letter-spacing: .08em; padding: 5px 7px; border: 1px solid var(--fg); border-radius: 2px; color: var(--fg); }
+.gx-flag.off { border-color: var(--line); color: var(--fg2); font-weight: 500; }
+.gx-preview { display: block; width: 100%; max-width: 260px; height: auto; border: 1px solid var(--line); border-radius: 4px; }
+@keyframes gxIn { from { opacity: 0; transform: translateY(10px); } }
+
+/* ── 첫 안내(코치) — 얇은 테 · 반투명 검정 ── */
+body.gx .coach p, body.gx .tapguide b { font: 600 14px/1.35 var(--sans); color: var(--fg); background: rgba(0, 0, 0, .72); border: 1px solid var(--hair); border-radius: 4px; box-shadow: none; padding: 10px 14px; }
+body.gx .coach .hand, body.gx .tapguide i, body.gx .f-finger { color: var(--fg); background: rgba(0, 0, 0, .6); border: 1px solid var(--hair); box-shadow: none; }
+
+/* ── 불러오는 중 · 오류 ── */
+.gx-state { display: grid; gap: 14px; justify-items: start; padding: 40px 0; }
+.gx-state p { margin: 0; font: 500 15px/1.5 var(--sans); color: var(--fg2); }
+.gx-dots::after { content: ''; animation: gxDots 1.2s steps(4) infinite; }
+@keyframes gxDots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
+
+/* ── 공용 부품(dwk-core · dwk-prog · icons)이 붙이는 것 — 이 화면에서만 같은 옷으로 ── */
+body.gx .dc-follow { margin: 28px 0 0; padding: 14px 0 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 16px; }
+body.gx .gx-rows + .dc-follow { margin-top: 0; border-top: 0; }
+body.gx .dc-follow p { margin: 0; font: 400 13px/1.5 var(--sans); color: var(--fg2); }
+body.gx .dc-follow b { color: var(--fg); font-weight: 600; }
+body.gx .dc-follow .btn { flex: 0 0 auto; min-height: 44px; padding: 0 2px; border: 0; background: none; color: var(--fg2); font: 500 13px/1 var(--sans); text-decoration: underline; text-decoration-color: var(--fg3); text-underline-offset: 4px; }
+body.gx .dc-follow .btn:hover, body.gx .dc-follow .btn:active { background: none; color: var(--fg); }
+body.gx .dc-toast { bottom: calc(24px + env(safe-area-inset-bottom)); background: rgba(0, 0, 0, .86); color: var(--fg); border: 1px solid var(--hair); border-radius: 4px; box-shadow: none; padding: 12px 16px; font: 500 14px/1.3 var(--sans); }
+body.gx .dp-stack { bottom: auto; top: calc(64px + env(safe-area-inset-top)); gap: 6px; }
+body.gx .dp-flash b, body.gx .dp-flash a, body.gx .dp-lv { font: 600 12px/1 var(--sans); letter-spacing: .02em; color: var(--fg); background: rgba(0, 0, 0, .84); border: 1px solid var(--hair); border-radius: 4px; box-shadow: none; padding: 8px 10px; animation: gxChip .35s ease-out both; }
+body.gx .dp-flash b:nth-child(n) { background: rgba(0, 0, 0, .84); }
+body.gx .dp-flash b:first-child { background: var(--fg); color: #000; border-color: var(--fg); }
+body.gx .dp-flash a, body.gx .dp-flash .gx-gone { display: none; } /* 「광장에서 보상 받기」 — 광장은 탑승 대기 중이라 이 화면에서는 숨긴다(dwk-prog.js는 이 작업 소유가 아님) */
+body.gx .dp-lv { padding: 6px 14px; font-size: 13px; }
+body.gx .dp-lv strong { font-weight: 800; font-size: 20px; }
+body.gx .dp-lv small { color: var(--fg2); }
+@keyframes gxChip { from { opacity: 0; transform: translateY(-6px); } }
+body.gx .sq { display: inline-block; width: 12px; height: 12px; margin: 0 2px; border: 0; border-radius: 1px; vertical-align: middle; background: var(--good); }
+body.gx .sq.y { background: #f2c94c; } body.gx .sq.r { background: var(--bad); }
+body.gx input { font: 600 16px/1 var(--sans); color: var(--fg); background: rgba(0, 0, 0, .5); border: 1px solid var(--hair); border-radius: 4px; padding: 0 14px; min-height: 48px; }
+body.gx input::placeholder { color: var(--fg3); }
+body.gx input:focus { outline: 2px solid var(--fg); outline-offset: 1px; border-color: var(--fg); }
+body.gx :focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+
+/* ── 넓은 화면 ── */
+@media (min-width: 900px) {
+  .gx-nav { height: 64px; padding: 0 40px; }
+  .gx-mark { font-size: 18px; }
+  .gx-hero { min-height: 100vh; margin-top: -64px; padding: 120px 40px 56px; }
+  .gx-endwrap { max-width: 1180px; margin: 0; padding: 24px 40px 72px; }
+  .gx-h1 { font-size: 56px; }
+  .gx-sub { font-size: 17px; }
+  .gx-main { max-width: none; padding: 0 40px 64px; } /* 글은 머리 줄 표지와 같은 왼쪽 40px 선에서 시작(SpaceX) · 게임판은 화면 가운데 */
+  .gx-score { font-size: 120px; }
+  .gx-hud b { font-size: 36px; }
+  body.gx .dp-stack { top: 76px; }
+}
+@media (max-width: 360px) { .gx-h1 { font-size: 30px; } .gx-score { font-size: 64px; } .gx-here { display: none; } }
+@media (prefers-reduced-motion: reduce) { .gx-end, body.gx .dp-flash b, body.gx .dp-lv { animation: none; } .gx-btn, body.gx .btn { transition: none; } }

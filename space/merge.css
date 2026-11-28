@@ -1,0 +1,93 @@
+/* 행성 합치기 전용 — 바깥 틀(game-ui.css)은 그대로 두고 이 게임 화면만 덮는다 (2026-11-28 게임 품질) */
+body.gx { overscroll-behavior: none; }
+/* 시작 화면 — 장면 대신 이 게임의 행성 10단계가 화면을 채운다(작은 것 → 큰 것) */
+.chain { display: flex; align-items: flex-end; gap: 6px; margin: auto 0; padding: 12px 0 24px; }
+.chip { display: inline-block; flex: none; border-radius: 50%; background-color: transparent; background-size: 100%; background-position: center; background-repeat: no-repeat; }
+.chain .chip { animation: float 6s ease-in-out infinite; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .6)); }
+.chain .chip:nth-child(2n) { animation-delay: -2s; } .chain .chip:nth-child(3n) { animation-delay: -4s; }
+.m-rule { display: flex; align-items: center; gap: 10px; }
+.m-rule i { flex: none; width: 26px; height: 0; border-top: 2px dashed var(--bad); }
+
+/* 진행 중 — 점수판 */
+.m-play { padding-top: 4px; }
+.m-hud { gap: 18px; padding-bottom: 10px; }
+.m-hud b { font-variant-numeric: tabular-nums; }
+.m-hud .m-time b { min-width: 2ch; }
+.m-hud .m-time.low b { color: var(--bad); animation: mBeat 1s ease-in-out infinite; }
+.m-hud .m-time.plus b { animation: mBump .35s cubic-bezier(.2, 1.8, .4, 1); color: #9fe8b4; }
+#score.bump { animation: mBump .28s cubic-bezier(.2, 1.8, .4, 1); }
+.nextbox { text-align: center; }
+.nextbox .chip { width: 40px; height: 40px; display: block; margin: 0 auto; filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .7)); }
+.nextbox .chip.swap { animation: mSwap .3s cubic-bezier(.2, 1.6, .4, 1); }
+@keyframes mBump { 0% { transform: scale(1); } 40% { transform: scale(1.22); } 100% { transform: scale(1); } }
+@keyframes mBeat { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+@keyframes mSwap { from { transform: scale(.4) translateY(8px); opacity: 0; } }
+
+/* 게임판 */
+.boardwrap { position: relative; display: flex; justify-content: center; margin-top: 12px; }
+#board { touch-action: none; display: block; border-radius: 14px; cursor: grab; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+#board:active { cursor: grabbing; }
+
+/* 단계 사다리 — 지금까지 키운 단계는 밝게, 이번 판 최고 단계는 흰 테 */
+.ladder { display: flex; justify-content: center; align-items: center; gap: 3px; margin-top: 12px; flex-wrap: nowrap; }
+.step { display: inline-flex; align-items: center; gap: 3px; }
+.step i { width: 26px; height: 26px; border-radius: 50%; background-size: 100%; background-position: center; background-repeat: no-repeat; display: inline-block; opacity: .45; transition: opacity .2s; }
+.step.reached i { opacity: 1; }
+.step.now i { box-shadow: 0 0 0 1.5px var(--fg), 0 0 12px rgba(240, 240, 250, .35); }
+.step.new i { animation: mNew .6s cubic-bezier(.2, 1.8, .4, 1); }
+.step.unknown i { background: none; box-shadow: inset 0 0 0 1px rgba(240, 240, 250, .22); opacity: 1; }
+.step em { font-style: normal; color: rgba(240, 240, 250, .3); font-size: 10px; }
+@keyframes mNew { 0% { transform: scale(.3); } 60% { transform: scale(1.35); } 100% { transform: scale(1); } }
+
+/* 처음 한 번만 — 손가락 안내 */
+.coach { position: absolute; inset: 78% 0 auto; display: flex; flex-direction: column; align-items: center; gap: 10px; pointer-events: none; }
+.coach .hand { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; animation: sweep 1.6s ease-in-out infinite; }
+.coach .hand .ic { width: 26px; height: 26px; }
+@keyframes sweep { 0%, 100% { transform: translateX(-60px); } 50% { transform: translateX(60px); } }
+
+/* 끝 */
+.m-endgrid { display: grid; gap: 22px; }
+.m-top { display: flex; align-items: center; gap: 14px; }
+.bigorb { flex: none; width: 64px; height: 64px; border-radius: 50%; background-size: 100%; background-position: center; background-repeat: no-repeat; filter: drop-shadow(0 4px 10px rgba(0, 0, 0, .6)); }
+.m-top p { margin: 0; font: 500 13px/1.4 var(--sans); color: var(--fg2); } .m-top b { display: block; font: 700 18px/1.3 var(--sans); color: var(--fg); }
+
+/* 보상 칩(dwk-prog.js)이 끝 화면 위쪽 점수·제목을 덮지 않게 이 게임에서는 화면 아래로 */
+body.gx.m-page .dp-stack { top: auto; bottom: calc(14px + env(safe-area-inset-bottom)); }
+
+@media (min-width: 900px) {
+  .chain { gap: 14px; }
+  .m-play { max-width: 520px; margin: 0 auto; }
+  .m-endgrid { grid-template-columns: minmax(0, 1fr) 300px; align-items: start; gap: 56px; max-width: 980px; }
+  .m-endgrid .gx-preview { max-width: 300px; }
+}
+@media (max-width: 360px) { .m-hud { gap: 12px; } .m-hud b { font-size: 26px; } }
+@media (prefers-reduced-motion: reduce) { .coach .hand, .chain .chip, #score.bump, .nextbox .chip.swap, .step.new i, .m-hud .m-time.low b { animation: none; } }
+
+/* 2차(2026-11-28): 폰에서는 판을 거의 화면 폭까지(양옆 8px) — 판이 커지고 사다리 아래 빈 공간이 준다 */
+@media (max-width: 520px) { .m-page .boardwrap { margin-left: -12px; margin-right: -12px; } }
+/* 게임 중에는 판 아래 여백을 줄여(바깥 틀 40px → 10px) 판이 화면을 채우고 문서가 스크롤되지 않게 */
+.gx-main:has(> .m-play) { padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+
+/* 3차(2026-11-28): 단계 색 테 — 판 위 행성 둘레 대기 빛과 같은 색(merge.js TIERS.col → --tc). 작은 아이콘에서도 흰 달·회색 쇼핑몰이 색으로 갈린다 */
+.step i[style*="--tc"] { box-shadow: 0 0 0 1.5px var(--tc), 0 0 8px -1px var(--tc); }
+.step.now i[style*="--tc"] { box-shadow: 0 0 0 1.5px var(--tc), 0 0 0 3.5px var(--fg), 0 0 12px rgba(240, 240, 250, .35); }
+.nextbox .chip { border-radius: 50%; box-shadow: 0 0 0 1.5px var(--tc, transparent), 0 0 10px -2px var(--tc, transparent); }
+.bigorb { box-shadow: 0 0 0 2px var(--tc, transparent), 0 0 16px -4px var(--tc, transparent); }
+/* 「남은 시간」 → 「버틴 시간」: 빨간 선이 내려오기 시작하면 빨갛게 */
+.m-hud .m-time.low b { animation: none; }
+/* 폰 끝 화면 — 공유 카드는 「가장 크게 키운 행성」 줄 오른쪽 작은 미리보기(누르면 공유) */
+.m-top { position: relative; }
+.m-cardthumb { margin-left: auto; flex: none; display: grid; justify-items: center; gap: 4px; padding: 0; border: 0; background: none; color: var(--fg2); cursor: pointer; font: 500 11px/1.2 var(--sans); }
+.m-cardthumb canvas { display: block; width: 64px; height: 80px; border: 1px solid var(--line); border-radius: 4px; }
+
+/* 4차(2026-11-28): 넘치기 직전 초읽기는 판 위가 아니라 점수줄 「내 최고」 칸 자리에(판의 행성을 덮지 않게) */
+.m-hud .m-warn { display: none; }
+.m-hud.danger .dim { display: none; }
+.m-hud.danger .m-warn { display: block; }
+.m-hud .m-warn small { color: #ff8a92; white-space: nowrap; }
+.m-hud .m-warn b { color: #ff5a64; animation: mBeat .5s ease-in-out infinite; }
+/* 점수줄과 판 사이 빈 띠 정리 — 판 위 여백 12 → 4px(판 안쪽 위 여백도 merge.js에서 40 → 6으로 줄였다) */
+.m-page .boardwrap { margin-top: 4px; }
+/* 다음 칸 단계 색 테도 얇게(작은 행성이 스티커처럼 보이지 않게) */
+.nextbox .chip { box-shadow: 0 0 0 1px var(--tc, transparent), 0 0 8px -3px var(--tc, transparent); }
+@media (prefers-reduced-motion: reduce) { .m-hud .m-warn b { animation: none; } }

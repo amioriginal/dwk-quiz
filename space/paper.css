@@ -1,0 +1,103 @@
+/* paper.css — 게임·아케이드·자랑 게시판·행성 고르기 화면을 광장(world.css)과 같은 옷으로 (2026-11-20)
+   style.css(옛 검은 유리 옷) 위에 덧씌운다. <body class="paper"> 인 화면에만 걸린다 → start·maker 는 그대로.
+   문법: 크림 종이 #fff4dc + 잉크 #1f1a2e 굵은 테두리(2.5~3px) + 딱 떨어지는 그림자(0 4px 0 잉크) + 눌리는 버튼
+         + 도트 글꼴(갈무리, OFL · fonts/)은 제목·버튼·이름표에만, 긴 글은 Pretendard. 아이콘은 icons.js 한 벌. */
+@font-face { font-family: 'Galmuri11'; src: url('fonts/Galmuri11-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Galmuri14'; src: url('fonts/Galmuri14.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+
+body.paper {
+  --ink: #1f1a2e; --paper: #fff4dc; --paper2: #f2e1bb; --sun: #ffcf3a; --sky: #7fd8ff; --leaf: #8be07a; --rose: #ff6f91; --mute: #6f6480;
+  --pix: 'Galmuri11', 'Pretendard Variable', Pretendard, system-ui, sans-serif;
+  /* 옛 변수도 종이 값으로 → 각 화면의 옛 규칙이 자동으로 종이 옷을 입는다 */
+  --bg: var(--paper); --panel: #fff; --line: var(--ink); --text: var(--ink); --muted: var(--mute);
+  --accent: var(--sun); --accent2: #1f6fb5; --danger: #d6284f; --radius: 14px;
+  background: var(--paper); color: var(--ink);
+}
+html:has(body.paper) { background: #fff4dc; }
+body.paper #stars { display: none; }
+body.paper .ic { display: inline-block; width: 22px; height: 22px; flex: 0 0 auto; vertical-align: middle; }
+body.paper .ic svg { width: 100%; height: 100%; display: block; }
+
+/* 위 막대: 돌아가기(44px 이상 버튼) · 화면 이름 · 소리 */
+body.paper .top { padding: calc(10px + env(safe-area-inset-top)) 16px 0; gap: 8px; }
+body.paper .back { display: inline-flex; align-items: center; gap: 6px; min-height: 46px; padding: 0 14px 0 8px; font: 700 14px/1 var(--pix); color: var(--ink); background: var(--paper); border: 2.5px solid var(--ink); border-radius: 12px; box-shadow: 0 4px 0 var(--ink); text-decoration: none; -webkit-tap-highlight-color: transparent; }
+body.paper .back:active, body.paper .kbtn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+body.paper .kbtn { display: inline-flex; align-items: center; justify-content: center; width: 46px; height: 46px; padding: 0; color: var(--ink); background: var(--paper); border: 2.5px solid var(--ink); border-radius: 12px; box-shadow: 0 4px 0 var(--ink); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+body.paper .pagename { font: 700 13px/1 var(--pix); color: var(--ink); background: var(--paper2); border: 2px solid var(--ink); border-radius: 8px; padding: 7px 10px 6px; white-space: nowrap; }
+
+/* 글자 */
+body.paper .eyebrow, body.paper .kicker { font: 700 12px/1.2 var(--pix); color: var(--mute); letter-spacing: 0; }
+body.paper .title, body.paper h1, body.paper h2 { font-family: var(--pix); font-weight: 700; letter-spacing: 0; color: var(--ink); }
+body.paper .title em, body.paper h1 em { color: var(--ink); background: var(--sun); padding: 0 6px; border-radius: 4px; box-shadow: 0 3px 0 var(--ink); font-style: normal; }
+body.paper .sub, body.paper .hint, body.paper .meta { color: var(--mute); }
+body.paper .sub b, body.paper .hint b { color: var(--ink); }
+body.paper a { color: inherit; }
+
+/* 버튼: 눌리는 두께 */
+body.paper .btn { font: 700 15px/1.2 var(--pix); letter-spacing: 0; min-height: 48px; color: var(--ink); background: #fff; border: 2.5px solid var(--ink); border-radius: 12px; box-shadow: 0 4px 0 var(--ink); transition: transform .05s, box-shadow .05s; -webkit-tap-highlight-color: transparent; }
+body.paper .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+body.paper .btn.primary { background: var(--sun); color: var(--ink); border-color: var(--ink); }
+body.paper .btn.ghost { background: var(--paper2); }
+body.paper .btn.small { min-height: 44px; font-size: 13px; }
+body.paper .btn[disabled], body.paper button[disabled] { opacity: .45; cursor: not-allowed; }
+body.paper .btn .ic { width: 20px; height: 20px; }
+
+/* 종이 카드 */
+body.paper .planet, body.paper .result, body.paper .hall .entry, body.paper .hall .empty, body.paper .quiz .q, body.paper .quiz-result, body.paper .code-box, body.paper .out pre, body.paper .links a, body.paper .links .soon {
+  background: #fff; border: 2.5px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink); color: var(--ink);
+}
+body.paper .planet.chosen { background: var(--sun); box-shadow: 0 1px 0 var(--ink); transform: translateY(3px); }
+body.paper .planet:hover, body.paper .planet:focus-visible { border-color: var(--ink); }
+body.paper .planet .num { font: 700 12px/1 var(--pix); color: var(--mute); }
+body.paper .planet .name { font: 700 14px/1.3 var(--pix); }
+body.paper .orb { box-shadow: none; border: 2.5px solid var(--ink); }
+body.paper .card-preview { border: 2.5px solid var(--ink); border-radius: 12px; }
+body.paper .result h2 { color: var(--ink); }
+
+/* 탭(편 고르기 등) — 44px 이상 */
+body.paper .ep-tabs button { min-height: 44px; padding: 0 14px; font: 700 13px/1 var(--pix); color: var(--ink); background: #fff; border: 2.5px solid var(--ink); border-radius: 10px; box-shadow: 0 3px 0 var(--ink); }
+body.paper .ep-tabs button[aria-selected="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+body.paper .ep-tabs { padding: 2px 2px 8px; }
+
+/* 아래 메뉴(행성 고르기 화면) */
+body.paper .tabbar { background: var(--paper); border-top: 3px solid var(--ink); backdrop-filter: none; }
+body.paper .tabbar a { color: var(--ink); min-height: 54px; justify-content: center; border-radius: 12px; border: 2px solid transparent; }
+body.paper .tabbar a span { font: 700 11px/1 var(--pix); }
+body.paper .tabbar a .ic { width: 24px; height: 24px; }
+body.paper .tabbar a.on { color: var(--ink); background: var(--sun); border-color: var(--ink); box-shadow: 0 3px 0 var(--ink); }
+
+/* 입력칸 */
+body.paper input, body.paper textarea { color: var(--ink); background: #fff; border: 2.5px solid var(--ink); border-radius: 12px; }
+body.paper .form label { color: var(--ink); font-weight: 700; }
+body.paper .form input:focus, body.paper .form textarea:focus, body.paper input:focus { outline: 3px solid var(--sky); border-color: var(--ink); }
+body.paper .warn { color: var(--ink); background: #ffe6ea; border: 2px solid var(--ink); }
+body.paper .spoiler { border: 2px dashed var(--ink); }
+body.paper .spoiler summary { color: var(--ink); min-height: 44px; display: flex; align-items: center; gap: 6px; font: 700 13px/1 var(--pix); }
+body.paper .spoiler p { color: var(--danger); }
+body.paper .watch a { color: var(--ink); background: #fff; border: 2.5px solid var(--ink); box-shadow: 0 3px 0 var(--ink); font: 700 13px/1 var(--pix); min-height: 44px; display: flex; align-items: center; justify-content: center; }
+body.paper .opt-row button { color: var(--ink); background: #fff; border: 2px solid var(--ink); min-height: 40px; }
+body.paper .opt-row button[aria-pressed="true"] { background: var(--sun); border-color: var(--ink); }
+body.paper .sep { border-top: 2px dashed var(--ink); opacity: .35; }
+body.paper .privacy summary { min-height: 44px; display: flex; align-items: center; }
+
+/* 알림 · 팔로우 안내(dwk-core 가 붙이는 것) */
+body.paper .toast, body.paper .dc-toast { background: var(--ink); color: var(--paper); border: 2.5px solid var(--paper); border-radius: 10px; font: 700 13px/1.3 var(--pix); padding: 10px 14px 9px; box-shadow: 0 4px 0 rgba(0,0,0,.3); }
+body.paper .dc-follow { border: 2px dashed var(--ink); background: transparent; border-radius: 12px; }
+body.paper .dc-follow p { color: var(--mute); } body.paper .dc-follow b { color: var(--ink); }
+body.paper .dc-follow .btn { min-height: 44px; font-size: 13px; white-space: nowrap; }
+
+/* 결과 줄 칸(이모지 네모 대신) */
+body.paper .sq { display: inline-block; width: 14px; height: 14px; margin: 0 2px; border: 2px solid var(--ink); border-radius: 3px; vertical-align: middle; }
+body.paper .sq.g { background: var(--leaf); } body.paper .sq.y { background: var(--sun); } body.paper .sq.r { background: var(--rose); }
+
+/* 방법 안내 3칸(게임 시작 카드 공용) */
+body.paper .howto > div, body.paper .steps > div { background: #fff; border: 2.5px solid var(--ink); border-radius: 12px; box-shadow: 0 3px 0 var(--ink); color: var(--ink); }
+body.paper .howto .ic, body.paper .steps .ic { width: 28px; height: 28px; }
+body.paper .howto small, body.paper .steps small, body.paper .steps span { color: var(--ink); font-weight: 700; }
+
+/* 가로 화면: 위 여백 줄이기 */
+@media (max-height: 520px) and (orientation: landscape) {
+  body.paper .top { padding-top: 6px; }
+  body.paper .back { min-height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) { body.paper .orb { animation: none; } }

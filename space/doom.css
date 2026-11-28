@@ -1,0 +1,50 @@
+/* doom.css — 화면 틀(버튼·시트·아래 막대·이름표)을 릴스 돈워너노우호 세계의 「우주선 계기판」으로(2026-11-28 · 편장부 H33)
+   대표 원문(11-28): 「전광판 디자인이 존나 짜쳐 내부 ui도 존나 짜치고 좀 디자인 디벨롭좀 해봐」
+   문법: 어두운 유리판(반투명 + 흐림) · 청록 머리카락 선 · 네 모서리 꺾쇠 · 숫자·강조는 릴스와 같은 노랑 #ffd84a + 검은 테 · 제목은 갈무리(릴스 자막 글꼴)
+   크림 종이 + 굵은 잉크 테 + 딱 떨어지는 그림자(옛 레트로 게임기 옷)는 ?skin=cute 일 때만. body.doom 은 world-doom.js · town-doom.js 가 붙인다. */
+body.town.doom, body.world.doom {
+  --ink: #dbe7f2; --paper: rgba(9, 14, 21, .86); --paper2: rgba(16, 24, 34, .92); --sky: #5fe8ff; --sun: #ffd84a; --rose: #ff6a4a; --leaf: #6fe0a8; --mute: #8ea3b8;
+  --hud-line: rgba(95, 232, 255, .42); --hud-line2: rgba(95, 232, 255, .16); --glass: rgba(8, 13, 20, .78);
+  --corner: linear-gradient(var(--sky), var(--sky)) top left / 14px 2px no-repeat, linear-gradient(var(--sky), var(--sky)) top left / 2px 14px no-repeat,
+            linear-gradient(var(--sky), var(--sky)) top right / 14px 2px no-repeat, linear-gradient(var(--sky), var(--sky)) top right / 2px 14px no-repeat,
+            linear-gradient(var(--sky), var(--sky)) bottom left / 14px 2px no-repeat, linear-gradient(var(--sky), var(--sky)) bottom left / 2px 14px no-repeat,
+            linear-gradient(var(--sky), var(--sky)) bottom right / 14px 2px no-repeat, linear-gradient(var(--sky), var(--sky)) bottom right / 2px 14px no-repeat;
+}
+/* 공용 단추: 유리판 + 머리카락 선 + 눌리면 청록 빛 */
+body.doom .k { background: var(--glass); color: var(--ink); border: 1px solid var(--hud-line); border-radius: 10px; box-shadow: 0 0 0 1px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .06);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); text-shadow: 0 1px 0 #000; }
+body.doom .k:active { transform: translateY(1px); box-shadow: 0 0 14px rgba(95, 232, 255, .45), inset 0 0 0 1px var(--sky); }
+body.doom .k.small { box-shadow: 0 0 0 1px rgba(0, 0, 0, .5); }
+body.doom .k.sun, body.doom .t-visit .btn, body.doom .t-sheet .btn.primary { background: linear-gradient(#ffe27a, #f2b915); color: #1a1204; border-color: #fff0a8; text-shadow: none; box-shadow: 0 0 16px rgba(255, 216, 74, .35); }
+body.doom .k.sky { background: linear-gradient(rgba(20, 70, 84, .9), rgba(10, 36, 46, .9)); color: #d8fbff; border-color: var(--sky); box-shadow: 0 0 12px rgba(95, 232, 255, .25); }
+body.doom .k.rose { background: linear-gradient(rgba(90, 26, 18, .92), rgba(52, 14, 10, .92)); color: #ffd9cf; border-color: var(--rose); }
+/* 이름표(내 땅 · No.0000) — 계기판 표시창 */
+body.doom .t-name { background: var(--corner), var(--glass); border-color: var(--hud-line2); padding: 0 16px; }
+body.doom .t-namebox small { color: var(--sky); letter-spacing: .08em; font-size: 10px; }
+body.doom #nameText { font: 700 17px/1 'Galmuri11', var(--pix); color: var(--sun); text-shadow: 0 0 0 #000, 1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000, 0 0 10px rgba(255, 216, 74, .35); }
+body.doom .t-icon { border-radius: 10px; }
+/* 시트(꾸미기·캐릭터·행성·사진·자랑·코드) — 모서리 꺾쇠가 있는 유리 계기판 */
+body.doom .t-sheet { background: var(--corner), var(--paper); color: var(--ink); border: 1px solid var(--hud-line); border-radius: 14px; box-shadow: 0 0 0 1px #000, 0 18px 40px rgba(0, 0, 0, .55), inset 0 0 40px rgba(95, 232, 255, .05);
+  backdrop-filter: blur(12px) saturate(1.2); -webkit-backdrop-filter: blur(12px) saturate(1.2); }
+body.doom .t-sheet-head { background: linear-gradient(90deg, rgba(95, 232, 255, .14), rgba(95, 232, 255, 0) 70%); border-bottom: 1px solid var(--hud-line); }
+body.doom .t-sheet-head b { font: 700 16px/1.2 'Galmuri11', var(--pix); color: #fff; letter-spacing: .04em; }
+body.doom .t-sheet-head b::before { content: ''; display: inline-block; width: 8px; height: 8px; margin: 0 8px 1px 0; background: var(--sky); box-shadow: 0 0 8px var(--sky); vertical-align: middle; }
+/* 소품 칸 · 카드 · 칩: 어두운 칸 + 고르면 노란 빛 테 */
+body.doom .t-item, body.doom .t-card, body.doom .t-chip, body.doom .t-planet, body.doom .t-link, body.doom .t-code, body.doom .t-sheet .btn, body.doom .t-log, body.doom .t-got li {
+  background: linear-gradient(rgba(30, 42, 56, .9), rgba(14, 20, 28, .9)); color: var(--ink); border: 1px solid var(--hud-line2); border-radius: 10px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05); }
+body.doom .t-item:hover, body.doom .t-card:hover, body.doom .t-chip:hover { border-color: var(--hud-line); }
+body.doom .t-item.on, body.doom .t-chip.on { background: linear-gradient(rgba(70, 56, 10, .92), rgba(34, 26, 4, .92)); color: var(--sun); border-color: var(--sun); transform: none; box-shadow: 0 0 0 1px rgba(255, 216, 74, .4), 0 0 16px rgba(255, 216, 74, .3); }
+body.doom .t-item .ic, body.doom .t-chip .ic { filter: drop-shadow(0 0 4px rgba(95, 232, 255, .35)); }
+body.doom .t-item.on .ic { filter: drop-shadow(0 0 6px rgba(255, 216, 74, .6)); }
+body.doom .t-card img, body.doom .t-orb { border: 1px solid var(--hud-line); }
+body.doom #itemCount { font: 700 15px/1 'Galmuri11', var(--pix); color: var(--sun); }
+/* 아래 막대: 계기판 띠 + 켜진 칸은 노란 밑줄 빛 */
+body.doom .t-bar { background: linear-gradient(rgba(6, 10, 16, .82), rgba(3, 6, 10, .96)); border-top: 1px solid var(--hud-line); box-shadow: 0 -10px 30px rgba(0, 0, 0, .45); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+body.doom .t-bar button { color: var(--mute); border: 0; border-radius: 8px; position: relative; }
+body.doom .t-bar button[aria-pressed], body.doom .t-bar button[aria-pressed="true"] { background: rgba(255, 216, 74, .08); color: var(--sun); box-shadow: none; }
+body.doom .t-bar button[aria-pressed]::after { content: ''; position: absolute; left: 22%; right: 22%; bottom: 2px; height: 2px; background: var(--sun); box-shadow: 0 0 10px var(--sun); border-radius: 2px; }
+/* 안내 줄 · 선택 막대 · 행동 막대 · 알림 */
+body.doom .t-hint { background: var(--glass); color: #e8f4ff; border: 1px solid var(--hud-line); border-radius: 999px; font: 700 12px/1 'Galmuri11', var(--pix); letter-spacing: .03em; backdrop-filter: blur(8px); }
+body.doom .t-sel, body.doom .t-act, body.doom .t-tool, body.doom .t-visit { background: var(--corner), var(--paper); color: var(--ink); border: 1px solid var(--hud-line); box-shadow: 0 10px 30px rgba(0, 0, 0, .5); backdrop-filter: blur(10px); }
+body.doom .dc-toast { background: rgba(6, 10, 16, .94) !important; color: var(--ink) !important; border: 1px solid var(--sky) !important; box-shadow: 0 0 18px rgba(95, 232, 255, .25) !important; }
+body.doom .t-loading, body.doom .t-fail { background: #020308; }

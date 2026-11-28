@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data: https://cdn.jsdelivr.net; img-src 'self' data: blob: https://i.ytimg.com; media-src 'self' data: blob:; connect-src 'self' https://yvjhsqbymgomicjqmuok.supabase.co wss://yvjhsqbymgomicjqmuok.supabase.co wss://dwk-realtime.dwk-plaza.workers.dev https://dwk-feed.dwk-plaza.workers.dev https://cdn.jsdelivr.net ws://127.0.0.1:* ws://localhost:*; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'"><!-- 보안(2026-11-28): 정해 둔 곳에서만 스크립트·연결 · 근거 reports/돈워너노우_사이트보안_20261128/REPORT.md -->
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>돈워너노우 행성 작업실</title>
+<meta name="description" content="행성 하나 골라. 여기서 1년 버텨야 해. — 돈워너노우 시청자가 행성을 고르고, 직접 만든 행성을 내는 곳.">
+<meta property="og:title" content="돈워너노우 행성 작업실">
+<meta property="og:description" content="행성 하나 골라. 여기서 1년 버텨야 해.">
+<meta property="og:image" content="img/og.jpg">
+<meta name="theme-color" content="#000000">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" integrity="sha384-GIdEBaqGN9mNkDkMkzMHW8EKUqtpPIe/sLj1X7DIrnc9uPtLROJgmuDlh+3rBw0j" crossorigin="anonymous">
+<!-- 11-28 대표 「영상 속 행성고르기 … 내부는 디자인이랑 디테일 디벨롭 안해놓은거야?」 → 입구(start.html)와 같은 SpaceX·NASA 문법.
+     예전 종이 옷(style.css·paper.css · 1분 게임과 공용)은 이 화면에서만 빼고 pick.css 하나로. 되돌리기: reports/돈워너노우_사이트입구_20261128/이전판/내부_행성고르기_전/ -->
+<link rel="stylesheet" href="pick.css?v=2">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+} }
+</script>
+</head>
+<body class="pick">
+<header class="nav">
+  <a class="mark" href="start.html" aria-label="돈워너노우 처음 화면으로"><span class="mark-back" aria-hidden="true"></span>돈워너노우</a>
+  <span class="passport" title="행성을 고르면 여권에 도장이 찍혀"><span id="passportMini">도장 0</span></span>
+</header>
+
+<main id="app">
+  <!-- 고르기 — SpaceX: 장면 하나 + 말 하나, 글은 왼쪽 아래 · NASA: 굵고 큰 글자 -->
+  <section data-view="pick">
+    <div class="hero">
+      <p class="eyebrow"><span id="pickEyebrow">행성</span></p>
+      <h1 class="title">행성 하나 골라.<br>여기서 1년 버텨야 해.</h1>
+      <p class="sub">보기 전에 먼저 골라. 고르면 시청자들이 뭘 골랐는지 열려.</p>
+    </div>
+    <div class="ep-tabs" id="epTabs" role="tablist" aria-label="편 고르기"></div>
+    <div class="planets" id="planets" aria-busy="true"><p class="state">행성 불러오는 중…</p></div>
+
+    <div class="result hidden" id="result" aria-live="polite">
+      <div class="r-scene">
+        <img class="r-bg" id="resultImg" alt="" decoding="async">
+        <div class="r-cap">
+          <p class="eyebrow"><span id="resultEyebrow">네가 고른 행성</span></p>
+          <h2 id="resultName">—</h2>
+          <p class="pitch" id="resultPitch"></p>
+          <div class="watch" id="watchLinks" aria-label="영상 보러 가기"></div>
+        </div>
+      </div>
+      <div class="r-body">
+        <div class="r-col">
+          <div class="crowd hidden" id="crowd" aria-live="polite"></div>
+          <details class="spoiler">
+            <summary>스포 보기 <small>영상 먼저 보고 와</small></summary>
+            <p id="resultRule"></p>
+          </details>
+          <p class="hint">버틸 수 있을지는 <b>영상 끝</b>에서 알려 줘.</p>
+        </div>
+        <div class="r-col r-share">
+          <p class="label">공유 카드</p>
+          <div class="card-wrap" id="cardWrap" data-state="busy">
+            <canvas id="card" width="1080" height="1350" class="card-preview" aria-label="공유 카드 미리보기"></canvas>
+            <p class="card-state" id="cardState">카드 만드는 중…</p>
+          </div>
+          <div class="actions">
+            <button class="btn primary" id="shareBtn" disabled>카드 공유하기<i aria-hidden="true"></i></button>
+            <button class="btn" id="saveBtn" disabled>이미지 저장</button>
+          </div>
+          <a class="txt" href="#submit">내가 상상한 행성 신청하기</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 도감 -->
+  <section data-view="dex" class="hidden">
+    <div class="hero">
+      <p class="eyebrow"><span>행성 도감</span></p>
+      <h1 class="title">지금까지 나온 행성</h1>
+      <p class="sub" id="dexSub">골라 본 행성엔 도장이 찍혀. 다 모아 봐.</p>
+    </div>
+    <div class="dex" id="dex"></div>
+  </section>
+
+  <!-- 행성 신청(11-28 대표 「그냥 행성 신청 이런거로 하던가」) — 서버(Supabase planet_apps)로 접수 · 접수 번호 · 이 기기의 「내 신청」 상태.
+       서버를 못 쓰면 예전 「댓글 문구 복사」로 물러난다(submitOut). 근거: reports/돈워너노우_사이트입구_20261128/행성신청_자동갱신.md -->
+  <section data-view="submit" class="hidden">
+    <div class="hero">
+    <p class="eyebrow"><span>행성 신청</span></p>
+    <h1 class="title">네 행성을 신청해.</h1>
+    <p class="sub">좋아 보이는데 숨은 함정이 있는 행성. 뽑히면 <b>1년 버티기 영상</b>이 되고, 영상과 이 사이트에 <b>네 아이디</b>가 올라가.</p>
+    </div>
+    <ol class="flow4" aria-label="신청한 행성이 영상이 되기까지">
+      <li><b>신청</b><span>지금 여기서</span></li>
+      <li><b>검수</b><span>사람이 다 읽고, 통과하면 대기열에</span></li>
+      <li><b>영상</b><span>대기열에서 뽑아 1년 버티기 편으로</span></li>
+      <li><b>크레딧</b><span>영상 끝과 이 사이트에 네 아이디</span></li>
+    </ol>
+    <div class="mine hidden" id="applyMine" aria-live="polite"></div>
+    <form class="form" id="submitForm" autocomplete="off" novalidate>
+      <label>행성 이름<input name="planet" maxlength="30" placeholder="예) 끝없는 이불 행성" required></label>
+      <label>좋은 점 <small>낙원 같은 부분</small><textarea name="good" maxlength="80" rows="2" placeholder="예) 언제 누워도 딱 좋은 온도야" required></textarea></label>
+      <label>숨은 함정 <small>영상의 반전 — 공개 목록엔 안 보여</small><textarea name="trap" maxlength="80" rows="2" placeholder="예) 근데 한번 누우면 이불이 안 놔 줘" required></textarea></label>
+      <label>인스타 아이디 <small>선택 · 뽑히면 크레딧에 써</small><span class="at"><input name="ig" maxlength="31" placeholder="dontwannaknow.kr" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="email"></span></label>
+      <label class="check"><input type="checkbox" name="over14" required><span>만 14세 이상이야</span></label>
+      <p class="warn">실명·학교·전화번호·사진은 쓰지 마. 욕설·연락처·링크가 들어가면 접수가 안 돼. 적은 내용과 아이디만 저장하고, 지우고 싶으면 인스타 DM으로 접수 번호를 보내 줘.</p>
+      <p class="form-err" id="applyErr" role="alert" hidden></p>
+      <button class="btn primary wide" type="submit" id="applyBtn">신청하기<i aria-hidden="true"></i></button>
+    </form>
+    <div class="done hidden" id="applyDone" tabindex="-1">
+      <p class="eyebrow"><span>접수 완료</span></p>
+      <p class="done-no"><small>접수 번호</small><b id="doneNo">—</b></p>
+      <h2 class="done-name" id="doneName">—</h2>
+      <p class="done-msg" id="doneMsg"></p>
+      <div class="actions">
+        <button class="btn primary" type="button" id="applyAgain">하나 더 신청하기</button>
+        <a class="btn" href="start.html">입구로</a>
+      </div>
+    </div>
+    <div class="board hidden" id="applyBoard"></div>
+    <div class="out hidden" id="submitOut">
+      <p class="warn" id="submitWhy">지금은 서버가 신청을 못 받아. 대신 아래 문구를 복사해서 <b>댓글</b>로 내 줘 — 댓글로 낸 것도 똑같이 읽어.</p>
+      <pre id="submitText"></pre>
+      <div class="actions">
+        <button class="btn primary" id="copyBtn">복사하기</button>
+        <a class="btn" id="commentLink" target="_blank" rel="noopener">최신 편 댓글로 가기 ↗</a>
+      </div>
+      <a class="btn wide hidden" id="formLink" target="_blank" rel="noopener">구글 폼으로 내기 ↗</a>
+      <p class="hint">인스타·유튜브·틱톡·페이스북 어디 댓글이든 <b>#행성신청</b>만 붙어 있으면 다 봐.</p>
+    </div>
+  </section>
+
+  <!-- 내 캐릭터(옛 2D 카드) -->
+  <section data-view="me" class="hidden">
+    <div class="hero">
+    <p class="eyebrow"><span>캐릭터</span></p>
+    <h1 class="title">영상에 나올 내 캐릭터</h1>
+    <p class="sub">사진 없이 만들어. 캐릭터 코드를 댓글에 남기면 다음 편 <b>카메오 후보</b>가 돼.</p>
+    </div>
+    <div class="me3d">
+      <div class="me3d-stage" id="me3dStage"><p class="me3d-load" id="me3dLoad">3D 캐릭터 불러오는 중…</p></div>
+      <a class="btn wide" href="start.html#wait">캐릭터 꾸미기는 탑승 대기실에서<i aria-hidden="true"></i></a>
+    </div>
+    <div class="code-box">
+      <span>캐릭터 코드</span>
+      <strong id="code">—</strong>
+      <button class="btn small" id="copyCode">복사</button>
+    </div>
+    <div class="actions">
+      <button class="btn" id="saveAvatar">캐릭터 카드 저장</button>
+    </div>
+
+    <hr class="sep">
+    <p class="eyebrow"><span>생존 테스트</span></p>
+    <h2 class="title smaller">나는 어떤 생존자?</h2>
+    <div class="quiz" id="quiz"></div>
+  </section>
+
+  <!-- 더보기 -->
+  <section data-view="more" class="hidden">
+    <div class="hero">
+    <p class="eyebrow"><span>명예의 전당</span></p>
+    <h1 class="title">영상이 된 시청자 행성</h1>
+    </div>
+    <div class="hall" id="hall"></div>
+
+    <hr class="sep">
+    <p class="eyebrow"><span>우리 만나는 곳</span></p>
+    <h2 class="title smaller">인스타가 사라져도 여기서 만나</h2>
+    <div class="links" id="homeLinks"></div>
+
+    <hr class="sep">
+    <details class="privacy" id="privacy">
+      <summary>개인정보 · 이용 안내</summary>
+      <ul>
+        <li>로그인·회원가입이 없어. 고른 행성, 여권 도장, 캐릭터 설정은 <b>네 기기 브라우저에만</b> 저장돼. 브라우저 기록을 지우면 사라져.</li>
+        <li><b>행성 신청</b>을 하면 적은 행성 내용과(적었다면) <b>인스타 아이디</b>만 저장해. 실명·연락처·사진은 받지 않아. 도배를 막으려고 접속 주소는 원래 값 대신 알아볼 수 없게 바꾼 값만 남겨.</li>
+        <li>신청은 <b>만 14세 이상</b>만 할 수 있어. 남의 신청 내용은 누구도 사이트에서 볼 수 없고, 우리가 검수해 통과시킨 행성의 이름·좋은 점만 공개돼(숨은 함정은 영상 반전이라 비공개).</li>
+        <li>뽑혀서 영상이 되면 영상과 이 사이트에 <b>인스타 아이디</b>로 크레딧이 나가. 대기열에선 앞 세 글자만 보여.</li>
+        <li>신청을 지우고 싶으면 인스타 DM으로 <b>접수 번호</b>를 보내 줘. 댓글로 내는 방법도 그대로 있어.</li>
+        <li><b>방문 기록</b>: 사이트를 더 낫게 고치려고 어느 화면을 봤는지·무엇을 눌렀는지·얼마나 머물렀는지·어디서 왔는지(인스타·유튜브 등)·기기 종류·화면 크기·느린 로딩과 오류를 기록해. <b>쿠키를 쓰지 않고</b>, 이름·연락처·적은 글은 기록하지 않아. 기기는 이 브라우저가 만든 무작위 글자로만 구분하고, 접속 주소(IP)는 저장하지 않아. 원래 기록은 <b>90일</b> 뒤 지우고 날짜별 합계만 남겨. <button type="button" class="txt" id="trackOff" data-dwk-off>이 기기 기록 끄기</button></li>
+        <li>문의: 인스타 @dontwannaknow.kr 메시지</li>
+      </ul>
+    </details>
+    <div class="ad-slot hidden" id="adSlot" aria-label="광고"></div>
+  </section>
+</main>
+
+<nav class="tabbar" aria-label="메뉴">
+  <a href="#pick" data-tab="pick" data-ic="planet"><span>고르기</span></a>
+  <a href="#dex" data-tab="dex" data-ic="book"><span>도감</span></a>
+  <a href="#submit" data-tab="submit" data-ic="pen"><span>신청</span></a>
+  <a href="#me" data-tab="me" data-ic="user"><span>캐릭터</span></a>
+  <a href="#more" data-tab="more" data-ic="star"><span>더보기</span></a>
+</nav>
+
+<div class="toast" id="toast" role="status"></div>
+<script src="data.js?v=15"></script>
+<script src="dwk-track.js?v=2"></script><!-- 방문 기록(11-28 · 쿠키 없음 · 설계 reports/돈워너노우_사이트데이터_20261128/REPORT.md) -->
+<script src="icons.js?v=1"></script>
+<script src="app.js?v=13"></script>
+<script src="dwk-core.js?v=5"></script>
+<script type="module">
+// 3D 캐릭터 카드(maker.html과 같은 캐릭터) — 「캐릭터」 화면을 열 때만 three.js를 불러온다
+const $ = (q) => document.querySelector(q);
+let K = null, S = null, card = null, busy = null;
+async function ready() {
+  if (K) return; K = await import('./dwk-char.js?v=7'); S = K.myChar() || K.defaultChar(); window.DWK_CHAR_NEW = !K.myChar();
+  const code = K.encodeChar(S); window.DWK_CHAR = { code }; $('#code').textContent = code;
+}
+async function show() {
+  if (busy) return busy;
+  busy = (async () => {
+    try {
+      await ready(); card = await K.charCard(S, { badge: '내 캐릭터' });
+      const img = new Image(); img.alt = `내 캐릭터 「${K.charName(S)}」`; img.src = card.toDataURL('image/png');
+      $('#me3dStage').replaceChildren(img);
+    } catch (e) { console.warn('3D 캐릭터를 못 그림', e); $('#me3dLoad').textContent = '캐릭터를 못 불러왔어. 「캐릭터 꾸미기」에서 다시 열어 줘.'; busy = null; }
+  })();
+  return busy;
+}
+const onRoute = () => { if (location.hash === '#me') show(); };
+addEventListener('hashchange', onRoute); onRoute();
+ready().catch(() => {});
+$('#copyCode').addEventListener('click', async () => { await ready(); try { await navigator.clipboard.writeText(window.DWK_CHAR.code); DC.toast('캐릭터 코드 복사했어'); } catch { DC.toast(window.DWK_CHAR.code); } });
+$('#saveAvatar').addEventListener('click', async () => { await show(); if (card) DC.shareCanvas(card, `돈워너노우_캐릭터_${window.DWK_CHAR.code}.png`, `내 캐릭터 「${K.charName(S)}」 · @${DWK.site.handle}`); });
+</script>
+<script type="module" src="dwk-chat.js?v=7"></script><!-- 라운지(11-28 이름 변경 · 지금은 준비 중 안내) -->
+</body>
+</html>

@@ -1,0 +1,40 @@
+/* 행성 착륙 — 게임판 안은 land.js 캔버스가 그린다(2026-11-28 게임판 디벨롭). 바깥 틀만 입구와 같은 옷(game-ui.css)으로 (2026-11-28)
+   시작·끝 화면 = 행성이 화면을 채우고(폰: 위 · 컴퓨터: 오른쪽) 글은 왼쪽 아래. 상자·두꺼운 테 없음. */
+body.land { padding: 0; overflow: hidden; height: 100vh; height: 100dvh; touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; background: #000; }
+body.land #stars { display: block; } /* 착륙 게임은 별 하늘이 게임 화면이라 남긴다 */
+body.land .gx-nav { position: fixed; left: 0; right: 0; top: 0; z-index: 5; }
+#game { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 1; display: block; }
+#ui { position: fixed; inset: 0; z-index: 3; pointer-events: none; }
+#ui .panel { pointer-events: auto; position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column;
+  padding: calc(84px + env(safe-area-inset-top)) 20px calc(24px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, .82) 54%, #000 68%); animation: gxIn .4s ease-out both; }
+/* 폰: 위 절반은 행성 자리 — 글이 길어도(끝 화면) 행성 아래에서 시작해 스크롤된다 */
+#ui .panel::before { content: ''; flex: 0 0 calc(50svh - 84px); }
+#ui .l-cap { margin-top: auto; display: grid; gap: 12px; width: 100%; max-width: 560px; }
+#ui .l-cap .gx-acts { margin-top: 4px; }
+#ui .l-flags { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+#ui .emojis { margin: 0; line-height: 1.8; }
+#ui .gx-preview { max-width: 200px; }
+/* 4차(2026-11-28): 화면 아래 손 아이콘·「아무 데나 탭」(.tapguide)은 없앴다 — 첫 5초 안내는 캔버스 판 하나(land.js drawGuide) */
+/* 3차(2026-11-28): 끝 화면 — 「한 판 더」가 폰 첫 화면(390×844) 아래로 잘렸다. 점수 줄(점수 + 기록 표시 한 줄) 바로 아래로 단추를 올린다(land.js가 순서를 바꿈).
+   공용 game-ui.css는 그대로 두고 여기서만 덮는다. */
+#ui .l-end .l-scoreline { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 14px; }
+#ui .l-end .l-scoreline .gx-score { margin: 0; }
+#ui .l-end .l-scoreline .gx-flag { margin-bottom: 8px; }
+#ui .l-end .gx-acts { margin-top: 2px; }
+#ui .l-end .gx-acts .gx-btn.main { min-width: 148px; }
+#ui .l-end .gx-acts + .gx-rows { margin-top: 10px; }
+/* 4차: 끝 화면이 0.4초 투명→불투명 페이드(gxIn)라 결과 글자가 반투명인 채 늦게 선명해졌다 → 처음부터 불투명, 0.18초 짧게 올라오기만 한다 */
+#ui .panel.l-end { animation: lEndIn .18s cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes lEndIn { from { transform: translateY(14px); } }
+@media (min-width: 900px) {
+  #ui .panel::before { display: none; }
+  #ui .panel { padding: 120px 40px 48px; background: linear-gradient(90deg, rgba(0, 0, 0, .9) 0%, rgba(0, 0, 0, .7) 38%, rgba(0, 0, 0, 0) 60%); }
+  #ui .gx-preview { max-width: 240px; }
+}
+@media (prefers-reduced-motion: reduce) { #ui .panel, #ui .panel.l-end { animation: none; } }
+@media (max-height: 520px) and (orientation: landscape) {
+  #ui .panel::before { display: none; }
+  #ui .panel { padding-top: 70px; background: linear-gradient(90deg, rgba(0, 0, 0, .92) 0%, rgba(0, 0, 0, .7) 45%, rgba(0, 0, 0, 0) 70%); }
+  #ui .l-cap { max-width: 420px; }
+}

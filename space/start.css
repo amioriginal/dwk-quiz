@@ -1,0 +1,142 @@
+/* start.css — 첫 화면 전용 (style.css 의 기본 위에 얹는다)
+   2026-11-20: 배경 = 광장 입장 연출 영상(우주선 → 낙하 → 착지). 글·버튼은 광장(world.css)과 같은 「레트로 게임기」 옷 —
+   크림 종이 + 굵은 잉크 테두리 + 딱 떨어지는 그림자 + 눌리는 버튼 + 도트 글꼴(갈무리, OFL · fonts/). 유리·빛 흐름·반짝이 없음.
+   글 묶음은 화면 아래 1/3 안 — 영상의 캐릭터(화면 가운데쯤)를 가리지 않는다. */
+@font-face { font-family: 'Galmuri11'; src: url('fonts/Galmuri11-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Galmuri14'; src: url('fonts/Galmuri14.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+
+body.start {
+  --ink: #1f1a2e; --paper: #fff4dc; --paper2: #f2e1bb; --sun: #ffcf3a; --sky: #7fd8ff; --mute: #6c6178;
+  --pix: 'Galmuri11', 'Pretendard Variable', Pretendard, system-ui, sans-serif;
+  --dot: 'Galmuri14', 'Galmuri11', 'Pretendard Variable', Pretendard, system-ui, sans-serif;
+  padding: 0; margin: 0; height: 100%; min-height: 100svh; overflow: hidden;
+  background: #1d2f6e; text-align: center;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+}
+
+/* 영상이 오기 전 바탕 — 영상 첫 장면(파란 하늘)과 같은 색 */
+.space-fallback {
+  position: fixed; inset: 0; z-index: 0;
+  background: linear-gradient(to bottom, #2a4caa 0%, #6f9ee6 46%, #4a6cc0 70%, #1d2f6e 100%);
+}
+/* 넓은 화면에서 세로 영상 양옆을 채우는 흐린 바탕(세로 폰에선 안 받는다) */
+.backdrop { display: none; }
+
+.drop, .drop-still {
+  position: fixed; inset: 0; z-index: 1; width: 100%; height: 100%;
+  object-fit: cover; object-position: 50% 42%; display: block; background: transparent;
+  pointer-events: auto;
+}
+.drop::-webkit-media-controls, .drop::-webkit-media-controls-start-playback-button { display: none !important; -webkit-appearance: none; }
+.drop-still { z-index: 2; opacity: 0; pointer-events: none; transition: opacity .3s ease; }
+body.still .drop-still { opacity: 1; }
+body.still .drop { visibility: hidden; }
+
+/* 아래 글 자리만 어둡게 — 위쪽 장면은 그대로 */
+.veil {
+  position: fixed; inset: 0; z-index: 3; pointer-events: none;
+  background: linear-gradient(to bottom, rgba(16,14,30,0) 58%, rgba(16,14,30,.42) 80%, rgba(16,14,30,.62) 100%);
+  opacity: 0; transition: opacity .5s ease;
+}
+body.ready .veil { opacity: 1; }
+
+/* 글자·버튼 묶음 — 화면 아래쪽 */
+.hero {
+  position: fixed; z-index: 4; left: 0; right: 0; bottom: 0;
+  max-width: 440px; margin: 0 auto;
+  padding: 0 16px calc(8px + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; align-items: center;
+  pointer-events: none;
+}
+.hero > * { opacity: 0; transform: translateY(10px); transition: opacity .35s ease-out, transform .35s ease-out; }
+body.ready .hero > * { opacity: 1; transform: none; pointer-events: auto; }
+body.ready .hero > :nth-child(2) { transition-delay: .12s; }
+body.ready .hero > :nth-child(3) { transition-delay: .2s; }
+
+.card {
+  width: 100%; padding: 16px 16px 10px; text-align: center;
+  background: var(--paper); color: var(--ink); border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 6px 0 #000;
+}
+.headline {
+  margin: 0; font: 700 25px/1.25 var(--pix); letter-spacing: -.02em; color: var(--ink); word-break: keep-all;
+}
+.lede { margin: 8px 0 0; font: 400 15px/1.35 var(--dot); color: var(--mute); word-break: keep-all; }
+
+.cta { width: 100%; margin-top: 14px; display: flex; flex-direction: column; align-items: stretch; gap: 4px; }
+.cta-main {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 58px; padding: 0 16px; font: 700 18px/1 var(--pix); color: var(--ink); text-decoration: none;
+  background: var(--sun); border: 3px solid var(--ink); border-radius: 12px; box-shadow: 0 5px 0 var(--ink);
+  transition: transform .05s, box-shadow .05s;
+}
+.cta-main:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
+.cta-ar { width: 22px; height: 22px; flex: 0 0 auto; }
+/* 보조 길은 작게 — 글자 링크(누를 자리는 44px 유지) */
+.cta-sub {
+  display: flex; align-items: center; justify-content: center; min-height: 44px; margin-top: 4px;
+  font: 400 14px/1 var(--dot); color: var(--ink); text-decoration: underline; text-underline-offset: 3px;
+}
+.cta-sub[hidden] { display: none; }
+.cta-main:focus-visible, .cta-sub:focus-visible, .mini a:focus-visible { outline: 3px solid var(--sky); outline-offset: 3px; }
+
+.mini { margin-top: 2px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0 6px; }
+.mini a {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 10px;
+  font: 400 13px/1 var(--dot); color: var(--paper); text-decoration: underline; text-underline-offset: 3px;
+  text-shadow: 0 1px 0 rgba(0,0,0,.6);
+}
+
+.ad-slot { width: 100%; min-height: 50px; margin-top: 8px; border-radius: 10px; border: 2px dashed rgba(255,244,220,.3); }
+.ad-slot[hidden] { display: none; }
+
+/* 키 작은 세로 화면(SE 등) */
+@media (max-height: 760px) and (orientation: portrait) {
+  .card { padding: 12px 14px 6px; }
+  .headline { font-size: 22px; }
+  .lede { font-size: 14px; margin-top: 6px; }
+  .cta { margin-top: 10px; }
+  .cta-main { min-height: 52px; font-size: 17px; }
+  .cta-sub { min-height: 44px; }
+  .mini a { min-height: 44px; }
+}
+
+/* 세로 영상보다 넓은 화면(가로 폰·태블릿·PC): 영상은 통째로 보이게(contain), 양옆은 흐린 착지 장면 */
+@media (min-aspect-ratio: 3/4) {
+  .backdrop {
+    display: block; position: fixed; inset: -40px; z-index: 0;
+    background: #1d2f6e url('media/drop_end.jpg') center / cover no-repeat;
+    filter: blur(28px) brightness(.55) saturate(1.1);
+  }
+  .drop, .drop-still { object-fit: contain; object-position: 50% 50%; }
+}
+
+/* 넓고 키 큰 화면(PC·태블릿): 영상 가운데, 글은 그 아래쪽 위에 */
+@media (min-width: 760px) and (min-height: 561px) {
+  .hero { max-width: 440px; padding-bottom: 24px; }
+  .headline { font-size: 28px; }
+}
+
+/* 가로 화면(폰 눕힘): 영상이 화면을 꽉 채우고(cover), 글·버튼은 오른쪽 위에 얹는다.
+   2026-11-22 대표 「꽉 차게 바꿔」 — 전에는 영상이 왼쪽 세로 창(52vw)에만 나오고 나머지는 흐린 배경이었다.
+   영상을 12vw 왼쪽으로 밀어(폭 112vw) 착지한 캐릭터가 오른쪽 카드에 가리지 않게 한다. */
+@media (orientation: landscape) and (max-height: 560px) {
+  .backdrop { display: none; }
+  .drop, .drop-still { left: -12vw; right: auto; width: 112vw; object-fit: cover; object-position: 50% 50%; }
+  .hero {
+    left: auto; right: 0; top: 0; bottom: 0; margin: 0; width: min(380px, 46vw); max-width: none; justify-content: center;
+    padding: env(safe-area-inset-top) max(14px, env(safe-area-inset-right)) env(safe-area-inset-bottom) 0;
+  }
+  /* 오른쪽 글 자리만 어둡게 — 카드 아래 작은 글자 링크가 영상 위에서도 읽히게 */
+  .veil { background: linear-gradient(to right, rgba(16,14,30,0) 45%, rgba(16,14,30,.35) 70%, rgba(16,14,30,.55) 100%); }
+  .card { padding: 12px 14px 6px; }
+  .headline { font-size: 21px; }
+  .lede { font-size: 14px; margin-top: 6px; }
+  .cta { margin-top: 10px; }
+  .cta-main { min-height: 50px; font-size: 16px; }
+  .cta-sub { min-height: 44px; }
+  .mini a { min-height: 44px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero > *, .veil, .drop-still { transition: none !important; }
+}

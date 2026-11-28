@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<link rel="icon" href="data:,">
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data: https://cdn.jsdelivr.net; img-src 'self' data: blob: https://i.ytimg.com; media-src 'self' data: blob:; connect-src 'self' https://yvjhsqbymgomicjqmuok.supabase.co wss://yvjhsqbymgomicjqmuok.supabase.co wss://dwk-realtime.dwk-plaza.workers.dev https://dwk-feed.dwk-plaza.workers.dev https://cdn.jsdelivr.net ws://127.0.0.1:* ws://localhost:*; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'"><!-- 보안(2026-11-28): 정해 둔 곳에서만 스크립트·연결 · 근거 reports/돈워너노우_사이트보안_20261128/REPORT.md -->
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>행성 생존 · 카드를 넘겨 1년 버티기</title>
+<meta name="robots" content="noindex, nofollow">
+<meta property="og:title" content="행성 생존 — 여기서 1년 버텨">
+<meta property="og:image" content="img/og.jpg">
+<meta name="theme-color" content="#000000">
+<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="game-ui.css?v=2">
+<link rel="stylesheet" href="survive.css?v=13">
+<style>
+  body.gx { overscroll-behavior: none; }
+  /* 시작 — 오늘의 행성 장면이 화면을 채운다 */
+  .s-today { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 64px; padding: 12px 0; background: none; border: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: var(--fg); text-align: left; cursor: pointer; }
+  .s-today:active { background: rgba(240, 240, 250, .06); }
+  .s-today::after { content: '→'; margin-left: auto; color: var(--fg3); }
+  .s-today b { display: block; font: 700 16px/1.3 var(--sans); } .s-today small { display: block; margin-top: 3px; font: 400 13px/1.3 var(--sans); color: var(--fg2); }
+  .ticket { display: inline-flex; align-items: center; gap: 8px; font: 600 11px/1 var(--sans); letter-spacing: .06em; color: var(--fg2); padding: 6px 8px; border: 1px solid var(--line); border-radius: 2px; }
+  .ticket .ic { width: 14px; height: 14px; }
+  .mini-orb { width: 40px; height: 40px; flex: 0 0 40px; border-radius: 50%; background-size: 118%; background-position: center 45%; box-shadow: 0 0 0 1px rgba(240, 240, 250, .2); }
+  .s-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 34px 0 6px; }
+  .s-head h2 { margin: 0; font: 700 22px/1.2 var(--sans); letter-spacing: -.02em; }
+  /* 행성 고르기 — 상자 없이 행성 그림 + 이름 + 엔딩 수 */
+  .planets { list-style: none; margin: 0; padding: 8px 0 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px 12px; }
+  .planet { position: relative; display: grid; justify-items: center; gap: 6px; padding: 4px 0; background: none; border: 0; color: var(--fg); cursor: pointer; font: inherit; }
+  .planet .orb { width: 82%; max-width: 104px; margin: 0; aspect-ratio: 1; border: 0; border-radius: 50%; box-shadow: 0 0 0 1px rgba(240, 240, 250, .12), 0 10px 30px rgba(0, 0, 0, .8); transition: transform .35s cubic-bezier(.2, .7, .2, 1), box-shadow .3s; }
+  .planet:hover .orb, .planet:active .orb { transform: scale(1.06); box-shadow: 0 0 0 1px var(--fg), 0 10px 30px rgba(0, 0, 0, .8); }
+  .planet .name { display: inline-flex; align-items: center; gap: 4px; font: 600 13px/1.3 var(--sans); text-align: center; word-break: keep-all; } .planet .name .ic { width: 14px; height: 14px; }
+  .planet .stamp { position: static; font: 500 11px/1 var(--sans); letter-spacing: .02em; color: var(--fg3); }
+  .planet .num { position: static; display: none; }
+  .planet.locked .orb { filter: grayscale(1) brightness(.45); } .lock-hint { display: block; color: var(--fg3); font-size: 11px; line-height: 1.35; text-align: center; word-break: keep-all; }
+  .planet.locked:hover .orb { transform: none; box-shadow: 0 0 0 1px rgba(240, 240, 250, .12); }
+  .codebox { display: flex; gap: 8px; margin: 28px 0 0; } .codebox input { flex: 1; min-width: 0; text-transform: uppercase; letter-spacing: .08em; }
+  .codebox .gx-btn { flex: none; }
+  /* 진행 중 카드판 = survive.css (2026-11-28 게임판 품질) */
+  /* 끝 */
+  /* 끝 화면 배경 = 엔딩 그림(survive.js artEl · survive.css .s-endart, 2026-11-28 2차). 그림은 위쪽 정사각에 또렷하게 두고 글자는 그 아래 검정 위
+     3차: 그림 칸(--ah)을 원본 크기 이하로 줄이고 글 시작을 .8 → .7로 올려 「다시」「결과 공유」가 폰 첫 화면 안에 들어오게 */
+  .end { position: relative; isolation: isolate; display: grid; gap: 10px; margin: calc(-56px - env(safe-area-inset-top)) 0 0; padding: calc(var(--ah, 390px) * .7 + env(safe-area-inset-top)) 20px 22px; animation: fade .5s; }
+  .end::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(0,0,0,.55) 0, rgba(0,0,0,0) 96px, rgba(0,0,0,0) calc(var(--ah, 390px) * .44), rgba(0,0,0,.8) calc(var(--ah, 390px) * .74), #000 var(--ah, 390px), #000 100%); }
+  .end h2 { margin: 0; font: 800 52px/1 var(--sans); letter-spacing: -.03em; color: var(--fg); } .end.lose h2 { color: var(--fg); }
+  .end .ending { justify-self: start; font: 700 11px/1 var(--sans); letter-spacing: .06em; color: var(--fg2); border: 1px solid var(--line); border-radius: 2px; padding: 5px 7px; margin: 2px 0 0; }
+  .end .ending.new { color: var(--fg); border-color: var(--fg); }
+  .end .story { font: 400 16px/1.6 var(--sans); color: var(--fg); margin: 4px 0 0; word-break: keep-all; } .end .rule { font: 600 13px/1.4 var(--sans); color: var(--bad); margin: 0; }
+  .trail { margin: 6px 0 0; line-height: 1.9; }
+  .s-endgrid { display: grid; gap: 18px; }
+  .dex-ep { margin: 0; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .dex-ep h3 { display: flex; align-items: center; gap: 10px; font: 700 15px/1.2 var(--sans); margin: 0 0 10px; } .dex-ep .mini-orb { width: 28px; height: 28px; flex-basis: 28px; }
+  .dex-end { display: flex; flex-wrap: wrap; gap: 6px; } .dex-end span { padding: 6px 8px; border-radius: 2px; border: 1px solid var(--line); color: var(--fg3); font: 500 12px/1 var(--sans); } .dex-end span.got { border-color: var(--fg); color: var(--fg); font-weight: 600; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @media (min-width: 900px) {
+    .planets { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .end { margin: -64px 0 0; padding: 260px 40px 40px; } .end h2 { font-size: 96px; }
+    .end::after { background: linear-gradient(180deg, rgba(0,0,0,.4) 0, rgba(0,0,0,0) 110px, rgba(0,0,0,0) calc(var(--ah) * .6), #000 var(--ah), #000 100%); }
+    .end > * { max-width: 640px; }
+    .s-endgrid { grid-template-columns: minmax(0, 1fr) 300px; gap: 56px; align-items: start; }
+  }
+  @media (max-height: 520px) and (orientation: landscape) { .end { padding-top: 90px; } .end h2 { font-size: 36px; } }
+  @media (prefers-reduced-motion: reduce) { .card, .note, .end, .coach .hand { animation: none; } }
+</style>
+</head>
+<body class="gx">
+<canvas id="stars" aria-hidden="true"></canvas>
+<header class="gx-nav">
+  <a class="gx-mark" href="start.html">돈워너노우</a>
+  <span class="gx-here">행성 생존</span>
+  <nav class="gx-navr"><a href="arcade.html">게임 목록</a><button class="gx-icon" id="snd" type="button"></button></nav>
+</header>
+<main id="stage" class="gx-main" aria-live="polite"><div class="gx-state"><p class="gx-dots">행성을 불러오는 중</p></div></main>
+<script src="data.js?v=15"></script>
+<script src="dwk-core.js?v=5"></script>
+<script src="icons.js?v=1"></script>
+<script src="dwk-prog.js?v=14"></script>
+<script>new MutationObserver(() => document.querySelectorAll('.dp-flash b:not(.gx-gone)').forEach(b => { if (b.textContent.includes('광장')) b.classList.add('gx-gone'); })).observe(document.body, { childList: true, subtree: true });</script>
+<script src="survive.js?v=20"></script>
+</body>
+</html>

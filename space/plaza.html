@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<link rel="icon" href="data:,">
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data: https://cdn.jsdelivr.net; img-src 'self' data: blob: https://i.ytimg.com; media-src 'self' data: blob:; connect-src 'self' https://yvjhsqbymgomicjqmuok.supabase.co wss://yvjhsqbymgomicjqmuok.supabase.co wss://dwk-realtime.dwk-plaza.workers.dev https://dwk-feed.dwk-plaza.workers.dev https://cdn.jsdelivr.net ws://127.0.0.1:* ws://localhost:*; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'"><!-- 보안(2026-11-28): 정해 둔 곳에서만 스크립트·연결 · 근거 reports/돈워너노우_사이트보안_20261128/REPORT.md -->
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>자랑 게시판 · 돈워너노우</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="내 캐릭터를 자랑하고, 하트 TOP 3는 다음 영상에 나와">
+<meta property="og:title" content="돈워너노우 자랑 게시판">
+<meta property="og:image" content="img/og.jpg">
+<meta name="theme-color" content="#000000">
+<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="game-ui.css?v=2">
+<link rel="stylesheet" href="board.css?v=1">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+} }
+</script>
+<!-- 2026-11-28 디벨롭(대표 「자랑 게시판은 왜 안고친거야?」): 크림 종이(paper.css)를 빼고 입구·1분 게임과 같은 옷(game-ui.css + board.css).
+     광장(world·town·maker)은 탑승 대기실로 잠겨 있어, 광장·캐릭터 만들기로 가던 길은 전부 「탑승 대기실」(start.html#wait)로 바꿨다.
+     기록: reports/돈워너노우_사이트입구_20261128/내부_자랑게시판.md · 고치기 전 원본: 같은 폴더 이전판/내부_자랑게시판_전/ -->
+</head>
+<body class="gx bd">
+<header class="gx-nav">
+  <a class="gx-mark" href="start.html">돈워너노우</a>
+  <span class="gx-here">자랑 게시판</span>
+  <nav class="gx-navr"><a href="arcade.html">1분 게임</a><button class="gx-icon" id="snd" type="button"></button></nav>
+</header>
+<main class="bd-wrap" id="app">
+  <div class="bd-side">
+    <section class="bd-hero">
+      <p class="gx-eyebrow"><span>자랑</span>하트 TOP 3는 다음 영상에 나와</p>
+      <h1 class="gx-h1">자랑 게시판</h1>
+      <p class="gx-sub">내 캐릭터를 올리고 하트를 받아. 하트는 한 사람이 하루 <b id="perDay">3</b>개 줄 수 있어.</p>
+      <p class="bd-live" id="status"></p>
+    </section>
+    <section class="bd-sec bd-mine" aria-labelledby="mineT">
+      <p class="gx-label" id="mineT">내 캐릭터 · 올리기</p>
+      <div id="mine"></div>
+    </section>
+  </div>
+  <div class="bd-feed">
+    <section class="bd-spot" id="spot" aria-live="polite"></section>
+    <section class="bd-entries" aria-labelledby="entriesTitle">
+      <div class="bd-head"><p class="gx-label" id="entriesTitle">이번 회 출전</p><small id="entriesSub"></small></div>
+      <p class="bd-left" id="left" hidden></p>
+      <div id="entries"><div class="gx-state"><p>목록을 불러오는 중<span class="gx-dots"></span></p></div></div>
+    </section>
+    <section class="bd-hall" aria-labelledby="hallT">
+      <div class="bd-head"><p class="gx-label" id="hallT">명예의 전당</p><small>지난 회 TOP 3</small></div>
+      <div id="results"></div>
+    </section>
+    <details class="bd-how">
+      <summary>어떻게 하는 거야?</summary>
+      <ol class="gx-rows bd-steps">
+        <li><span>캐릭터 만들기<small>탑승 대기실(광장)이 열리면 같이 열려</small></span></li>
+        <li><span>출전<small>캐릭터 코드를 인스타 DM으로 보내면 접수</small></span></li>
+        <li><span>하트<small>한 사람이 하루 3개 · 같은 캐릭터엔 한 번만</small></span></li>
+        <li><span>출연<small>하트 TOP 3는 다음 영상에 나와</small></span></li>
+      </ol>
+      <p class="gx-note" id="countNote" style="padding-top:14px"></p>
+      <ul class="bd-rules">
+        <li>하트는 한 기기에서 하루 <span id="perDay2">3</span>개. 같은 캐릭터에게는 한 번만.</li>
+        <li>한 사람이 여러 번 누른 흔적이 보이는 하트는 빼고 세.</li>
+        <li>상품은 없어. TOP 3는 다음 영상 출연과 명예의 전당이 보상이야.</li>
+        <li>이름·사진·연락처는 받지 않아. 별명은 공개해도 된다고 한 사람만 보여 줘.</li>
+        <li>인스타 좋아요·댓글 수로 순위를 매기지 않아. 하트는 이 게시판에서만 세.</li>
+        <li>명예의 전당 하트 수는 집계 서버가 센 실제 숫자야.</li>
+      </ul>
+    </details>
+    <nav class="bd-foot"><a class="gx-txt" href="start.html">입구로</a><a class="gx-txt" href="arcade.html">1분 게임</a><a class="gx-txt" href="index.html#submit">행성 신청</a><a class="gx-txt" href="start.html#wait">탑승 대기실</a></nav>
+    <div id="admin"></div>
+    <div id="follow"></div>
+  </div>
+</main>
+<script src="data.js?v=15"></script>
+<script src="dwk-track.js?v=2"></script><!-- 방문 기록(11-28 · 쿠키 없음 · 설계 reports/돈워너노우_사이트데이터_20261128/REPORT.md) -->
+<script src="dwk-core.js?v=5"></script>
+<script src="icons.js?v=1"></script>
+<script src="dwk-prog.js?v=14"></script>
+<script type="module">
+const { el } = DC; const $ = (s) => document.querySelector(s);
+DI.sound($('#snd'));
+$('#follow').append(DC.followCta());
+const WAIT = 'start.html#wait'; // 광장·캐릭터 만들기는 탑승 대기 중 — 그쪽 길은 전부 여기로
+
+// 캐릭터 부품(three.js)을 못 불러오면 목록 대신 한 줄 안내 + 다시 불러오기
+let K;
+try { K = await import('./dwk-char.js?v=7'); }
+catch (e) {
+  console.warn('캐릭터 부품을 못 불러옴', e);
+  const fail = (box) => box.replaceChildren(el('div', { class: 'bd-msg err' }, el('p', {}, '캐릭터 그림을 못 불러왔어. 인터넷 연결을 확인하고 다시 열어 줘.'), el('button', { class: 'gx-txt', type: 'button', onclick: () => location.reload() }, '다시 불러오기')));
+  fail($('#entries')); fail($('#mine')); $('#results').replaceChildren();
+  throw e;
+}
+
+const P = Object.assign({ likeApi: null, round: { no: 1, status: 'ready' }, entries: [], results: [], samples: [], perDay: 3 }, DWK.plaza || {});
+const R = P.round; $('#perDay').textContent = P.perDay; $('#perDay2').textContent = P.perDay;
+const API = P.likeApi; const LIVE = R.status === 'vote' && !!API;
+const OPEN = R.status === 'vote' || R.status === 'open';
+
+// ── 지금 상태(NASA 「지금 일」 한 줄) ──
+const ST = {
+  ready: ['준비 중', `${R.no}회 출전을 아직 받기 전이야`],
+  open: ['출전 중', `${R.no}회 출전 받는 중${R.vote ? ` · 하트 투표 ${R.vote}부터` : ''}`],
+  vote: ['투표 중', `${R.no}회 하트 투표 중${R.result ? ` · 발표 ${R.result}` : ''}`],
+  result: ['발표', `${R.no}회 결과가 나왔어`],
+};
+{ const [tag, txt] = ST[R.status] || ST.ready; $('#status').replaceChildren(el('b', {}, tag), el('span', {}, txt)); if (!OPEN) $('#status').classList.add('off'); }
+
+// ── 그림(목록용 · 한 장씩 차례로 그린다) ──
+const cache = new Map(); let chain = Promise.resolve();
+function pic(code, size = 360) {
+  const key = code + size; if (cache.has(key)) return cache.get(key);
+  const p = chain = chain.then(async () => { const s = K.decodeChar(code); if (!s) return ''; const c = await K.portrait(s, size, size, { fov: 22 }); return c ? c.toDataURL('image/png') : ''; }).catch((e) => { console.warn('캐릭터 그림 실패', e); return ''; });
+  cache.set(key, p); return p;
+}
+// 그림 자리: 그리는 동안 은은하게 흐르고(wait), 못 그리면 이름 첫 글자
+const nameOf = (s) => K.charName(s);
+function picBox(code, size, label = '') {
+  const box = el('span', { class: 'bd-pic wait', 'aria-hidden': 'true' });
+  pic(code, size).then(u => {
+    box.classList.remove('wait');
+    if (u) box.replaceChildren(el('img', { src: u, alt: '' }));
+    else box.replaceChildren(el('span', { class: 'ini' }, (label || '?').trim().slice(0, 1)));
+  });
+  return box;
+}
+const openSpot = (code) => (e) => { e?.preventDefault?.(); if (location.hash !== `#c=${code}`) location.hash = `c=${code}`; else spot(); };
+
+// ── 하트: 서버가 있으면 서버, 없으면 「이 기기에만」(숫자는 안 보임 — 가짜 숫자 금지) ──
+const device = (() => { let d = DC.store.get('device', null); if (!d) { d = Array.from(crypto.getRandomValues(new Uint8Array(12)), b => b.toString(16).padStart(2, '0')).join(''); DC.store.set('device', d); } return d; })();
+const pickKey = `plaza_${R.no}_${DC.today()}`;
+const picks = () => DC.store.get(pickKey, []);
+const everKey = `plaza_${R.no}_all`;
+let counts = {}; let countsErr = false;
+async function loadCounts() {
+  if (!API) return;
+  countsErr = false;
+  try { const r = await fetch(`${API}/counts?round=${R.no}`, { cache: 'no-store' }); if (r.ok) counts = (await r.json()).counts || {}; else countsErr = true; }
+  catch (e) { countsErr = true; console.warn('하트 집계를 못 불러옴', e); }
+}
+async function heart(code, btn) {
+  const all = DC.store.get(everKey, []);
+  if (all.includes(code)) { DC.toast('이 캐릭터엔 이미 하트를 줬어'); return; }
+  if (picks().length >= P.perDay) { DC.toast(`오늘 하트 ${P.perDay}개를 다 썼어. 내일 또 와`); DC.sfx('bad'); return; }
+  if (LIVE) {
+    btn.disabled = true; btn.setAttribute('aria-busy', 'true');
+    try {
+      const r = await fetch(`${API}/heart`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ round: R.no, code, device }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !j.ok) { DC.toast(j.msg || '하트를 못 보냈어. 잠시 뒤 다시'); btn.disabled = false; btn.removeAttribute('aria-busy'); return; }
+      if (Number.isFinite(j.count)) counts[code] = j.count;
+    } catch { DC.toast('인터넷이 불안정해. 잠시 뒤 다시'); btn.disabled = false; btn.removeAttribute('aria-busy'); return; }
+  }
+  DC.store.set(pickKey, [...picks(), code]); DC.store.set(everKey, [...all, code]);
+  DC.sfx('good'); DC.buzz([15, 30, 15]); btn.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.12)' }, { transform: 'scale(1)' }], { duration: 260 });
+  DC.toast(LIVE ? '하트 보냈어' : '하트 줬어 · 투표가 열리기 전이라 이 기기에만 남아');
+  drawEntries(); if (/c=/.test(location.hash)) spot();
+}
+const heartIc = (full) => { const h = DI.ic('heart'); if (full) h.innerHTML = DI.ICON.heartFill; return h; };
+function heartBtn(code, big = false) {
+  const given = DC.store.get(everKey, []).includes(code);
+  const n = counts[code];
+  const label = LIVE && Number.isFinite(n) ? String(n) : (given ? '줬어' : '하트');
+  const b = el('button', { class: `bd-heart${given ? ' on' : ''}${big ? ' big' : ''}`, type: 'button', 'aria-pressed': given ? 'true' : 'false',
+    'aria-label': given ? '이미 하트를 줬어' : (LIVE && Number.isFinite(n) ? `하트 주기 · 지금 ${n}개` : '하트 주기'), disabled: OPEN ? null : '' },
+    heartIc(given), el('span', {}, label));
+  b.onclick = () => heart(code, b);
+  return b;
+}
+
+// ── 공유 카드 1080×1350 — 입구와 같은 문법(검정 · 장면 하나 · 글은 왼쪽 아래 · 흰 글씨만) ──
+const F = "'Pretendard Variable', Pretendard, system-ui, -apple-system, 'Apple SD Gothic Neo', sans-serif";
+async function boardCard(s, eyebrow = '자랑 게시판') {
+  try { await Promise.all([document.fonts.load(`700 80px ${F}`), document.fonts.load(`500 34px ${F}`)]); } catch { /* 시스템 글꼴 */ }
+  const c = document.createElement('canvas'); c.width = 1080; c.height = 1350; const x = c.getContext('2d');
+  x.fillStyle = '#000'; x.fillRect(0, 0, 1080, 1350);
+  const g = x.createRadialGradient(540, 470, 40, 540, 470, 640); g.addColorStop(0, '#141b2a'); g.addColorStop(1, '#000'); x.fillStyle = g; x.fillRect(0, 0, 1080, 1350);
+  const p = await K.portrait(s, 980, 900, { fov: 21 }); if (p) x.drawImage(p, 50, 10, 980, 900);
+  x.textAlign = 'left'; x.textBaseline = 'alphabetic';
+  x.fillStyle = 'rgba(240,240,250,.72)'; x.font = `600 30px ${F}`; x.fillText(`${eyebrow}  ·  ${K.TITLES[s.title].name}`, 72, 1000);
+  x.fillStyle = 'rgba(240,240,250,.5)'; x.fillRect(72, 1030, 40, 2);
+  x.fillStyle = '#f0f0fa'; let fs = 92; x.font = `700 ${fs}px ${F}`; while (x.measureText(nameOf(s)).width > 936 && fs > 56) { fs -= 4; x.font = `700 ${fs}px ${F}`; } x.fillText(nameOf(s), 72, 1132);
+  x.fillStyle = 'rgba(240,240,250,.72)'; x.font = `500 34px ${F}`; x.fillText(`출신 ${DC.planet(s.p)?.name || '작은 행성'} · 특기 ${K.SKILLS[s.skill]}`, 72, 1190);
+  x.fillStyle = 'rgba(240,240,250,.14)'; x.fillRect(72, 1236, 936, 1);
+  x.fillStyle = '#f0f0fa'; x.font = `700 32px ${F}`; x.fillText(`@${DWK.site.handle}`, 72, 1294);
+  x.textAlign = 'right'; x.fillStyle = 'rgba(240,240,250,.5)'; x.font = `500 22px ${F}`; x.fillText(`코드 ${K.encodeChar(s)}`, 1008, 1292);
+  return c;
+}
+async function shareCard(s, btn) {
+  btn.disabled = true; const keep = btn.textContent; btn.textContent = '카드 만드는 중…';
+  try { const c = await boardCard(s); await DC.shareCanvas(c, `dwk-캐릭터-${K.encodeChar(s)}.png`, `내 캐릭터 「${nameOf(s)}」 · @${DWK.site.handle}`); }
+  catch (e) { console.warn('카드 실패', e); DC.toast('카드를 못 만들었어. 잠시 뒤 다시'); }
+  btn.disabled = false; btn.textContent = keep;
+}
+async function shareLink(code, s) {
+  const url = new URL(`plaza.html#c=${code}`, location.href).href; const text = `「${nameOf(s)}」 자랑 게시판 · @${DWK.site.handle}`;
+  try { if (navigator.share) { await navigator.share({ title: '돈워너노우 자랑 게시판', text, url }); return; } } catch (e) { if (e?.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(url); DC.toast('자랑 링크를 복사했어'); } catch { prompt('이 링크를 복사해 줘', url); }
+}
+
+// ── 글 하나(#c=코드) — 장면 하나 + 말 하나 ──
+function closeSpot() { history.replaceState(null, '', location.pathname + location.search); spot(); }
+function spot() {
+  const m = /(?:^|[#&])c=([A-Za-z0-9_-]+)/.exec(location.hash); const box = $('#spot'); box.replaceChildren();
+  if (!m) return;
+  const close = el('button', { class: 'gx-txt bd-close', type: 'button', onclick: closeSpot }, '← 목록으로');
+  const s = K.decodeChar(m[1]);
+  if (!s) {
+    box.append(el('div', { class: 'bd-spotcap' }, el('p', { class: 'gx-eyebrow' }, el('span', {}, '자랑'), '링크 확인'), el('h2', { class: 'gx-h1' }, '이 코드는 깨졌어'),
+      el('p', { class: 'gx-sub' }, '링크를 끝까지 복사했는지 확인해 줘. 코드는 영문·숫자 20자 정도야.'), close));
+    scrollTo({ top: 0 }); return;
+  }
+  const code = m[1];
+  const inRound = P.entries.some(e => e.code === code);
+  const isSample = P.samples.includes(code);
+  const mine = K.myChar() && K.encodeChar(K.myChar()) === code;
+  const tag = mine ? '내 캐릭터' : (inRound ? `${R.no}회 출전` : (isSample ? '견본 · 투표 대상 아님' : '자랑'));
+  const by = P.entries.find(e => e.code === code)?.by;
+  const card = el('button', { class: 'gx-btn', type: 'button' }, '카드 공유'); card.onclick = () => shareCard(s, card);
+  box.append(picBox(code, 720, nameOf(s)),
+    el('div', { class: 'bd-spotcap' },
+      el('p', { class: 'gx-eyebrow' }, el('span', {}, tag), K.TITLES[s.title].name),
+      el('h2', { class: 'gx-h1' }, nameOf(s)),
+      el('p', { class: 'gx-sub' }, `출신 ${DC.planet(s.p)?.name || '작은 행성'} · 특기 ${K.SKILLS[s.skill]}${by ? ` · by ${by}` : ''}`),
+      el('div', { class: 'gx-acts' }, inRound ? heartBtn(code, true) : null, card, el('button', { class: 'gx-txt', type: 'button', onclick: () => shareLink(code, s) }, '링크 공유')),
+      inRound || mine ? null : el('p', { class: 'gx-note' }, isSample ? '돈워너노우가 만든 예시야. 투표에는 안 들어가.' : '이번 회 출전 캐릭터가 아니라 하트는 못 줘.'),
+      close));
+  scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+}
+
+// ── 내 캐릭터 · 올리기 흐름 ──
+function mine() {
+  const box = $('#mine'); box.replaceChildren(); const s = K.myChar();
+  if (!s) {
+    box.append(el('div', { class: 'bd-empty' },
+      el('p', { class: 'gx-sub' }, '아직 내 캐릭터가 없어.'),
+      el('p', { class: 'gx-note' }, '캐릭터 만들기는 광장과 같이 열려. 탑승자 3만 명이 모이면 문이 열리고, 그때 만든 캐릭터로 출전할 수 있어.'),
+      el('a', { class: 'gx-btn', href: WAIT }, '탑승 대기실', el('i', { 'aria-hidden': 'true' }))));
+    return;
+  }
+  const code = K.encodeChar(s);
+  const entered = P.entries.some(e => e.code === code);
+  const canEnter = R.status === 'open' || R.status === 'ready';
+  const dmText = `자랑 게시판 출전! 캐릭터 코드 ${code}`;
+  const status = entered ? `${R.no}회 출전 중이야` : (canEnter ? '아직 출전 전 · 아래 순서대로 보내면 접수돼' : '이번 회 출전은 끝났어 · 다음 회를 기다려');
+  const card = el('button', { class: 'gx-btn', type: 'button' }, '카드 공유'); card.onclick = () => shareCard(s, card);
+  box.append(el('div', { class: 'bd-me' }, el('a', { href: `#c=${code}`, onclick: openSpot(code), 'aria-label': '내 자랑 페이지 보기' }, picBox(code, 360, nameOf(s))),
+    el('div', {}, el('p', { class: 'gx-eyebrow' }, el('span', {}, '내 캐릭터'), K.TITLES[s.title].name), el('b', {}, nameOf(s)), el('p', { class: 'gx-note' }, status))));
+  if (!entered && canEnter) box.append(el('ol', { class: 'gx-rows bd-steps' },
+    el('li', {}, el('span', {}, '출전 문구 복사', el('small', {}, `「${dmText}」`))),
+    el('li', {}, el('span', {}, '인스타 DM에 붙여 넣기', el('small', {}, `@${DWK.site.handle} 에게 보내`))),
+    el('li', {}, el('span', {}, '접수되면 이 목록에 올라와', el('small', {}, '돈워너노우가 확인하고 올려 · 하루쯤 걸릴 수 있어')))));
+  const dm = el('button', { class: 'gx-btn main', type: 'button' }, '출전 DM 보내기', el('i', { 'aria-hidden': 'true' }));
+  dm.onclick = async () => { try { await navigator.clipboard.writeText(dmText); DC.toast('출전 문구를 복사했어. DM에 붙여 넣어'); } catch { prompt('이 문구를 복사해 DM으로 보내 줘', dmText); } window.open(`https://ig.me/m/${DWK.site.handle}`, '_blank', 'noopener'); };
+  box.append(el('div', { class: 'gx-acts' }, !entered && canEnter ? dm : null, card, el('a', { class: 'gx-txt', href: `#c=${code}`, onclick: openSpot(code) }, '내 자랑 페이지')));
+}
+
+// ── 출전 목록 — 가는 선 줄 ──
+function row(code, n, sub, withHeart) {
+  const s = K.decodeChar(code); if (!s) return null;
+  return el('li', { class: 'bd-item' },
+    el('a', { href: `#c=${code}`, onclick: openSpot(code), 'aria-label': `${nameOf(s)} 보기` },
+      el('span', { class: 'n' }, String(n).padStart(2, '0')), picBox(code, 240, nameOf(s)),
+      el('span', { class: 't' }, el('b', {}, nameOf(s)), el('small', {}, ...sub(s)))),
+    withHeart ? heartBtn(code) : el('span', { class: 'go', 'aria-hidden': 'true' }, '→'));
+}
+function drawEntries() {
+  const box = $('#entries'); box.replaceChildren();
+  const left = Math.max(0, P.perDay - picks().length);
+  const showLeft = OPEN && P.entries.length;
+  $('#left').hidden = !showLeft;
+  if (showLeft) $('#left').replaceChildren('오늘 남은 하트 ', el('b', {}, `${left}개`), ` · ${P.perDay}개 중`);
+  $('#entriesSub').textContent = P.entries.length ? `${P.entries.length}명${LIVE && !countsErr ? ' · 하트 많은 순' : ''}` : '';
+  $('#countNote').textContent = LIVE ? '하트 수는 집계 서버가 센 실제 숫자야.' : (API ? '투표가 열리면 하트 수가 보여.' : '하트 집계는 투표가 열리면 시작돼. 그 전에 누른 하트는 이 기기에만 남아.');
+  if (LIVE && countsErr) box.append(el('div', { class: 'bd-msg err' }, el('p', {}, '하트 수를 못 불러왔어. 하트 주기는 그대로 돼.'),
+    el('button', { class: 'gx-txt', type: 'button', onclick: async (e) => { e.target.disabled = true; e.target.textContent = '불러오는 중…'; await loadCounts(); drawEntries(); } }, '다시 불러오기')));
+  if (!P.entries.length) {
+    box.append(el('div', { class: 'bd-msg' }, el('p', {}, R.status === 'ready' ? `${R.no}회 출전을 아직 받기 전이야. 첫 출전자 자리가 비어 있어.` : '첫 출전 캐릭터를 기다리는 중이야.')));
+    if (P.samples.length) {
+      box.append(el('div', { class: 'bd-head' }, el('p', { class: 'gx-label' }, '견본'), el('small', {}, '돈워너노우가 만든 예시 · 투표 대상 아님')));
+      box.append(el('ul', { class: 'bd-list' }, ...P.samples.map((code, i) => row(code, i + 1, (s) => [K.TITLES[s.title].name], false)).filter(Boolean)));
+    }
+    return;
+  }
+  const list = [...P.entries];
+  if (LIVE && !countsErr) list.sort((a, b) => (counts[b.code] || 0) - (counts[a.code] || 0));
+  box.append(el('ul', { class: 'bd-list' }, ...list.map((e, i) => row(e.code, i + 1, (s) => [e.by ? `by ${e.by} · ` : '', K.TITLES[s.title].name], true)).filter(Boolean)));
+}
+
+// ── 명예의 전당 ──
+function results() {
+  const box = $('#results'); box.replaceChildren();
+  if (!P.results.length) { box.append(el('div', { class: 'bd-msg' }, el('p', {}, '아직 발표 전이야. 첫 TOP 3 자리는 비어 있어.'))); return; }
+  for (const r of [...P.results].reverse()) {
+    box.append(el('p', { class: 'gx-note', style: 'padding:0 0 10px' }, `${r.no}회 · ${r.counted} 집계${r.ep ? ` · ${r.ep}편 출연` : ''}`));
+    box.append(el('ul', { class: 'bd-list' }, ...r.top.slice(0, 3).map((t, i) => row(t.code, i + 1, () => [`하트 ${t.likes}`, t.by ? ` · by ${t.by}` : ''], false)).filter(Boolean)));
+  }
+}
+
+// ── 운영(대표·CC 전용 ?admin=1): 발표 카드 1080×1350 — 같은 흑백 문법 ──
+async function rankCard(top, no) {
+  const c = document.createElement('canvas'); c.width = 1080; c.height = 1350; const x = c.getContext('2d');
+  try { await document.fonts.load(`700 80px ${F}`); } catch { /* 시스템 글꼴 */ }
+  x.fillStyle = '#000'; x.fillRect(0, 0, 1080, 1350);
+  x.textAlign = 'left'; x.fillStyle = 'rgba(240,240,250,.72)'; x.font = `600 32px ${F}`; x.fillText(`자랑 게시판 ${no}회`, 72, 110);
+  x.fillStyle = '#f0f0fa'; x.font = `700 84px ${F}`; x.fillText('하트 TOP 3', 72, 205);
+  const slots = [[540, 270, 520, 0], [200, 470, 400, 1], [880, 470, 400, 2]];
+  for (const [cx, y, size, i] of slots) {
+    const t = top[i]; if (!t) continue; const s = K.decodeChar(t.code); if (!s) continue;
+    const p = await K.portrait(s, size, size, { fov: 22 }); x.drawImage(p, cx - size / 2, y, size, size);
+    x.textAlign = 'center'; x.font = `700 ${i ? 34 : 44}px ${F}`; x.fillStyle = '#f0f0fa'; x.fillText(`${i + 1}위 ${K.charName(s)}`, cx, y + size + (i ? 40 : 50));
+    x.font = `600 ${i ? 28 : 34}px ${F}`; x.fillStyle = 'rgba(240,240,250,.72)'; x.fillText(`하트 ${t.likes}`, cx, y + size + (i ? 82 : 100));
+  }
+  x.textAlign = 'left'; x.fillStyle = 'rgba(240,240,250,.14)'; x.fillRect(72, 1236, 936, 1);
+  x.fillStyle = 'rgba(240,240,250,.72)'; x.font = `500 30px ${F}`; x.fillText('세 주민은 다음 영상에 나와', 72, 1294);
+  x.textAlign = 'right'; x.fillStyle = '#f0f0fa'; x.font = `700 32px ${F}`; x.fillText(`@${DWK.site.handle}`, 1008, 1294);
+  return c;
+}
+if (new URLSearchParams(location.search).get('admin') === '1') {
+  const box = el('div', { class: 'admin' }, el('p', { class: 'gx-label', style: 'margin:0' }, '운영 · 발표 카드'), el('p', { class: 'gx-note' }, 'data.js plaza.results 의 마지막 회로 만든다. 하트 수는 서버 집계값만 넣는다.'));
+  const btn = el('button', { class: 'gx-btn', type: 'button' }, '발표 카드 만들기'); box.append(btn); $('#admin').append(box);
+  btn.onclick = async () => {
+    const last = P.results[P.results.length - 1]; if (!last) { DC.toast('results 가 비어 있어'); return; }
+    const c = await rankCard(last.top, last.no); const im = el('img', { src: c.toDataURL('image/png'), alt: '발표 카드' }); box.append(im);
+    DC.shareCanvas(c, `dwk-자랑게시판-${last.no}회-TOP3.png`, '');
+  };
+}
+
+addEventListener('hashchange', spot);
+spot(); mine(); results();
+await loadCounts();
+drawEntries();
+window.__plaza = { K, P, R, counts, rankCard, boardCard, redraw: () => { spot(); mine(); drawEntries(); results(); } };
+</script>
+</body>
+</html>

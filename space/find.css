@@ -1,0 +1,329 @@
+/* 빈틈 찾기 — 바깥 틀은 입구와 같은 옷(game-ui.css: 검정·얇은 테·한국어 반말), 게임판 안은 게임답게(2026-11-28 디벨롭)
+   판 안: 3D 렌더 장면 + 빛·그림자(가장자리 어둠) · 누르는 즉시 손끝 표시 · 확대 · 찾으면 동그라미·주변 어둡게·불꽃 · 틀리면 X·붉은 테
+   금지 지킴: 모서리 꺾쇠·청록 빛·도트 글꼴 없음
+   3차(2026-11-28): 장면 그림 캔버스(.f-pic) · 소개 덮개가 걷힌 뒤 시간 시작 · 힌트 줄 처음엔 안내만 · 누른 자리 오답 표시 · 끝 화면 공유 카드 주인공
+   4차(2026-11-28): 폰 세로 화면은 판이 화면 높이만큼(.f-play.tall) · 해설은 판 아래쪽 위에 덮개로 · 옆으로 둘러보기 위치 줄 · 찾은 자리 금빛 두 겹 고리 · 소개는 누를 때까지 */
+#app { touch-action: manipulation; }
+/* 보상 칩(dwk-prog.js)이 끝 화면 등급 글자를 덮지 않게 이 게임에서만 화면 아래로 */
+body.gx.f-page .dp-stack { top: auto; bottom: calc(14px + env(safe-area-inset-bottom)); }
+
+/* ── 메뉴: 하는 법을 2초 그림으로 ── */
+.f-demo { position: relative; width: 100%; max-width: 380px; aspect-ratio: 16 / 10; overflow: hidden; border: 1px solid var(--hair); border-radius: 4px; background: #0b0c12; margin-bottom: 6px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, .55); }
+.f-demo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; animation: fdImg 3.6s ease-in-out infinite; }
+.f-demo::after { content: ''; position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 40%, transparent 45%, rgba(0, 0, 0, .55) 100%); pointer-events: none; }
+.f-demo-ring { position: absolute; left: 26.5%; top: 24%; width: 52%; height: 26%; border-radius: 50%; border: 3px solid var(--good); z-index: 1;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, .35), 0 0 22px rgba(91, 224, 138, .6); opacity: 0; animation: fdRing 3.6s infinite; }
+.f-demo-pts { position: absolute; left: 52.5%; top: 18%; z-index: 2; transform: translate(-50%, -50%); font: 800 20px/1 var(--sans); color: #fff; text-shadow: 0 2px 0 rgba(0, 0, 0, .5), 0 0 14px rgba(255, 210, 94, .8); opacity: 0; animation: fdPts 3.6s infinite; }
+.f-demo-dots { position: absolute; left: 52.5%; top: 37%; z-index: 1; }
+.f-demo-dots i { position: absolute; width: 6px; height: 6px; margin: -3px; border-radius: 50%; background: #ffd25e; opacity: 0; transform: rotate(var(--a)) translateX(0); animation: fdDot 3.6s infinite; }
+.f-demo-dots i:nth-child(even) { background: #fff; width: 4px; height: 4px; margin: -2px; }
+.f-demo-hand { position: absolute; left: 80%; top: 95%; margin: -6px 0 0 -16px; z-index: 3; width: 44px; height: 44px; display: grid; place-items: center; color: #fff; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .6)); animation: fdHand 3.6s cubic-bezier(.45, .05, .3, 1) infinite; }
+.f-demo-hand .ic { width: 34px; height: 34px; }
+.f-demo-cap { position: absolute; left: 10px; bottom: 9px; z-index: 3; font: 600 12px/1 var(--sans); color: var(--fg); background: rgba(0, 0, 0, .6); border: 1px solid var(--line); border-radius: 2px; padding: 6px 8px; }
+@keyframes fdImg { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+@keyframes fdHand { 0% { left: 80%; top: 95%; opacity: 0; } 12% { opacity: 1; } 38% { left: 52.5%; top: 37%; transform: scale(1); } 43% { left: 52.5%; top: 37%; transform: scale(.8); } 50% { transform: scale(1); } 80% { left: 54%; top: 40%; opacity: 1; } 92%, 100% { left: 54%; top: 40%; opacity: 0; } }
+@keyframes fdRing { 0%, 43% { opacity: 0; transform: scale(1.6); } 52% { opacity: 1; transform: scale(.94); } 58% { transform: scale(1); } 86% { opacity: 1; } 96%, 100% { opacity: 0; transform: scale(1); } }
+@keyframes fdPts { 0%, 46% { opacity: 0; transform: translate(-50%, -20%) scale(.6); } 55% { opacity: 1; transform: translate(-50%, -80%) scale(1.15); } 80% { opacity: 1; transform: translate(-50%, -110%) scale(1); } 92%, 100% { opacity: 0; transform: translate(-50%, -130%); } }
+@keyframes fdDot { 0%, 44% { opacity: 0; transform: rotate(var(--a)) translateX(0); } 50% { opacity: 1; } 70%, 100% { opacity: 0; transform: rotate(var(--a)) translateX(64px); } }
+
+/* ── 한 판 ── */
+.f-play { max-width: 560px; margin: 0 auto; padding-top: 4px; }
+.f-hud { padding-bottom: 10px; }
+.f-hud .score { transform-origin: left 70%; }
+.f-hud .score.bump { animation: fBump .45s cubic-bezier(.2, 1.6, .4, 1); }
+.f-hud .f-combo { transform-origin: right 70%; }
+@keyframes fBump { 0% { transform: scale(1.32); color: #ffe08a; text-shadow: 0 0 16px rgba(255, 210, 94, .9); } 100% { transform: scale(1); color: var(--fg); text-shadow: none; } }
+.f-timerow { display: flex; align-items: center; gap: 12px; margin: 12px 0 14px; }
+.f-bar { flex: 1; height: 4px; background: var(--line); overflow: hidden; border-radius: 2px; }
+.f-bar i { display: block; height: 100%; width: 100%; background: var(--fg); transform-origin: left; transform: scaleX(1); transition: background-color .3s; }
+.f-bar.low i { background: var(--bad); }
+.f-bar.hit { animation: fBarHit .5s ease-out; }
+@keyframes fBarHit { 0%, 30% { background: rgba(255, 107, 107, .55); transform: scaleY(2.2); } 100% { background: var(--line); transform: scaleY(1); } }
+.f-clock { min-width: 44px; text-align: right; font: 700 17px/1 var(--sans); font-variant-numeric: tabular-nums; color: var(--fg); }
+.f-clock.low { color: var(--bad); animation: fClock 1s ease-in-out infinite; }
+@keyframes fClock { 50% { transform: scale(1.14); } }
+.f-q { margin: 0 0 4px; font: 700 21px/1.3 var(--sans); letter-spacing: -.02em; word-break: keep-all; }
+.f-hint { color: var(--fg); font: 500 14px/1.5 var(--sans); margin: 0 0 12px; min-height: 21px; word-break: keep-all; }
+.f-hint.idle { color: var(--fg3); font-weight: 400; font-size: 13px; }
+.f-hint.on { color: #ffe08a; animation: fHintIn .45s cubic-bezier(.2, 1.3, .4, 1) both; }
+@keyframes fHintIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+/* 시간 줄: 소개 중엔 멈춰 있음을 흐리게 보이고, 시작하는 순간 한 번 번쩍 */
+.f-timerow { position: relative; }
+.f-timerow.wait .f-bar, .f-timerow.wait .f-clock { opacity: .45; }
+.f-timerow.go .f-bar { animation: fGo .5s ease-out; }
+@keyframes fGo { 0% { box-shadow: 0 0 0 0 rgba(240, 240, 250, .0); transform: scaleY(1); } 30% { box-shadow: 0 0 12px 2px rgba(240, 240, 250, .55); transform: scaleY(2); } 100% { box-shadow: none; transform: none; } }
+.f-clockpop { position: absolute; right: 56px; top: -4px; z-index: 3; pointer-events: none; font: 800 15px/1 var(--sans); color: #ff8f8f; text-shadow: 0 1px 0 rgba(0, 0, 0, .6); animation: fClockPop .9s ease-out forwards; }
+@keyframes fClockPop { 0% { opacity: 0; transform: translateY(6px) scale(.7); } 20% { opacity: 1; transform: translateY(-8px) scale(1.2); } 70% { opacity: 1; } 100% { opacity: 0; transform: translateY(-22px) scale(1); } }
+
+.f-stage { position: relative; width: min(100%, 62svh); aspect-ratio: 1; margin: 0 auto; border-radius: 4px; overflow: hidden; border: 1px solid var(--line); background: #07080c;
+  touch-action: none; cursor: crosshair; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; isolation: isolate; }
+.f-stage::before { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; /* 빛·깊이: 가운데 밝고 가장자리 어둡게 */
+  background: radial-gradient(115% 95% at 50% 42%, transparent 55%, rgba(0, 0, 0, .42) 100%); }
+.f-stage::after { content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none; opacity: 0; box-shadow: inset 0 0 0 2px var(--bad), inset 0 0 70px rgba(255, 70, 70, .55); }
+.f-stage.low::after { animation: fLow 1s ease-in-out infinite; }
+@keyframes fLow { 50% { opacity: 1; } }
+.f-stage.err .f-cam { display: none; }
+.f-stage.err .f-intro { display: none; }
+.f-stage.err { display: grid; place-items: center; }
+.f-stage.err .f-coach { display: none; }
+.f-stage.err > canvas { display: none; }
+.f-stage.err::before { content: '장면을 못 불러왔어 · 「빈틈 없음」으로 넘어가거나 새로고침해 줘'; position: absolute; inset: 0; display: grid; place-items: center; padding: 0 24px; text-align: center; font: 500 13px/1.5 var(--sans); color: var(--fg3); background: none; }
+.f-cam { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 0; transform-origin: 0 0; will-change: transform; } /* 4차: 크기는 find.js fitStage가 그림 한 변(S)으로 정함 */
+.f-cam.ease { transition: transform var(--ease, .6s) cubic-bezier(.2, .8, .2, 1); }
+.f-drift { position: absolute; inset: 0; transform-origin: 50% 45%; animation: fDrift linear both; }
+.f-stage.done .f-drift { animation-play-state: paused; }
+@keyframes fDrift { from { transform: scale(1); } to { transform: scale(1.05); } }
+.f-drift img, .f-drift .f-pic { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; -webkit-user-drag: none; transition: filter .12s;
+  image-rendering: auto; image-rendering: smooth; }
+/* 3차: 다시 그린 고화질 캔버스가 들어오면 원본 <img>는 숨긴다(크기·오류 판정용으로 DOM엔 남김) */
+.f-drift.has-pic img { visibility: hidden; }
+.f-stage.is-intro .f-drift img, .f-stage.is-intro .f-drift .f-pic { animation: fIntroImg .76s cubic-bezier(.2, .8, .2, 1) both; }
+/* 2차: 소개 컷에서 장면을 흐리게(blur)·어둡게(filter) 하던 것을 뺐다 — 검수에서 「그림이 흐리다」로 읽혔다 */
+@keyframes fIntroImg { from { transform: scale(1.1); } to { transform: scale(1); } } /* 그림에 필터를 걸면 움직이는 동안 낮은 해상도로 그려진다 — 어둡기는 .f-intro 덮개가 맡는다 */
+.f-stage.press .f-drift img, .f-stage.press .f-drift .f-pic { filter: brightness(1.08); }
+.f-stage.hitstop .f-drift img, .f-stage.hitstop .f-drift .f-pic { filter: brightness(1.45) saturate(1.25); transition: none; }
+.f-stage.done:not(.err) .f-drift img, .f-stage.done:not(.err) .f-drift .f-pic { filter: saturate(1.08); }
+.f-grain { position: absolute; inset: 0; z-index: 1; pointer-events: none; background-image: var(--f-grain, none); background-size: 64px 64px; opacity: .05; mix-blend-mode: overlay; }
+.f-fx { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; pointer-events: none; }
+.f-marks { position: absolute; inset: 0; pointer-events: none; }
+
+/* 행성 소개 컷(장면마다 0.76초) — 3D 렌더 행성이 돌며 나타났다 사라진다 */
+.f-intro { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; align-content: center; gap: 12px; pointer-events: none; text-align: center;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, .3), rgba(0, 0, 0, .74)); opacity: 0; transform: scale(1.06); transition: opacity .2s ease, transform .22s ease; }
+/* 첫 장면 소개 = 하는 법 포함(그동안 시간 안 감) */
+.f-intro.first { background: radial-gradient(closest-side, rgba(0, 0, 0, .45), rgba(0, 0, 0, .82)); gap: 10px; }
+.f-intro.first .f-intro-planet { width: 26%; }
+.f-intro-how { display: grid; grid-template-columns: auto auto; column-gap: 10px; align-items: center; justify-content: center; text-align: left; margin-top: 4px; padding: 10px 14px; border: 1px solid var(--hair); border-radius: 4px; background: rgba(0, 0, 0, .55); }
+.f-intro-how .f-coach-hand { grid-row: span 2; }
+.f-intro .f-intro-how b { font: 700 17px/1.2 var(--sans); color: #fff; text-shadow: none; letter-spacing: -.01em; }
+.f-intro .f-intro-how small { font: 500 12px/1.4 var(--sans); color: var(--fg2); letter-spacing: 0; }
+.f-intro-go { position: absolute; left: 0; right: 0; bottom: 12px; font: 500 11px/1 var(--sans); font-style: normal; letter-spacing: .06em; color: var(--fg3); }
+.f-stage.is-intro .f-intro { opacity: 1; transform: none; transition: none; }
+.f-intro-planet { width: 38%; aspect-ratio: 1; border-radius: 50%; object-fit: cover; -webkit-mask-image: radial-gradient(closest-side, #000 82%, transparent 100%); mask-image: radial-gradient(closest-side, #000 82%, transparent 100%);
+  animation: fSpin 6s linear infinite; filter: drop-shadow(0 10px 24px rgba(0, 0, 0, .8)); }
+@keyframes fSpin { from { transform: rotate(-8deg) scale(.86); } to { transform: rotate(52deg) scale(1); } }
+.f-intro p { margin: 0; display: grid; gap: 6px; }
+.f-intro small { font: 600 11px/1 var(--sans); letter-spacing: .1em; color: var(--fg2); }
+.f-intro b { font: 800 26px/1.1 var(--sans); letter-spacing: -.02em; color: #fff; text-shadow: 0 2px 12px rgba(0, 0, 0, .7); }
+.f-intro span { font: 600 13px/1 var(--sans); color: var(--fg); }
+
+/* 누르는 순간의 손끝 표시(포인터 다운 즉시) */
+.f-press { position: absolute; z-index: 4; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%; pointer-events: none;
+  border: 2px solid rgba(255, 255, 255, .95); box-shadow: 0 0 0 1px rgba(0, 0, 0, .4), inset 0 0 0 1px rgba(0, 0, 0, .25); background: radial-gradient(circle, rgba(255, 255, 255, .9) 0 3px, rgba(255, 255, 255, .12) 4px 100%);
+  animation: fPress .12s cubic-bezier(.2, 1.4, .4, 1) both; }
+.f-press.out { animation: fPressOut .2s ease-out forwards; }
+.f-press.lock { border-color: rgba(255, 143, 143, .9); background: radial-gradient(circle, rgba(255, 143, 143, .9) 0 3px, rgba(255, 107, 107, .12) 4px 100%); }
+.f-stage.locked { cursor: not-allowed; }
+@keyframes fPress { from { transform: scale(1.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes fPressOut { to { transform: scale(.6); opacity: 0; } }
+
+/* 정답 동그라미 · 주변 어둡게 */
+.f-ring { position: absolute; border-radius: 50%; border: 3px solid var(--good); box-shadow: 0 0 0 2px rgba(0, 0, 0, .35), 0 0 22px rgba(91, 224, 138, .6), inset 0 0 18px rgba(91, 224, 138, .3);
+  animation: fRing .55s cubic-bezier(.2, 1.5, .4, 1) both; }
+.f-ring.miss { border-color: var(--bad); box-shadow: 0 0 0 2px rgba(0, 0, 0, .35), 0 0 22px rgba(255, 107, 107, .6), inset 0 0 18px rgba(255, 107, 107, .3); }
+.f-spotdim { position: absolute; inset: 0; pointer-events: none; animation: fSpot .5s ease-out both; }
+@keyframes fRing { from { transform: scale(1.7) rotate(-12deg); opacity: 0; } 60% { opacity: 1; } to { transform: none; opacity: 1; } }
+@keyframes fSpot { from { opacity: 0; } to { opacity: 1; } }
+.f-glow { position: absolute; border-radius: 50%; border: 2px solid rgba(255, 236, 170, .95); background: radial-gradient(closest-side, rgba(255, 236, 170, 0) 55%, rgba(255, 236, 170, .38)); box-shadow: 0 0 0 1px rgba(0, 0, 0, .35), 0 0 26px rgba(255, 214, 110, .7); animation: fGlow .7s ease-in-out infinite alternate; }
+/* 단계형 힌트 고리 — 단계가 오를 때마다 줄어들며 자리를 옮기고, 바깥이 점점 어두워진다(어둡게 = 덮개 한 장의 그라데이션, 큰 그림자 안 씀) */
+@property --hx { syntax: '<percentage>'; inherits: false; initial-value: 50%; }
+@property --hy { syntax: '<percentage>'; inherits: false; initial-value: 50%; }
+@property --hr { syntax: '<percentage>'; inherits: false; initial-value: 75%; }
+@property --hd { syntax: '<number>'; inherits: false; initial-value: 0; }
+.f-hintdim { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse var(--hr) var(--hr) at var(--hx) var(--hy), transparent 97%, rgba(0, 0, 0, var(--hd)) 100%);
+  transition: --hx .5s cubic-bezier(.2, .9, .2, 1), --hy .5s cubic-bezier(.2, .9, .2, 1), --hr .5s cubic-bezier(.2, .9, .2, 1), --hd .5s ease; }
+.f-hintring { position: absolute; border-radius: 50%; pointer-events: none; border: 2px dashed rgba(255, 228, 150, .95); box-shadow: 0 0 22px rgba(255, 214, 110, .55), inset 0 0 22px rgba(255, 214, 110, .25);
+  transition: left .5s cubic-bezier(.2, .9, .2, 1), top .5s cubic-bezier(.2, .9, .2, 1), width .5s cubic-bezier(.2, .9, .2, 1), height .5s cubic-bezier(.2, .9, .2, 1), border-color .3s; }
+.f-hintring.lv2 { border-style: solid; border-width: 2px; }
+.f-hintring.lv3 { border: 3px solid #ffe08a; animation: fHint3 .7s ease-in-out .5s infinite alternate; }
+@keyframes fHint3 { to { transform: scale(1.06); box-shadow: 0 0 34px rgba(255, 214, 110, .95), inset 0 0 26px rgba(255, 214, 110, .45); } }
+/* 다각형 정답(이빨 줄·창유리)의 윤곽을 그려 나간다 */
+.f-trace { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.f-trace path { fill: rgba(91, 224, 138, .12); stroke: var(--good); stroke-width: .8; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; filter: drop-shadow(0 0 6px rgba(91, 224, 138, .7)); animation: fTrace .7s cubic-bezier(.4, 0, .2, 1) forwards; }
+.f-trace.miss path { fill: rgba(255, 107, 107, .12); stroke: var(--bad); filter: drop-shadow(0 0 6px rgba(255, 107, 107, .7)); }
+@keyframes fTrace { to { stroke-dashoffset: 0; } }
+/* 누른 자리에서 퍼지는 파동 · 빛 번짐 */
+.f-wave { position: absolute; z-index: 3; width: 24px; height: 24px; margin: -12px 0 0 -12px; border-radius: 50%; pointer-events: none; border: 3px solid #ffe08a; box-shadow: 0 0 14px rgba(255, 210, 94, .8), inset 0 0 8px rgba(255, 210, 94, .5);
+  animation: fWave .72s cubic-bezier(.15, .7, .3, 1) both; }
+.f-wave.bad { border: 4px solid #ff6464; box-shadow: 0 0 16px rgba(255, 70, 70, .85), inset 0 0 10px rgba(255, 70, 70, .5); animation-name: fWaveBad; animation-duration: .62s; }
+@keyframes fWave { from { transform: scale(.4); opacity: 1; } to { transform: scale(9); opacity: 0; border-width: 1px; } }
+@keyframes fWaveBad { from { transform: scale(.5); opacity: 1; } to { transform: scale(6.5); opacity: 0; border-width: 1px; } }
+.f-flash { position: absolute; z-index: 2; width: 220px; height: 220px; margin: -110px 0 0 -110px; border-radius: 50%; pointer-events: none; mix-blend-mode: screen;
+  background: radial-gradient(closest-side, rgba(255, 250, 225, .95), rgba(255, 214, 110, .45) 40%, transparent 100%); animation: fFlash .5s ease-out both; }
+@keyframes fFlash { from { transform: scale(.2); opacity: 1; } 35% { opacity: .9; } to { transform: scale(1.25); opacity: 0; } }
+.f-flash.bad { width: 160px; height: 160px; margin: -80px 0 0 -80px; mix-blend-mode: normal; background: radial-gradient(closest-side, rgba(255, 70, 70, .55), rgba(255, 40, 40, .22) 50%, transparent 100%); }
+@keyframes fGlow { from { opacity: .35; transform: scale(.9); } to { opacity: 1; transform: scale(1.05); } }
+
+/* 틀린 자리 X */
+.f-x { position: absolute; z-index: 4; width: 50px; height: 50px; margin: -25px 0 0 -25px; pointer-events: none; filter: drop-shadow(0 0 10px rgba(255, 70, 70, .85)); animation: fX .85s cubic-bezier(.2, 1.6, .4, 1) both; }
+.f-x::before, .f-x::after { content: ''; position: absolute; left: 50%; top: 50%; width: 52px; height: 9px; margin: -4.5px 0 0 -26px; border-radius: 5px; background: #ff5a5a; box-shadow: 0 0 0 2px rgba(0, 0, 0, .55); transform: rotate(45deg); }
+.f-x::after { transform: rotate(-45deg); }
+@keyframes fX { 0% { transform: scale(1.5); opacity: 1; } 18% { transform: scale(.88) rotate(-10deg); } 34% { transform: scale(1.04) rotate(7deg); } 50% { transform: rotate(0); } 78% { opacity: 1; } 100% { opacity: 0; transform: scale(.92); } }
+/* 누른 자리 위(또는 아래)에 「틀렸어 / −1초 · −20」 */
+.f-misspop { position: absolute; z-index: 5; display: grid; justify-items: center; gap: 4px; pointer-events: none; white-space: nowrap; transform: translate(-50%, -50%); animation: fMiss 1s cubic-bezier(.2, 1.5, .4, 1) forwards; }
+.f-misspop b { font: 900 26px/1 var(--sans); letter-spacing: -.02em; color: #fff; text-shadow: 0 2px 0 rgba(0, 0, 0, .6), 0 0 16px rgba(255, 60, 60, .95); }
+.f-misspop small { font: 800 15px/1 var(--sans); color: #ffb0b0; padding: 5px 8px; border-radius: 3px; background: rgba(60, 0, 0, .72); border: 1px solid rgba(255, 107, 107, .7); }
+@keyframes fMiss { 0% { opacity: 0; transform: translate(-50%, -30%) scale(.6); } 16% { opacity: 1; transform: translate(-50%, -50%) scale(1.12); } 30% { transform: translate(-50%, -50%) scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -78%); } }
+.f-misspop.below { animation-name: fMissB; }
+@keyframes fMissB { 0% { opacity: 0; transform: translate(-50%, -70%) scale(.6); } 16% { opacity: 1; transform: translate(-50%, -50%) scale(1.12); } 30% { transform: translate(-50%, -50%) scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -22%); } }
+
+.f-float { position: absolute; z-index: 4; transform: translate(-50%, -50%); pointer-events: none; white-space: nowrap; font: 800 18px/1 var(--sans); color: #fff; text-shadow: 0 2px 0 rgba(0, 0, 0, .55), 0 0 10px rgba(0, 0, 0, .6); animation: fFloat .9s ease-out forwards; }
+.f-float.bad { color: #ff8f8f; }
+.f-float.big { font-size: 36px; letter-spacing: -.02em; }
+@keyframes fFloat { 0% { opacity: 0; transform: translate(-50%, -20%) scale(.7); } 18% { opacity: 1; transform: translate(-50%, -60%) scale(1.15); } 70% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -150%) scale(1); } }
+.f-edge { position: absolute; inset: 0; z-index: 3; pointer-events: none; animation: fEdge .6s ease-out forwards; }
+.f-edge.bad { box-shadow: inset 0 0 0 3px var(--bad), inset 0 0 80px rgba(255, 60, 60, .6); }
+.f-edge.good { box-shadow: inset 0 0 0 2px rgba(255, 246, 214, .9), inset 0 0 90px rgba(255, 210, 94, .45); }
+.f-edge.good.hot { box-shadow: inset 0 0 0 4px #ffe08a, inset 0 0 130px rgba(255, 170, 60, .7); animation-duration: .8s; }
+@keyframes fEdge { from { opacity: 1; } to { opacity: 0; } }
+.f-combopop { position: absolute; left: 50%; top: 18%; z-index: 4; transform: translate(-50%, -50%); display: grid; justify-items: center; pointer-events: none; font: 900 54px/1 var(--sans); letter-spacing: -.03em; color: #fff;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, .5), 0 0 24px rgba(255, 196, 70, .85); animation: fCombo 1.1s cubic-bezier(.2, 1.6, .4, 1) forwards; }
+.f-combopop small { font: 700 13px/1 var(--sans); letter-spacing: .1em; margin-bottom: 4px; }
+.f-combopop em { margin-top: 6px; font: 800 13px/1 var(--sans); font-style: normal; letter-spacing: .02em; color: #ffe08a; }
+.f-combopop.hot { font-size: 68px; color: #fff4cf; text-shadow: 0 3px 0 rgba(0, 0, 0, .5), 0 0 30px rgba(255, 150, 40, .95), 0 0 60px rgba(255, 196, 70, .6); }
+.f-combo.bump { animation: fBump .5s cubic-bezier(.2, 1.6, .4, 1); }
+@keyframes fCombo { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.3); } 25% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); } 75% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -80%) scale(.95); } }
+.f-fly { position: fixed; z-index: 80; pointer-events: none; font: 800 24px/1 var(--sans); color: #fff; white-space: nowrap; text-shadow: 0 2px 0 rgba(0, 0, 0, .55), 0 0 14px rgba(255, 200, 80, .9); }
+
+/* 첫 장면 안내 */
+.f-coach { position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 12px; align-items: center; padding: 28px 16px 14px; pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, .78)); animation: fin .4s both; }
+.f-coach b { font: 700 17px/1.2 var(--sans); color: #fff; }
+.f-coach small { grid-column: 2; font: 500 12px/1.4 var(--sans); color: var(--fg2); }
+.f-coach-hand { grid-row: span 2; width: 40px; height: 40px; display: grid; place-items: center; color: #fff; animation: fTapHand 1.1s ease-in-out infinite; }
+.f-coach-hand .ic { width: 30px; height: 30px; }
+@keyframes fTapHand { 0%, 100% { transform: translateY(0) scale(1); } 45% { transform: translateY(3px) scale(.82); } }
+.f-zoom { position: absolute; right: 10px; top: 10px; z-index: 4; min-height: 34px; padding: 0 12px; font: 600 12px/1 var(--sans); color: var(--fg); background: rgba(0, 0, 0, .62); border: 1px solid var(--hair); border-radius: 4px; cursor: pointer; }
+.f-zoom[hidden] { display: none; }
+
+/* 아래 단추·해설 */
+.f-under { margin-top: 14px; min-height: 120px; }
+.f-btns { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.8fr); gap: 10px; }
+.f-btns .gx-btn { width: 100%; padding: 0 12px; white-space: nowrap; gap: 8px; }
+.f-hintbtn small { font: 500 12px/1 var(--sans); color: inherit; opacity: .7; }
+.f-explain { padding: 14px 0 0; border-top: 1px solid var(--line); animation: fin .3s; display: grid; gap: 8px; }
+.f-explain h3 { margin: 0; font: 800 20px/1.3 var(--sans); letter-spacing: -.01em; }
+.f-explain h3.ok { color: var(--good); } .f-explain h3.no { color: var(--bad); }
+.f-explain h3 .f-gain { display: inline-block; margin-left: 8px; animation: fGain .5s cubic-bezier(.2, 1.6, .4, 1) .15s both; }
+@keyframes fGain { from { transform: scale(1.8); opacity: 0; } }
+.f-explain p { margin: 0; font: 400 15px/1.55 var(--sans); color: var(--fg); word-break: keep-all; }
+.f-explain .rule { color: var(--fg2); font-size: 13px; }
+.f-explain .gx-btn { margin-top: 6px; }
+.f-next { position: relative; overflow: hidden; }
+.f-next::after { content: ''; position: absolute; left: 0; bottom: 0; height: 2px; width: 100%; background: currentColor; opacity: .55; transform-origin: left; animation: fAuto var(--auto, 4.6s) linear both; }
+@keyframes fAuto { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes fin { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* ── 끝(3차): 주인공 = 공유 카드. 카드가 날아와 앉고 → 도장 → 점수 → 장면 칸 → 빛 훑기 ── */
+.f-endgrid { display: grid; gap: 22px; padding-top: 0; }
+.f-endgrid .gx-end { gap: 16px; padding-top: 10px; }
+.f-endhero { display: grid; grid-template-columns: 46% minmax(0, 1fr); gap: 18px; align-items: center; }
+.f-cardwrap { position: relative; }
+.f-card { position: relative; container-type: inline-size; aspect-ratio: 4 / 5; overflow: hidden; border-radius: 6px; border: 1px solid rgba(240, 240, 250, .22); transform: rotate(-3deg);
+  background: radial-gradient(1.2px 1.2px at 12% 18%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 78% 9%, #fff 50%, transparent 51%), radial-gradient(1.4px 1.4px at 88% 44%, rgba(255, 255, 255, .7) 50%, transparent 51%),
+    radial-gradient(1px 1px at 22% 70%, rgba(255, 255, 255, .6) 50%, transparent 51%), radial-gradient(1px 1px at 62% 96%, #fff 50%, transparent 51%), linear-gradient(#000, #0c0e18);
+  box-shadow: 0 22px 44px rgba(0, 0, 0, .7), 0 0 0 1px rgba(0, 0, 0, .5); text-align: center; }
+.f-card > span, .f-card > b { position: absolute; left: 0; right: 0; line-height: 1; white-space: nowrap; font-family: var(--sans); font-weight: 800; }
+.f-card .c1 { top: 6.4%; font-size: 4.07cqw; color: rgba(240, 240, 250, .72); }
+.f-card .c2 { top: 12.1%; font-size: 8.52cqw; color: #f4f1ea; letter-spacing: -.02em; }
+.f-card .c3 { top: 20.1%; font-size: 3.33cqw; font-weight: 600; color: #a9a7b8; }
+.f-card .cg { top: 25.5%; font-size: 35.2cqw; color: #f0f0fa; letter-spacing: -.03em; }
+.f-card .cn { top: 51.1%; font-size: 5.93cqw; color: #f4f1ea; }
+.f-card .cc { position: absolute; left: 5.1%; right: 5.1%; top: 60.7%; display: flex; justify-content: space-between; }
+.f-card .c { position: relative; width: 15.74cqw; }
+.f-card .c img { display: block; width: 15.74cqw; height: 15.74cqw; object-fit: cover; border-radius: 1.6cqw; background: #1c2040; }
+.f-card .c:not(:has(img))::before { content: ''; display: block; width: 15.74cqw; height: 15.74cqw; border-radius: 1.6cqw; background: #1c2040; }
+.f-card .c i { display: block; height: 1.48cqw; margin-top: 1.3cqw; background: var(--good); }
+.f-card .c.y i { background: #ffd34d; } .f-card .c.r i { background: var(--bad); }
+.f-card .cs { top: 78.8%; font-size: 6.67cqw; color: #f4f1ea; font-variant-numeric: tabular-nums; }
+.f-card .cq { top: 85.8%; font-size: 3.15cqw; font-weight: 600; color: #a9a7b8; }
+.f-card .ch { top: 92.3%; font-size: 4.07cqw; color: #f0f0fa; }
+.f-card::after { content: ''; position: absolute; inset: -20% -60%; pointer-events: none; opacity: 0; background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, .28) 48%, rgba(255, 255, 255, .06) 54%, transparent 62%); }
+.f-card.top::after { background: linear-gradient(105deg, transparent 38%, rgba(255, 226, 150, .42) 48%, rgba(255, 210, 110, .1) 54%, transparent 62%); }
+.f-card.live { animation: fCardIn .62s cubic-bezier(.2, 1.25, .35, 1) both; }
+.f-card.live .cg { animation: fCardStamp .42s cubic-bezier(.3, 1.5, .5, 1) .42s both; }
+.f-card.live .cn { animation: fin .3s ease-out .7s both; }
+.f-card.live .c { animation: fThumb .4s cubic-bezier(.2, 1.5, .4, 1) var(--d, 0ms) both; }
+.f-card.live::after { animation: fSheen 1s ease-in-out 1.5s both; }
+@keyframes fCardIn { 0% { opacity: 0; transform: translate(0, 80px) rotate(-16deg) scale(.7); } 60% { opacity: 1; transform: translate(0, -6px) rotate(1.5deg) scale(1.04); } 100% { opacity: 1; transform: rotate(-3deg); } }
+@keyframes fCardStamp { 0% { opacity: 0; transform: scale(2.6) rotate(-10deg); } 60% { opacity: 1; } 100% { opacity: 1; transform: none; } }
+@keyframes fSheen { 0% { opacity: 1; transform: translateX(-60%); } 100% { opacity: 1; transform: translateX(60%); } }
+/* 도장 찍힐 때 카드 둘레로 튀는 불티 */
+.f-sparks { position: absolute; left: 50%; top: 42%; z-index: 2; pointer-events: none; }
+.f-sparks i { position: absolute; width: 6px; height: 6px; margin: -3px; border-radius: 50%; background: #ffd25e; opacity: 0; box-shadow: 0 0 8px rgba(255, 210, 94, .9); }
+.f-sparks i:nth-child(3n) { background: #fff; width: 4px; height: 4px; margin: -2px; }
+.f-endhero.live .f-sparks i { animation: fSpark .75s cubic-bezier(.15, .7, .3, 1) .45s both; }
+@keyframes fSpark { 0% { opacity: 1; transform: rotate(var(--a)) translateX(10px) scale(1.2); } 100% { opacity: 0; transform: rotate(var(--a)) translateX(var(--r)) scale(.4); } }
+.f-endside { display: grid; gap: 6px; align-content: center; min-width: 0; }
+.f-grade { margin: 0; font: 800 84px/.86 var(--sans); letter-spacing: -.04em; color: var(--fg); transform-origin: 30% 60%; }
+.f-grade small { display: block; margin-top: 8px; font: 700 17px/1.2 var(--sans); letter-spacing: -.02em; color: var(--fg); word-break: keep-all; }
+.f-grade.stamp { animation: fStamp .5s cubic-bezier(.3, 1.5, .5, 1) .42s both; }
+@keyframes fStamp { 0% { transform: scale(2.6) rotate(-8deg); opacity: 0; filter: blur(4px); } 55% { opacity: 1; filter: none; } 100% { transform: none; opacity: 1; } }
+.f-endline { margin: 0; font: 400 13px/1.45 var(--sans); color: var(--fg2); word-break: keep-all; }
+.f-endscore { margin-top: 6px; font: 800 36px/1 var(--sans); letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--fg); }
+.f-endscore small { margin-left: 3px; font: 700 16px/1 var(--sans); color: var(--fg2); }
+.f-endscore.done { animation: fBump .5s cubic-bezier(.2, 1.6, .4, 1); transform-origin: left 70%; }
+.f-endmeta { margin: 0; font: 500 12px/1.45 var(--sans); color: var(--fg2); word-break: keep-all; }
+.f-thumbs { display: flex; gap: 6px; flex-wrap: wrap; }
+.f-thumb { position: relative; width: 44px; height: 44px; border-radius: 3px; overflow: hidden; background: #14161f; border: 1px solid var(--line); animation: fThumb .4s cubic-bezier(.2, 1.5, .4, 1) var(--d, 0ms) both; }
+.f-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.f-thumb i { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: var(--good); }
+.f-thumb.y i { background: #ffd34d; } .f-thumb.r i { background: var(--bad); }
+.f-thumb.r img { filter: grayscale(.7) brightness(.6); }
+@keyframes fThumb { from { transform: translateY(10px) scale(.6); opacity: 0; } }
+.f-newbest { animation: fBest 1.2s ease-out 1.4s both; }
+@keyframes fBest { 0% { background: var(--fg); color: #000; } 100% { background: transparent; color: var(--fg); } }
+.f-endacts .gx-btn.main { flex: 1 1 auto; }
+.f-sharebtn.nudge { animation: fNudge .7s ease-in-out 2; }
+@keyframes fNudge { 50% { box-shadow: 0 0 0 3px rgba(240, 240, 250, .25), 0 0 18px rgba(255, 210, 94, .45); border-color: var(--fg); } }
+.l-flags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; } .l-flags:empty { display: none; }
+
+@media (max-width: 599px) {
+  .f-stage { width: calc(100% + 40px); margin: 0 -20px; border-radius: 0; border-left: 0; border-right: 0; }
+}
+@media (min-width: 900px) {
+  .f-endgrid { max-width: 760px; }
+  .f-endhero { grid-template-columns: 280px minmax(0, 1fr); gap: 44px; }
+  .f-grade { font-size: 132px; }
+  .f-grade small { font-size: 24px; }
+  .f-endscore { font-size: 48px; }
+  .f-thumb { width: 60px; height: 60px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .f-demo img, .f-demo-hand, .f-drift, .f-intro-planet, .f-ring, .f-x, .f-float, .f-combopop, .f-coach, .f-coach-hand, .f-explain, .f-grade.stamp, .f-thumb, .f-stage.low::after, .f-clock.low, .f-glow, .f-press, .f-spotdim, .f-hintring.lv3, .f-combo.bump,
+  .f-misspop, .f-clockpop, .f-hint.on, .f-timerow.go .f-bar, .f-card.live, .f-card.live .cg, .f-card.live .cn, .f-card.live .c, .f-card.live::after, .f-endhero.live .f-sparks i, .f-endscore.done, .f-sharebtn.nudge { animation: none; }
+  .f-trace path { animation: none; stroke-dashoffset: 0; }
+  .f-hintring, .f-hintdim { transition: none; }
+  .f-demo-ring, .f-demo-pts { animation: none; opacity: 1; }
+  .f-demo-hand { left: 52.5%; top: 37%; }
+  .f-stage.is-intro .f-drift img, .f-stage.is-intro .f-drift .f-pic { animation: none; }
+}
+
+/* ── 4차(2026-11-28 · 검수 6.5~7점) ── */
+/* 폰 세로 화면: 판을 아래 단추 줄 바로 위까지(높이는 find.js fitStage가 px로) · 단추 줄 높이 고정 · 해설은 판 아래쪽 위에 덮개로 올라온다 */
+.f-play.tall { padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+#app.gx-main:has(> .f-play.tall) { padding-bottom: 0; } /* 바깥 틀의 아래 여백 40px(game-ui.css)은 이 판에서만 뺀다 — 그 자리를 판이 쓴다 */
+.f-play.tall .f-stage { aspect-ratio: auto; }
+.f-play.tall .f-under { position: relative; min-height: 0; z-index: 6; }
+.f-play.tall .f-explain { position: absolute; left: -20px; right: -20px; bottom: 0; padding: 44px 20px 0; border-top: 0; gap: 6px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, .86) 40px, #000 72%); }
+.f-play.tall .f-explain .gx-btn { margin-top: 4px; }
+/* 소개 중엔 장면 숨결도 멈춰 둔다(시간이 안 가는 동안 그림도 안 다가옴) · 「아무 데나 누르면 시작」을 또렷하게 */
+.f-stage.is-intro .f-drift { animation-play-state: paused; }
+.f-intro-go { bottom: 14px; font: 600 13px/1 var(--sans); letter-spacing: .02em; color: var(--fg); animation: fGoBlink 1.4s ease-in-out infinite; }
+@keyframes fGoBlink { 50% { opacity: .45; } }
+/* 그림이 판보다 넓을 때 지금 보이는 가로 위치 */
+.f-panbar { position: absolute; left: 22%; right: 22%; bottom: 8px; z-index: 4; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, .18); pointer-events: none; }
+.f-panbar[hidden] { display: none; }
+.f-panbar i { position: absolute; top: 0; bottom: 0; border-radius: 2px; background: rgba(255, 255, 255, .75); }
+/* 찾은 자리: 금빛 안쪽 고리 + 흰 바깥 고리가 0.4초 안에 튀어 들어오고, 한 번 퍼지는 빛 고리 */
+.f-ring.found { border: 3px solid #ffd25e; box-shadow: 0 0 0 2px rgba(0, 0, 0, .4), 0 0 0 6px rgba(255, 255, 255, .9), 0 0 0 8px rgba(0, 0, 0, .3), 0 0 30px 6px rgba(255, 196, 70, .75), inset 0 0 22px rgba(255, 214, 110, .45);
+  animation: fFound .4s cubic-bezier(.2, 1.6, .4, 1) both; }
+.f-ring.found::after { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid rgba(255, 240, 200, .95); animation: fFoundOut .55s ease-out .08s both; }
+@keyframes fFound { from { transform: scale(2.1); opacity: 0; } 55% { transform: scale(.9); opacity: 1; } to { transform: none; opacity: 1; } }
+@keyframes fFoundOut { from { transform: scale(1); opacity: .95; } to { transform: scale(1.9); opacity: 0; } }
+.f-fly.pop { font-size: 30px; color: #fff7da; }
+@media (prefers-reduced-motion: reduce) {
+  .f-ring.found, .f-ring.found::after, .f-intro-go { animation: none; }
+}

@@ -1,0 +1,348 @@
+/* pick.css v1 — 「영상 속 행성 고르기」 내부(index.html) 전용 옷 (2026-11-28)
+   대표 원문: 「영상 속 행성고르기랑 1분게임 왜 내부는 디자인이랑 디테일 디벨롭 안해놓은거야? 디벨롭 진행해」
+   입구(start-doors.css)와 같은 규칙 — 근거·실측: reports/돈워너노우_사이트입구_20261128/REPORT.md 「겉모습」 표
+     SpaceX: 검정 바탕 · 장면 하나 + 말 하나 · 글은 왼쪽 아래 · 제목 #f0f0fa · 단추 = 1px rgba(240,240,250,.35) 테 + rgba(0,0,0,.5) + 4px(누르면 흰 바탕)
+     NASA: 굵고 큰 글자 · 높은 흑백 대비
+     뺀 것: 크림 종이 · 굵은 잉크 테 · 도트 글꼴 · 노란 단추 · 칸 안의 칸 · 별 반짝임 · 빛 번짐
+   이 화면은 style.css·paper.css(1분 게임과 공용)를 불러오지 않는다 → 필요한 규칙은 전부 여기 있다. */
+body.pick {
+  --fg: #f0f0fa; --fg2: rgba(240, 240, 250, .72); --fg3: rgba(240, 240, 250, .5); --hair: rgba(240, 240, 250, .35); --line: rgba(240, 240, 250, .14);
+  --sans: 'Pretendard Variable', Pretendard, -apple-system, 'Apple SD Gothic Neo', 'Helvetica Neue', system-ui, sans-serif;
+  --ease: cubic-bezier(.2, .7, .2, 1); --tab: 62px;
+  margin: 0; min-height: 100vh; background: #000; color: var(--fg); font: 400 15px/1.55 var(--sans); letter-spacing: -.01em;
+  -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; overflow-x: hidden;
+  word-break: keep-all; overflow-wrap: break-word; line-break: strict;
+  padding-bottom: calc(var(--tab) + 84px + env(safe-area-inset-bottom)); /* 라운지 단추에 마지막 줄이 가리지 않게 */
+}
+html:has(body.pick) { background: #000; }
+body.pick * { box-sizing: border-box; }
+body.pick a { color: inherit; text-decoration: none; }
+body.pick .hidden { display: none !important; }
+body.pick .ic { display: inline-block; width: 22px; height: 22px; flex: none; }
+body.pick .ic svg { width: 100%; height: 100%; display: block; }
+body.pick b { font-weight: 700; color: var(--fg); }
+
+/* 머리 줄 — 글자 표지(입구로) + 오른쪽 도장 수 */
+.nav { position: fixed; z-index: 30; top: 0; left: 0; right: 0; height: calc(56px + env(safe-area-inset-top)); padding: env(safe-area-inset-top) 20px 0;
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(0, 0, 0, .86); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+.mark { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font: 800 17px/1 var(--sans); letter-spacing: .02em; color: var(--fg); white-space: nowrap; }
+.mark-back { width: 9px; height: 9px; border-left: 1.5px solid var(--fg2); border-bottom: 1.5px solid var(--fg2); transform: rotate(45deg); margin-left: 2px; }
+.passport { font: 500 12px/1 var(--sans); letter-spacing: .06em; color: var(--fg2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+main { position: relative; max-width: 1280px; margin: 0 auto; padding: calc(56px + env(safe-area-inset-top)) 20px 0; }
+
+/* 머리글 묶음 — 작은 머리글 · 굵고 큰 제목 · 한 줄 설명 (모두 왼쪽) */
+.hero { padding: 28px 0 22px; }
+.eyebrow, .label { margin: 0 0 12px; display: flex; align-items: center; gap: 10px; font: 600 11px/1.2 var(--sans); letter-spacing: .08em; color: var(--fg2); }
+.eyebrow span { color: var(--fg); }
+.eyebrow span::after, .label::after { content: ''; display: inline-block; width: 18px; height: 1px; margin-left: 10px; background: var(--fg3); vertical-align: middle; }
+.label::after { order: 1; }
+.title { margin: 0 0 12px; font: 700 34px/1.14 var(--sans); letter-spacing: -.025em; color: var(--fg); }
+.title.smaller { font-size: 24px; }
+.sub { margin: 0; max-width: 560px; font: 400 15px/1.5 var(--sans); color: var(--fg2); }
+.state { margin: 24px 0; color: var(--fg3); font-size: 14px; }
+
+/* 편 고르기 — 글자 탭(SpaceX 메뉴처럼) · 고른 편은 밑줄 */
+.ep-tabs { display: flex; gap: 22px; overflow-x: auto; scrollbar-width: none; margin: 0 -20px; padding: 0 20px; border-bottom: 1px solid var(--line); }
+.ep-tabs::-webkit-scrollbar { display: none; }
+.ep-tabs button { position: relative; flex: none; height: 46px; padding: 0; background: none; border: 0; cursor: pointer;
+  font: 600 14px/1 var(--sans); letter-spacing: .01em; color: var(--fg3); transition: color .2s; }
+.ep-tabs button::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--fg); transform: scaleX(0); transition: transform .35s var(--ease); }
+.ep-tabs button:hover { color: var(--fg2); }
+.ep-tabs button[aria-selected="true"] { color: var(--fg); }
+.ep-tabs button[aria-selected="true"]::after { transform: scaleX(1); }
+
+/* 행성 — 테 없는 우주에 떠 있는 원. 누르면 줄었다가 고른 행성만 흰 선으로 남고 나머지는 어두워진다 */
+.planets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px 18px; margin: 28px 0 36px; }
+.planets.n3 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 26px 14px; }
+.planet { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; gap: 12px 10px; align-content: start; padding: 0; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer;
+  transition: opacity .35s var(--ease); }
+.planet .orb { grid-column: 1 / -1; }
+.orb { position: relative; display: block; aspect-ratio: 1; border-radius: 50%; overflow: hidden; background: #0b0c12;
+  box-shadow: 0 0 0 1px rgba(240, 240, 250, .12); transition: transform .45s var(--ease), box-shadow .25s; }
+.orb img { display: block; width: 100%; height: 100%; object-fit: cover; transform: scale(1.18) translateY(-3%); }
+.orb.loading { background: linear-gradient(110deg, #0b0c12 30%, #16171f 50%, #0b0c12 70%) 0 0 / 240% 100%; animation: shimmer 1.4s linear infinite; }
+.orb.loading img { opacity: 0; }
+.orb img { transition: opacity .4s; }
+.orb.err { display: grid; place-items: center; }
+.orb.err::after { content: attr(data-ch); font: 700 28px/1 var(--sans); color: var(--fg3); }
+@keyframes shimmer { to { background-position: -240% 0; } }
+.planet .meta { display: flex; align-items: baseline; gap: 6px; }
+.planet { position: relative; }
+.planet .meta .stamp { position: absolute; top: 4px; left: 0; background: rgba(0, 0, 0, .72); border-color: var(--fg2); } /* 도장은 행성 왼쪽 위 — 이름 줄이 꺾이지 않게 */
+.num { font: 600 11px/1 var(--sans); letter-spacing: .1em; color: var(--fg3); font-variant-numeric: tabular-nums; }
+.stamp { font: 700 9px/1 var(--sans); letter-spacing: .12em; padding: 3px 5px 2px; border: 1px solid var(--fg2); border-radius: 2px; color: var(--fg2); }
+.planet .name { font: 600 15px/1.3 var(--sans); color: var(--fg); }
+.planets.n3 .planet .name { font-size: 14px; }
+.planet:hover .orb, .planet:focus-visible .orb { transform: scale(1.04); box-shadow: 0 0 0 1px var(--fg2); }
+.planet:active .orb { transform: scale(.95); transition-duration: .12s; }
+.planet:focus-visible { outline: none; }
+.planets.has-chosen .planet:not(.chosen) { opacity: .38; }
+.planets.has-chosen .planet:not(.chosen):hover { opacity: .75; }
+.planet.chosen .orb { box-shadow: 0 0 0 2px #000, 0 0 0 3px var(--fg); }
+.planet.chosen .num { color: var(--fg); }
+/* 고른 순간: 흰 선 한 줄이 행성 밖으로 퍼진다(빛 번짐 아님 · 1px 선) */
+.planet.just .orb::after { content: ''; position: absolute; inset: 0; border-radius: 50%; box-shadow: inset 0 0 0 1px var(--fg); animation: ring .6s var(--ease) forwards; }
+.planet.just .orb { animation: pop .45s var(--ease); }
+@keyframes ring { from { opacity: 1; transform: scale(.9); } to { opacity: 0; transform: scale(1.12); } }
+@keyframes pop { 0% { transform: scale(.94); } 60% { transform: scale(1.03); } 100% { transform: scale(1); } }
+
+/* 결과 — 장면 하나(고른 행성) + 말 하나(이름), 글은 왼쪽 아래 */
+.result { margin: 0 -20px; border-top: 1px solid var(--line); scroll-margin-top: 56px; }
+.result.in .r-scene .r-bg { animation: rise 1s var(--ease) both; }
+.result.in .r-cap, .result.in .r-body { animation: up .6s var(--ease) both; }
+.result.in .r-body { animation-delay: .12s; }
+@keyframes up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes rise { from { opacity: 0; transform: translateY(24px) scale(.96); } to { opacity: 1; transform: none; } }
+.r-scene { position: relative; isolation: isolate; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; min-height: min(118vw, 560px); padding: 20px 20px 26px;
+  background: radial-gradient(90% 70% at 70% 25%, #0d1420 0%, #000 70%); }
+.r-bg { position: absolute; z-index: -2; top: 22px; right: -16%; width: 92%; aspect-ratio: 1; object-fit: cover; clip-path: circle(42.4% at 50% 47%); }
+.r-bg.err { display: none; }
+.r-scene::before { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(0, 0, 0, 0) 38%, rgba(0, 0, 0, .7) 64%, #000 92%); }
+.r-cap { position: relative; max-width: 560px; }
+.r-cap h2 { margin: 0 0 10px; font: 700 36px/1.12 var(--sans); letter-spacing: -.025em; color: var(--fg); }
+.pitch { margin: 0; white-space: pre-line; font-size: 16px; line-height: 1.5; color: var(--fg2); }
+.watch { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 20px; margin-top: 18px; }
+
+.r-body { display: grid; gap: 40px; padding: 26px 20px 8px; }
+.r-col { display: grid; gap: 20px; align-content: start; min-width: 0; }
+
+/* 남들은 뭘 골랐나 — NASA 수치판처럼: 굵은 한 줄 + 얇은 막대 */
+.crowd { display: grid; gap: 0; }
+.crowd .label { margin-bottom: 14px; }
+.crowd-tag { order: 2; margin-left: 2px; font: 700 10px/1 var(--sans); letter-spacing: .1em; padding: 4px 6px 3px; border: 1px solid var(--fg); border-radius: 2px; color: var(--fg); }
+.crowd-head { margin: 0 0 18px; font: 700 21px/1.38 var(--sans); letter-spacing: -.02em; color: var(--fg); }
+.crowd-bars { display: grid; gap: 14px; }
+.crowd-row { display: grid; gap: 7px; }
+.crowd-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 14px; color: var(--fg2); }
+.crowd-name { min-width: 0; display: flex; align-items: baseline; gap: 8px; }
+.crowd-name b { font: 600 11px/1 var(--sans); letter-spacing: .1em; color: var(--fg3); font-variant-numeric: tabular-nums; }
+.crowd-name em { font: 700 9px/1 var(--sans); font-style: normal; letter-spacing: .12em; padding: 3px 5px 2px; border-radius: 2px; background: var(--fg); color: #000; }
+.crowd-row.me .crowd-top { color: var(--fg); font-weight: 700; }
+.crowd-n { flex: none; font-variant-numeric: tabular-nums; }
+.crowd-track { display: block; height: 3px; background: rgba(240, 240, 250, .12); overflow: hidden; }
+.crowd-fill { display: block; width: 0; height: 100%; background: var(--fg3); transition: width .8s var(--ease); }
+.crowd-row.me .crowd-fill { background: var(--fg); }
+.crowd-say { margin: 22px 0 0; padding: 2px 0 2px 16px; border-left: 1px solid var(--hair); font: 500 16px/1.5 var(--sans); color: var(--fg); }
+.crowd-say small { display: block; margin-top: 6px; font: 400 12px/1.4 var(--sans); color: var(--fg3); }
+.crowd-few { margin: 16px 0 0; font-size: 13px; color: var(--fg2); }
+.crowd-cta { margin-top: 18px; justify-self: start; }
+.crowd-note { margin: 12px 0 0; font-size: 11px; color: var(--fg3); }
+
+/* 스포 — 줄 두 개 사이 한 줄 · 열면 규칙이 굵게 */
+.spoiler { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.spoiler summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 54px; cursor: pointer; font: 600 14px/1.3 var(--sans); color: var(--fg); }
+.spoiler summary::-webkit-details-marker { display: none; }
+.spoiler summary small { margin-right: auto; font: 400 12px/1 var(--sans); color: var(--fg3); }
+.spoiler summary::after { content: ''; width: 12px; height: 12px; flex: none; background: linear-gradient(var(--fg2), var(--fg2)) center / 12px 1.5px no-repeat, linear-gradient(var(--fg2), var(--fg2)) center / 1.5px 12px no-repeat; transition: transform .3s var(--ease); }
+.spoiler[open] summary::after { transform: rotate(45deg); }
+.spoiler p { margin: 0 0 18px; font: 700 19px/1.4 var(--sans); color: var(--fg); }
+.hint { margin: 0; font-size: 13px; color: var(--fg2); }
+
+/* 공유 카드 — 만드는 동안 「만드는 중」, 실패하면 한 줄 안내 · 단추는 카드가 다 그려진 뒤에만 */
+.r-share { gap: 16px; }
+.r-share .label { margin: 0; }
+.card-wrap { position: relative; max-width: 420px; }
+.card-preview { display: block; width: 100%; height: auto; border-radius: 4px; box-shadow: 0 0 0 1px var(--line); transition: opacity .35s; }
+.card-state { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 20px; text-align: center; font-size: 14px; color: var(--fg2); }
+.card-wrap[data-state="busy"] .card-preview, .card-wrap[data-state="err"] .card-preview { opacity: .2; }
+.card-wrap[data-state="ok"] .card-state { display: none; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; max-width: 420px; }
+.actions .btn { flex: 1 1 0; justify-content: center; }
+
+/* 단추 — SpaceX 실측 그대로(입구와 같음): 얇은 테 · 반투명 검정 · 4px. 누르면 흰 바탕으로 뒤집힌다 */
+.btn { display: inline-flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 46px; padding: 0 18px; border: 1px solid var(--hair); border-radius: 4px;
+  background: rgba(0, 0, 0, .5); cursor: pointer; font: 600 13px/1.2 var(--sans); letter-spacing: .04em; color: var(--fg); text-align: left;
+  transition: background .2s, color .2s, border-color .2s, opacity .2s; }
+.btn i { flex: none; width: 14px; height: 10px; background: currentColor; clip-path: polygon(0 45%, 78% 45%, 55% 0, 66% 0, 100% 50%, 66% 100%, 55% 100%, 78% 55%, 0 55%); }
+.btn:not([disabled]):hover, .btn:not([disabled]):active { background: var(--fg); color: #000; border-color: var(--fg); }
+.btn.primary { border-color: rgba(240, 240, 250, .6); }
+.btn[disabled] { opacity: .35; cursor: default; }
+.btn.wide { display: flex; width: 100%; }
+.btn.small { min-height: 40px; padding: 0 14px; font-size: 12px; }
+.txt { display: inline-flex; align-items: center; min-height: 44px; font: 500 13px/1 var(--sans); color: var(--fg2); text-decoration: underline; text-decoration-color: var(--fg3); text-underline-offset: 4px; }
+.txt:hover { color: var(--fg); }
+.btn:focus-visible, .txt:focus-visible, .planet:focus-visible .orb, .ep-tabs button:focus-visible, .dex-item:focus-visible, .tabbar a:focus-visible, .mark:focus-visible, summary:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+
+/* 도감 — 편마다 한 줄: 제목 · 모은 수 · 행성 원(안 골라 본 건 흑백으로 어둡게) */
+.dex { display: grid; gap: 0 56px; padding-bottom: 12px; }
+.dex-empty { margin: 4px 0 18px; justify-self: start; }
+.dex-ep { padding: 20px 0 24px; border-top: 1px solid var(--line); }
+.dex-ep h3 { margin: 0 0 16px; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font: 600 15px/1.35 var(--sans); color: var(--fg); }
+.dex-ep h3 small { flex: none; font: 600 12px/1 var(--sans); letter-spacing: .06em; color: var(--fg3); font-variant-numeric: tabular-nums; }
+.dex-ep.full h3 small { color: var(--fg); }
+.dex-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.dex-item { position: relative; display: grid; gap: 8px; align-content: start; color: var(--fg3); }
+.dex-item .orb { filter: grayscale(1) brightness(.45); transition: filter .3s, transform .45s var(--ease); }
+.dex-item.got .orb { filter: none; }
+.dex-item:hover .orb { filter: grayscale(.3) brightness(.85); transform: scale(1.04); }
+.dex-item.got:hover .orb { filter: none; }
+.dex-item .nm { font: 500 12px/1.3 var(--sans); }
+.dex-item.got .nm { color: var(--fg); font-weight: 600; }
+.dex-item .stamp { justify-self: start; }
+
+/* 행성 내기 — 입력칸도 얇은 테 하나 */
+.form { display: grid; gap: 18px; max-width: 640px; }
+.form label { display: grid; gap: 8px; font: 600 13px/1.3 var(--sans); color: var(--fg2); }
+.form input, .form textarea { display: block; width: 100%; padding: 13px 14px; font: 400 16px/1.45 var(--sans); color: var(--fg); background: rgba(240, 240, 250, .04);
+  border: 1px solid var(--hair); border-radius: 4px; resize: vertical; transition: border-color .2s, background .2s; }
+.form input::placeholder, .form textarea::placeholder { color: rgba(240, 240, 250, .32); }
+.form input:focus, .form textarea:focus { outline: none; border-color: var(--fg); background: rgba(240, 240, 250, .07); }
+.warn { margin: 0; padding: 2px 0 2px 14px; border-left: 1px solid var(--hair); font-size: 13px; line-height: 1.55; color: var(--fg2); }
+.out { display: grid; gap: 14px; max-width: 640px; margin-top: 30px; padding-top: 26px; border-top: 1px solid var(--line); scroll-margin-top: 70px; }
+.out pre { margin: 0; padding: 18px; white-space: pre-wrap; word-break: break-word; font: 500 15px/1.65 var(--sans); color: var(--fg); background: rgba(240, 240, 250, .04); border: 1px solid var(--line); border-radius: 4px; }
+.out .actions { margin: 0; max-width: none; }
+
+/* 캐릭터 */
+.me3d { display: grid; gap: 14px; max-width: 420px; margin: 4px 0 20px; }
+.me3d-stage { position: relative; aspect-ratio: 4 / 5; overflow: hidden; border-radius: 4px; background: #05060d; box-shadow: 0 0 0 1px var(--line); }
+.me3d-stage img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.me3d-load { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 20px; text-align: center; color: var(--fg2); font-size: 14px; }
+.code-box { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "lbl btn" "code code"; align-items: center; gap: 6px 10px; max-width: 420px; padding: 16px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.code-box > span { grid-area: lbl; font: 600 11px/1 var(--sans); letter-spacing: .08em; color: var(--fg2); }
+.code-box > strong { grid-area: code; font: 700 18px/1.3 var(--sans); letter-spacing: .03em; color: var(--fg); word-break: break-all; }
+.code-box > button { grid-area: btn; }
+#app [data-view="me"] .actions { margin: 16px 0 0; }
+.sep { border: 0; border-top: 1px solid var(--line); margin: 40px 0 28px; }
+.quiz .q p { margin: 0 0 14px; font: 600 17px/1.45 var(--sans); color: var(--fg); }
+.opt-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; max-width: 640px; }
+.opt-row button { min-height: 52px; padding: 10px 14px; text-align: left; cursor: pointer; font: 500 14px/1.35 var(--sans); color: var(--fg); background: rgba(0, 0, 0, .5); border: 1px solid var(--hair); border-radius: 4px; transition: background .2s, color .2s; }
+.opt-row button:hover, .opt-row button:active { background: var(--fg); color: #000; }
+.quiz-result { max-width: 640px; }
+.quiz-result h3 { margin: 0 0 10px; font: 700 30px/1.15 var(--sans); letter-spacing: -.02em; color: var(--fg); }
+.quiz-result p { margin: 0 0 6px; color: var(--fg2); }
+.quiz-result .eyebrow { margin-bottom: 8px; }
+
+/* 더보기 */
+.hall .empty { color: var(--fg2); font-size: 15px; }
+.hall .empty a { color: var(--fg); text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--fg3); }
+.hall .entry { padding: 14px 0; border-bottom: 1px solid var(--line); }
+.links { display: grid; max-width: 640px; }
+.links a, .links .soon { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; min-height: 52px; padding: 16px 0; border-bottom: 1px solid var(--line); font: 600 15px/1.2 var(--sans); color: var(--fg); }
+.links a::after { content: '→'; color: var(--fg3); }
+.links small { margin-left: auto; font: 500 12px/1 var(--sans); color: var(--fg2); }
+.links .soon { color: var(--fg3); }
+.links .soon small { color: var(--fg3); }
+.privacy { max-width: 640px; color: var(--fg2); font-size: 14px; }
+.privacy summary { min-height: 48px; display: flex; align-items: center; cursor: pointer; color: var(--fg2); }
+.privacy li { margin-bottom: 6px; }
+.ad-slot { min-height: 100px; margin-top: 18px; }
+
+/* 아래 메뉴(폰) — 검정 · 얇은 선 · 고른 칸만 흰 글씨 + 위쪽 2px 선 */
+.tabbar { position: fixed; z-index: 30; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; padding: 0 4px env(safe-area-inset-bottom);
+  background: rgba(0, 0, 0, .9); border-top: 1px solid var(--line); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.tabbar a { position: relative; flex: 1; max-width: 112px; height: var(--tab); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; color: var(--fg3); transition: color .2s; }
+.tabbar a .ic { width: 20px; height: 20px; }
+.tabbar a span { font: 600 11px/1 var(--sans); letter-spacing: .02em; }
+.tabbar a::before { content: ''; position: absolute; top: -1px; left: 28%; right: 28%; height: 2px; background: var(--fg); transform: scaleX(0); transition: transform .3s var(--ease); }
+.tabbar a.on { color: var(--fg); }
+.tabbar a.on::before { transform: scaleX(1); }
+
+/* 알림 — 누른 단추처럼 흰 바탕 · 4px */
+#toast, .dc-toast { position: fixed; z-index: 70; left: 50%; bottom: calc(var(--tab) + 18px + env(safe-area-inset-bottom)); transform: translate(-50%, 12px); max-width: calc(100vw - 40px);
+  padding: 11px 16px; border-radius: 4px; background: var(--fg); color: #000; font: 600 13px/1.35 var(--sans); letter-spacing: .01em; white-space: nowrap;
+  opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s var(--ease); box-shadow: none; border: 0; }
+#toast.on, .dc-toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+/* 라운지 단추(dwk-chat)도 같은 문법 — 이 화면에서만 · 아래 메뉴 위 */
+body.pick .dch-fab { bottom: calc(var(--tab) + 14px + env(safe-area-inset-bottom)); height: 44px; background: rgba(0, 0, 0, .6); border: 1px solid var(--hair); border-radius: 4px;
+  color: var(--fg); box-shadow: none; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+body.pick .dch-fab svg { filter: none; width: 20px; height: 20px; }
+body.pick .dch-fab-t { font: 600 13px/1 var(--sans); letter-spacing: .04em; color: var(--fg); text-shadow: none; }
+body.pick .dch-new { background: var(--fg); color: #000; box-shadow: none; border-radius: 2px; font-family: var(--sans); }
+body.pick .dch-soon { bottom: calc(var(--tab) + 68px + env(safe-area-inset-bottom)); }
+
+/* 넓은 화면 — 메뉴는 위 줄로 올리고, 결과는 장면(왼쪽 큰 행성) + 두 칸 */
+@media (min-width: 900px) {
+  body.pick { --tab: 0px; padding-bottom: 80px; }
+  .nav { height: 64px; padding: 0 40px; }
+  .mark { font-size: 18px; }
+  main { max-width: none; padding: 64px 40px 0; }
+  .tabbar { top: 0; bottom: auto; left: 50%; right: auto; transform: translateX(-50%); z-index: 31; height: 64px; padding: 0; gap: 30px; background: none; border: 0; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .tabbar a { flex: none; max-width: none; height: 64px; flex-direction: row; gap: 0; }
+  .tabbar a .ic { display: none; }
+  .tabbar a span { font-size: 13px; letter-spacing: .04em; }
+  .tabbar a::before { top: auto; bottom: 14px; left: 0; right: 0; height: 1px; }
+  .tabbar a:hover { color: var(--fg2); }
+  .tabbar a.on:hover { color: var(--fg); }
+  .hero { padding: 64px 0 30px; }
+  .title { font-size: 60px; line-height: 1.06; letter-spacing: -.03em; }
+  .title.smaller { font-size: 30px; }
+  .sub { font-size: 17px; }
+  .ep-tabs { margin: 0; padding: 0; gap: 30px; }
+  .ep-tabs button { height: 52px; font-size: 15px; }
+  .planets, .planets.n3 { grid-template-columns: repeat(4, minmax(0, 220px)); gap: 40px 56px; margin: 44px 0 64px; }
+  .planet .name, .planets.n3 .planet .name { font-size: 17px; }
+  .num { font-size: 12px; }
+  .result { margin: 0; scroll-margin-top: 64px; }
+  .r-scene { min-height: 620px; padding: 56px 0 56px; background: radial-gradient(60% 80% at 72% 40%, #0d1420 0%, #000 70%); }
+  .r-bg { top: 30px; right: 2%; left: auto; width: min(600px, 48vw); }
+  .r-cap { max-width: 600px; }
+  .r-cap h2 { font-size: 64px; line-height: 1.05; letter-spacing: -.03em; margin-bottom: 14px; }
+  .pitch { font-size: 18px; }
+  .r-body { grid-template-columns: minmax(0, 1.3fr) minmax(0, .9fr); gap: 80px; padding: 48px 0 24px; border-top: 1px solid var(--line); }
+  .crowd-head { font-size: 26px; }
+  .dex { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dex-empty { grid-column: 1 / -1; }
+  .dex-row { gap: 22px; }
+  .dex-item .nm { font-size: 13px; }
+  #toast, .dc-toast { bottom: 32px; }
+  body.pick .dch-fab { bottom: 24px; right: 24px; }
+  body.pick .dch-soon { bottom: 80px; }
+}
+@media (max-width: 360px) { .title { font-size: 30px; } .r-cap h2 { font-size: 31px; } .planets.n3 .planet .name { font-size: 13px; } }
+@media (prefers-reduced-motion: reduce) {
+  .orb, .planet, .btn, .crowd-fill, .tabbar a::before, .ep-tabs button::after { transition: none; }
+  .result.in .r-scene .r-bg, .result.in .r-cap, .result.in .r-body, .planet.just .orb, .planet.just .orb::after, .orb.loading { animation: none; }
+}
+
+/* 행성 신청(v2 · 11-28 대표 「그냥 행성 신청 이런거로 하던가」) — 입구와 같은 문법: 상자 없음 · 얇은 선 · 굵은 흰 글자 · 왼쪽 정렬 */
+.flow4 { list-style: none; margin: 0 0 28px; padding: 0; display: grid; max-width: 640px; counter-reset: st; }
+.flow4 li { counter-increment: st; display: grid; grid-template-columns: 26px 62px 1fr; align-items: baseline; gap: 0 8px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+.flow4 li::before { content: counter(st, decimal-leading-zero); font: 600 10px/1 var(--sans); letter-spacing: .12em; color: var(--fg3); }
+.flow4 b { font: 700 15px/1.2 var(--sans); color: var(--fg); }
+.flow4 span { font: 400 13px/1.4 var(--sans); color: var(--fg2); word-break: keep-all; }
+.form label small { font-weight: 400; font-size: 12px; color: var(--fg3); margin-top: -4px; }
+.form .at { position: relative; display: block; }
+.form .at::before { content: '@'; position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font: 400 16px/1 var(--sans); color: var(--fg3); pointer-events: none; }
+.form .at input { padding-left: 32px; }
+.form label.check { grid-template-columns: auto 1fr; align-items: center; gap: 12px; min-height: 44px; font: 600 15px/1.3 var(--sans); color: var(--fg); cursor: pointer; }
+.form label.check input { appearance: none; -webkit-appearance: none; width: 22px; height: 22px; padding: 0; margin: 0; border: 1px solid var(--hair); border-radius: 3px; background: transparent; display: grid; place-items: center; cursor: pointer; }
+.form label.check input:checked { background: var(--fg); border-color: var(--fg); }
+.form label.check input:checked::after { content: ''; width: 10px; height: 6px; border: 2px solid #000; border-top: 0; border-right: 0; transform: rotate(-45deg) translate(1px, -1px); }
+.form label.check input:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+.form-err { margin: 0; padding: 2px 0 2px 14px; border-left: 2px solid var(--fg); font: 600 14px/1.5 var(--sans); color: var(--fg); word-break: keep-all; }
+.form-err[hidden] { display: none; }
+.btn:disabled { opacity: .55; cursor: default; }
+
+/* 접수 완료 — 장면 하나 + 말 하나(SpaceX). 접수 번호를 가장 크게 */
+.done { display: grid; gap: 14px; max-width: 640px; padding: 8px 0 6px; scroll-margin-top: 70px; outline: none; }
+.done-no { margin: 0; display: grid; gap: 6px; }
+.done-no small { font: 600 11px/1 var(--sans); letter-spacing: .08em; color: var(--fg2); }
+.done-no b { font: 800 64px/1 var(--sans); letter-spacing: -.02em; color: var(--fg); font-variant-numeric: tabular-nums; }
+.done-name { margin: 0; font: 700 26px/1.25 var(--sans); color: var(--fg); word-break: keep-all; }
+.done-msg { margin: 0; font: 400 15px/1.6 var(--sans); color: var(--fg2); word-break: keep-all; }
+
+/* 내 신청(이 기기) · 신청 현황 — 글자 목록 */
+.mine, .board { display: grid; max-width: 640px; margin: 0 0 30px; }
+.mine .label, .board .label { margin-bottom: 4px; }
+.mine-row { display: grid; grid-template-columns: 52px 1fr auto; align-items: baseline; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.mine-no { font: 600 13px/1 var(--sans); color: var(--fg3); font-variant-numeric: tabular-nums; }
+.mine-nm { display: grid; gap: 3px; min-width: 0; font: 600 15px/1.3 var(--sans); color: var(--fg); word-break: keep-all; }
+.mine-nm small { font: 400 12px/1.35 var(--sans); color: var(--fg2); }
+.mine-tag { font: 700 12px/1 var(--sans); color: var(--fg); white-space: nowrap; padding: 5px 7px; border: 1px solid var(--hair); border-radius: 2px; }
+.mine-row.st-new .mine-tag, .mine-row.st-no .mine-tag { border-color: var(--line); color: var(--fg2); font-weight: 500; }
+.mine-row.st-made .mine-tag { background: var(--fg); color: #000; border-color: var(--fg); }
+.board { margin-top: 34px; padding-top: 24px; border-top: 1px solid var(--line); }
+.board-n { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding: 6px 0 14px; }
+.board-n span { display: grid; gap: 6px; }
+.board-n b { font: 700 26px/1 var(--sans); color: var(--fg); font-variant-numeric: tabular-nums; }
+.board-n small { font: 500 12px/1 var(--sans); color: var(--fg2); }
+.board-row { display: grid; gap: 4px; padding: 12px 0; border-top: 1px solid var(--line); }
+.board-row b { font: 700 15px/1.3 var(--sans); color: var(--fg); }
+.board-row span { font: 400 13px/1.45 var(--sans); color: var(--fg2); word-break: keep-all; }
+.board-row small { font: 500 11px/1 var(--sans); color: var(--fg3); }
+@media (min-width: 900px) { .done-no b { font-size: 88px; } .done-name { font-size: 34px; } }
+/* 라운지 단추(오른쪽 아래 고정)가 접수 완료의 마지막 단추를 덮지 않게 — 신청 화면 아래 여백 */
+section[data-view="submit"] { padding-bottom: 72px; }

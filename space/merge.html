@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<link rel="icon" href="data:,">
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data: https://cdn.jsdelivr.net; img-src 'self' data: blob: https://i.ytimg.com; media-src 'self' data: blob:; connect-src 'self' https://yvjhsqbymgomicjqmuok.supabase.co wss://yvjhsqbymgomicjqmuok.supabase.co wss://dwk-realtime.dwk-plaza.workers.dev https://dwk-feed.dwk-plaza.workers.dev https://cdn.jsdelivr.net ws://127.0.0.1:* ws://localhost:*; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'"><!-- 보안(2026-11-28): 정해 둔 곳에서만 스크립트·연결 · 근거 reports/돈워너노우_사이트보안_20261128/REPORT.md -->
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>행성 합치기 · 돈워너노우</title>
+<meta name="robots" content="noindex, nofollow">
+<meta property="og:title" content="행성 합치기 — 같은 행성끼리 합쳐 봐">
+<meta property="og:image" content="img/og.jpg">
+<meta name="theme-color" content="#000000">
+<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="game-ui.css?v=2">
+<link rel="stylesheet" href="merge.css?v=5">
+</head>
+<body class="gx m-page">
+<canvas id="stars" aria-hidden="true"></canvas>
+<header class="gx-nav">
+  <a class="gx-mark" href="start.html">돈워너노우</a>
+  <span class="gx-here">행성 합치기</span>
+  <nav class="gx-navr"><a href="arcade.html">게임 목록</a><button class="gx-icon" id="snd" type="button"></button></nav>
+</header>
+<main id="stage" class="gx-main" aria-live="polite"><div class="gx-state"><p class="gx-dots">행성을 불러오는 중</p></div></main>
+<script src="data.js?v=15"></script>
+<script src="dwk-core.js?v=5"></script>
+<script src="icons.js?v=1"></script>
+<script src="dwk-prog.js?v=14"></script>
+<script>new MutationObserver(() => document.querySelectorAll('.dp-flash b:not(.gx-gone)').forEach(b => { if (b.textContent.includes('광장')) b.classList.add('gx-gone'); })).observe(document.body, { childList: true, subtree: true });</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+<script src="merge.js?v=18"></script>
+</body>
+</html>

@@ -1,0 +1,125 @@
+/* dwk-chat.css — 「다 같이 수다」(dwk-chat.js)의 겉모습. 어느 화면이든 같은 우주선 계기판 옷(doom.css 문법)을 입는다:
+   어두운 유리판 · 청록 머리카락 선 · 네 모서리 꺾쇠 · 숫자·강조는 릴스 노랑 #ffd84a · 제목은 갈무리.
+   색은 이 파일 안 변수(--dch-*)만 쓴다 — index(종이)·start(영상)·world·town 어느 화면 변수와도 섞이지 않게. */
+.dch-fab, .dch-sheet {
+  --dch-ink: #dbe7f2; --dch-mute: #8ea3b8; --dch-sky: #5fe8ff; --dch-sun: #ffd84a; --dch-rose: #ff6a4a;
+  --dch-line: rgba(95, 232, 255, .42); --dch-line2: rgba(95, 232, 255, .16); --dch-glass: rgba(8, 13, 20, .86);
+  --dch-corner: linear-gradient(var(--dch-sky), var(--dch-sky)) top left / 14px 2px no-repeat, linear-gradient(var(--dch-sky), var(--dch-sky)) top left / 2px 14px no-repeat,
+                linear-gradient(var(--dch-sky), var(--dch-sky)) top right / 14px 2px no-repeat, linear-gradient(var(--dch-sky), var(--dch-sky)) top right / 2px 14px no-repeat,
+                linear-gradient(var(--dch-sky), var(--dch-sky)) bottom left / 14px 2px no-repeat, linear-gradient(var(--dch-sky), var(--dch-sky)) bottom left / 2px 14px no-repeat,
+                linear-gradient(var(--dch-sky), var(--dch-sky)) bottom right / 14px 2px no-repeat, linear-gradient(var(--dch-sky), var(--dch-sky)) bottom right / 2px 14px no-repeat;
+  font-family: 'Pretendard Variable', Pretendard, system-ui, -apple-system, sans-serif; box-sizing: border-box;
+}
+.dch-sheet *, .dch-fab * { box-sizing: border-box; }
+
+/* 떠 있는 단추(오른쪽 아래) */
+.dch-fab { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 60; height: 52px; min-width: 52px; padding: 0 14px 0 12px; display: flex; align-items: center; gap: 7px;
+  background: var(--dch-corner), var(--dch-glass); color: var(--dch-sun); border: 1px solid var(--dch-line); border-radius: 12px; cursor: pointer;
+  box-shadow: 0 0 0 1px #000, 0 8px 24px rgba(0, 0, 0, .5), 0 0 16px rgba(95, 232, 255, .18); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.dch-fab:active { transform: translateY(1px); box-shadow: 0 0 0 1px #000, 0 0 16px rgba(95, 232, 255, .45); }
+.dch-fab svg { width: 24px; height: 24px; filter: drop-shadow(0 0 6px rgba(255, 216, 74, .45)); }
+.dch-fab-t { font: 700 14px/1 'Galmuri11', 'Pretendard Variable', sans-serif; color: #fff; letter-spacing: .04em; text-shadow: 0 1px 0 #000; }
+.dch-new { position: absolute; top: -9px; right: -6px; padding: 3px 5px; border-radius: 6px; background: var(--dch-rose); color: #fff; font: 800 10px/1 'Galmuri11', sans-serif; letter-spacing: .02em; box-shadow: 0 0 0 1px #000, 0 0 10px rgba(255, 106, 74, .6); }
+.dch-new[hidden] { display: none; }
+body.dch-open .dch-fab { display: none; }
+
+/* 화면마다 다른 바닥 장치 피하기 */
+body.world .dch-fab { bottom: calc(82px + env(safe-area-inset-bottom, 0px)); right: 16px; width: 54px; height: 54px; padding: 0; justify-content: center; } /* 광장: 손 흔들기(54px) 바로 위 · 같은 폭 */
+body.world .dch-fab-t { display: none; }                                                            /* 광장 폰에선 글자까지 넣으면 빠른 말 줄(w-chat)과 겹친다(375px 실측) */
+body.world.kb-open .dch-fab, body.world.w-intro .dch-fab, html.film .dch-fab { display: none; }    /* 자판 열림 · 첫 연출 · 촬영 */
+body.town .dch-fab { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); right: 12px; }          /* 내 땅: 아래 막대 위 */
+body.start .dch-fab { z-index: 60; }
+body.paper .dch-fab { bottom: calc(82px + env(safe-area-inset-bottom, 0px)); }                     /* 첫 화면(index): 아래 탭 막대(약 69px) 위 */
+
+/* 수다창 */
+.dch-sheet { position: fixed; right: 16px; bottom: 16px; z-index: 61; width: min(400px, calc(100vw - 32px)); height: min(620px, calc(100dvh - 32px)); display: flex; flex-direction: column;
+  background: var(--dch-corner), rgba(7, 11, 17, .93); color: var(--dch-ink); border: 1px solid var(--dch-line); border-radius: 14px;
+  box-shadow: 0 0 0 1px #000, 0 18px 50px rgba(0, 0, 0, .6), inset 0 0 40px rgba(95, 232, 255, .05); backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2); overflow: hidden; }
+.dch-sheet[hidden] { display: none; }
+@media (max-width: 719px) { .dch-sheet { inset: 0; width: 100%; height: 100dvh; border-radius: 0; border: 0; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); } }
+
+.dch-top { display: flex; align-items: center; gap: 10px; padding: 12px 12px 12px 16px; background: linear-gradient(90deg, rgba(95, 232, 255, .14), rgba(95, 232, 255, 0) 70%); border-bottom: 1px solid var(--dch-line); }
+.dch-top b { font: 700 16px/1.2 'Galmuri11', sans-serif; color: #fff; letter-spacing: .04em; }
+.dch-top b::before { content: ''; display: inline-block; width: 8px; height: 8px; margin: 0 8px 1px 0; background: var(--dch-sky); box-shadow: 0 0 8px var(--dch-sky); vertical-align: middle; }
+.dch-live { font: 700 11px/1 'Galmuri11', sans-serif; color: var(--dch-sun); padding: 5px 8px; border: 1px solid rgba(255, 216, 74, .4); border-radius: 999px; background: rgba(255, 216, 74, .08); white-space: nowrap; }
+.dch-live::before { content: ''; display: inline-block; width: 6px; height: 6px; margin-right: 5px; border-radius: 50%; background: #6fe0a8; box-shadow: 0 0 6px #6fe0a8; vertical-align: 1px; }
+.dch-live.off::before { background: var(--dch-rose); box-shadow: 0 0 6px var(--dch-rose); }
+.dch-x { margin-left: auto; width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--dch-line); background: rgba(8, 13, 20, .8); color: var(--dch-ink); font-size: 16px; cursor: pointer; }
+.dch-x:active { box-shadow: 0 0 12px rgba(95, 232, 255, .45); }
+
+.dch-pins { list-style: none; margin: 0; padding: 8px 12px; display: grid; gap: 4px; border-bottom: 1px solid var(--dch-line2); background: rgba(255, 216, 74, .04); }
+.dch-pins li { display: flex; gap: 8px; align-items: baseline; font-size: 12px; line-height: 1.45; color: #e8f4ff; }
+.dch-pins b { flex: none; font: 700 10px/1 'Galmuri11', sans-serif; color: #1a1204; background: var(--dch-sun); padding: 3px 5px; border-radius: 4px; }
+
+.dch-msgs { list-style: none; margin: 0; padding: 10px 12px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgba(95, 232, 255, .3) transparent; }
+.dch-m { max-width: 88%; align-self: flex-start; padding: 7px 10px 8px; border-radius: 10px; background: linear-gradient(rgba(30, 42, 56, .9), rgba(14, 20, 28, .9)); border: 1px solid var(--dch-line2); }
+.dch-m.mine { align-self: flex-end; border-color: rgba(255, 216, 74, .45); background: linear-gradient(rgba(58, 48, 12, .9), rgba(30, 24, 6, .9)); }
+.dch-m.sys { align-self: center; background: none; border: 0; color: var(--dch-mute); font-size: 12px; }
+.dch-who { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; font-size: 12px; }
+.dch-who b, .dch-name { font-weight: 700; color: #fff; }
+.dch-who small { color: var(--dch-mute); font-weight: 500; }
+.dch-name { background: none; border: 0; padding: 0; font: inherit; font-weight: 700; color: #fff; cursor: pointer; }
+.dch-name:hover { text-decoration: underline; text-decoration-color: var(--dch-line); }
+.dch-who time { margin-left: auto; color: var(--dch-mute); font-size: 10px; }
+.dch-no { font: 700 10px/1 'Galmuri11', sans-serif; color: var(--dch-sun); padding: 3px 4px; border: 1px solid rgba(255, 216, 74, .45); border-radius: 4px; text-shadow: 0 0 6px rgba(255, 216, 74, .35); white-space: nowrap; }
+.dch-no.none { color: var(--dch-mute); border-color: var(--dch-line2); text-shadow: none; }
+.dch-m p { margin: 0; font-size: 14px; line-height: 1.45; color: var(--dch-ink); word-break: break-word; }
+
+.dch-note { margin: 0; padding: 4px 12px 6px; font-size: 10px; color: var(--dch-mute); text-align: center; }
+.dch-err { margin: 0 12px 6px; padding: 7px 10px; border-radius: 8px; font-size: 12px; color: #ffd9cf; background: rgba(90, 26, 18, .7); border: 1px solid var(--dch-rose); }
+.dch-err[hidden], .dch-lock[hidden], .dch-in[hidden], .dch-seatf[hidden] { display: none; }
+
+.dch-in, .dch-row { display: flex; gap: 6px; }
+.dch-in { padding: 10px 12px 12px; border-top: 1px solid var(--dch-line); background: rgba(3, 6, 10, .6); }
+.dch-input, .dch-seatf input { flex: 1; min-width: 0; height: 42px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--dch-line); background: rgba(2, 4, 8, .85); color: #fff; font: 500 15px/1 'Pretendard Variable', sans-serif; outline: none; }
+.dch-input:focus, .dch-seatf input:focus { border-color: var(--dch-sky); box-shadow: 0 0 0 2px rgba(95, 232, 255, .2); }
+.dch-input::placeholder { color: #61738a; }
+.dch-seat { flex: none; height: 42px; padding: 0 9px; border-radius: 10px; border: 1px solid rgba(255, 216, 74, .5); background: rgba(255, 216, 74, .08); color: var(--dch-sun); font: 700 11px/1 'Galmuri11', sans-serif; cursor: pointer; white-space: nowrap; }
+.dch-seat.none { color: var(--dch-mute); border-style: dashed; border-color: var(--dch-line); background: none; }
+.dch-send, .dch-go { flex: none; height: 42px; padding: 0 14px; border-radius: 10px; border: 1px solid #fff0a8; background: linear-gradient(#ffe27a, #f2b915); color: #1a1204; font: 800 14px/1 'Pretendard Variable', sans-serif; cursor: pointer; box-shadow: 0 0 14px rgba(255, 216, 74, .3); }
+.dch-go { display: inline-flex; align-items: center; text-decoration: none; }
+.dch-ghost { flex: none; height: 42px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--dch-line); background: none; color: var(--dch-ink); font: 600 13px/1 'Pretendard Variable', sans-serif; cursor: pointer; }
+
+.dch-seatf { padding: 10px 12px 0; border-top: 1px solid var(--dch-line2); }
+.dch-seatf label { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; font-weight: 700; color: #e8f4ff; }
+.dch-seatf small { color: var(--dch-mute); font-weight: 500; }
+
+.dch-lock { padding: 12px 14px 14px; border-top: 1px solid var(--dch-line); background: rgba(3, 6, 10, .6); display: grid; gap: 10px; justify-items: start; }
+.dch-lock p { margin: 0; font-size: 13px; line-height: 1.5; color: #e8f4ff; }
+
+@media (prefers-reduced-motion: reduce) { .dch-fab, .dch-fab:active { transition: none; transform: none; } }
+
+/* 운영자 답(2026-11-28) — 서버가 확인한 운영자 글만 노란 테두리 · 답은 「↳ 누구: 무슨 글」 인용을 위에 단다 */
+.dch-m.staff { border-color: rgba(255, 216, 74, .7); background: linear-gradient(rgba(58, 46, 10, .92), rgba(24, 19, 6, .92)); box-shadow: 0 0 12px rgba(255, 216, 74, .14); }
+.dch-m.staff p { color: #fff6d6; }
+.dch-no.dch-staff { color: #1a1204; background: var(--dch-sun); border-color: var(--dch-sun); text-shadow: none; }
+.dch-re { display: block; margin: 0 0 4px; padding: 3px 8px; border-left: 2px solid var(--dch-sun); font-size: 11px; line-height: 1.4; color: var(--dch-mute); quotes: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dch-ans { flex: none; height: 22px; padding: 0 8px; border-radius: 6px; border: 1px solid rgba(255, 216, 74, .6); background: rgba(255, 216, 74, .1); color: var(--dch-sun); font: 700 10px/1 'Galmuri11', sans-serif; cursor: pointer; }
+.dch-reply { display: flex; align-items: center; gap: 8px; margin: 0 12px; padding: 6px 4px 6px 10px; border-left: 2px solid var(--dch-sun); background: rgba(255, 216, 74, .06); font-size: 12px; color: var(--dch-ink); }
+.dch-reply span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dch-reply .dch-ghost { height: 28px; padding: 0 9px; }
+.dch-spins { background: rgba(255, 216, 74, .07); }
+.dch-spins li span { min-width: 0; }
+.dch-spins .dch-re { margin: 0 0 2px; padding: 0 6px; }
+.dch-reply[hidden], .dch-spins[hidden], .dch-seat[hidden] { display: none; }
+.dch-sheet { text-align: left; } /* 화면(start 등)의 가운데 정렬이 수다창 글·인용에 새지 않게 */
+
+/* 11-28 라운지 단추 — 입구 SpaceX 문법(얇은 테·반투명 검정·4px · 빛·도트 글꼴 없음)으로 갈아입힘
+   대표 「수다라고 적지말고 좀 세련된 단어로 바꿔」 · 이전 「계기판 장식 … 화딱지나서 못보겠다」 */
+.dch-fab { height: 40px; min-width: 40px; padding: 0 14px 0 12px; gap: 8px; border: 1px solid rgba(240, 240, 250, .35); border-radius: 4px; background: rgba(0, 0, 0, .55);
+  box-shadow: none; color: #f0f0fa; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); transition: background .2s, color .2s, border-color .2s; }
+.dch-fab:hover, .dch-fab:active { background: #f0f0fa; color: #000; border-color: #f0f0fa; box-shadow: none; transform: none; }
+.dch-fab svg { width: 16px; height: 16px; filter: none; }
+.dch-fab-t { font: 600 13px/1 'Pretendard Variable', Pretendard, -apple-system, sans-serif; letter-spacing: .04em; color: inherit; text-shadow: none; }
+body.world .dch-fab { width: 44px; height: 44px; }
+.dch-soon { position: fixed; z-index: 61; right: 16px; bottom: calc(66px + env(safe-area-inset-bottom, 0px)); margin: 0; display: grid; gap: 4px; min-width: 200px; padding: 12px 14px;
+  border: 1px solid rgba(240, 240, 250, .35); border-radius: 4px; background: rgba(0, 0, 0, .86); color: #f0f0fa;
+  font: 500 13px/1.4 'Pretendard Variable', Pretendard, -apple-system, sans-serif; word-break: keep-all; }
+.dch-soon[hidden] { display: none; }
+.dch-soon b { font-weight: 700; font-size: 11px; letter-spacing: .08em; color: rgba(240, 240, 250, .72); }
+.dch-soon.pop { animation: dchSoon .3s cubic-bezier(.2, .7, .2, 1); }
+@keyframes dchSoon { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+body.paper .dch-soon { bottom: calc(132px + env(safe-area-inset-bottom, 0px)); }
+@media (prefers-reduced-motion: reduce) { .dch-soon.pop { animation: none; } }
+/* 행성 고르기 화면(폰)에선 글자를 빼고 아이콘만 — 4번 행성 이름을 가렸다(11-28 실측) */
+@media (max-width: 599px) { body.paper .dch-fab { width: 40px; padding: 0; justify-content: center; } body.paper .dch-fab-t { display: none; } }

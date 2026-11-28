@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data: https://cdn.jsdelivr.net; img-src 'self' data: blob: https://i.ytimg.com; media-src 'self' data: blob:; connect-src 'self' https://yvjhsqbymgomicjqmuok.supabase.co wss://yvjhsqbymgomicjqmuok.supabase.co wss://dwk-realtime.dwk-plaza.workers.dev https://dwk-feed.dwk-plaza.workers.dev https://cdn.jsdelivr.net ws://127.0.0.1:* ws://localhost:*; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'"><!-- 보안(2026-11-28): 정해 둔 곳에서만 스크립트·연결 · 근거 reports/돈워너노우_사이트보안_20261128/REPORT.md -->
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>돈워너노우 우주</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:,">
+<meta name="description" content="행성 신청 · 탑승 대기실 · 1분 게임. 떨어지면 1년 버텨야 해.">
+<meta property="og:title" content="돈워너노우 우주">
+<meta property="og:description" content="행성 신청 · 탑승 대기실 · 1분 게임. 떨어지면 1년 버텨야 해.">
+<meta property="og:image" content="img/og.jpg">
+<meta name="theme-color" content="#000000">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" integrity="sha384-GIdEBaqGN9mNkDkMkzMHW8EKUqtpPIe/sLj1X7DIrnc9uPtLROJgmuDlh+3rBw0j" crossorigin="anonymous">
+<link rel="stylesheet" href="start-doors.css?v=8">
+</head>
+<body class="gate">
+<!-- 입구(2026-11-28 대표 「픽세 사이트 들어가면 처음에 3개로 … 목적에 따라서 ㄱ」 → 「똑같이 만들지 말고 … 세계 최고인거 보고」
+     → 「nasa랑 spacex 사이트 디자인 분석해서 적용해」). 근거·비교표: reports/돈워너노우_사이트입구_20261128/REPORT.md
+     SpaceX: 화면을 꽉 채운 장면 하나에 말 하나 · 글은 왼쪽 아래 · 상자·테두리·빛 없음 · 단추는 얇은 테 하나.
+     NASA: 맨 위 한 줄에 「지금 일어난 일」. 우리 것: 문 이름 = 하고 싶은 일 · 행성·게임은 누르면 바로 · 다시 온 사람에겐 「이어서」. -->
+<header class="nav">
+  <a class="mark" href="start.html" aria-label="돈워너노우 처음으로">돈워너노우</a>
+  <nav class="sns" id="sns" aria-label="돈워너노우 채널"></nav><!-- 11-28 대표 「유튜브,틱톡,페이스북 바로 연결되도록 버튼 … 조그만하게」 · 주소는 data.js site.links -->
+</header>
+<a class="live" id="live" href="index.html#pick" hidden></a>
+
+<main class="tri" aria-label="하고 싶은 것 고르기">
+  <!-- 01 행성 신청(11-28 대표 「영상 속 행성 고르기 카테고리가 있는 이유 자체가 뭐야?」 → 「그냥 행성 신청 이런거로 하던가」)
+       픽세 상상 대기열의 작동 원리를 가져옴: 규칙을 「?」 뒤에 숨기지 않고 네 단계를 칸 위에 그대로 · 단계마다 실제 집계 숫자 · 검수 통과한 것만 공개.
+       숫자는 서버(planet_apps_board)가 센 값만 — 못 받으면 숫자 없이 단계만(IMM-1). 근거: reports/돈워너노우_사이트입구_20261128/행성신청_자동갱신.md -->
+  <section class="panel p-apply" id="apply" aria-labelledby="pApplyT">
+    <ol class="flow" id="flow" aria-label="신청한 행성이 영상이 되기까지">
+      <li data-k="total"><b>신청</b><span>행성 · 좋은 점 · 숨은 함정</span><em></em></li>
+      <li data-k="queued"><b>검수</b><span>사람이 읽고 대기열에 세워</span><em></em></li>
+      <li data-k="picked"><b>영상</b><span>뽑히면 1년 버티기 편으로</span><em></em></li>
+      <li data-k="made"><b>크레딧</b><span>영상·사이트에 네 아이디</span><em></em></li>
+    </ol>
+    <div class="cap">
+      <p class="eyebrow"><span>01</span>신청</p>
+      <h2 id="pApplyT">행성 신청</h2>
+      <p class="sub" id="applySub">네가 상상한 행성을 내. 뽑히면 진짜 영상이 되고, 영상에 네 아이디가 올라가.</p>
+      <ul class="queue" id="applyQueue" aria-label="검수 통과한 행성" hidden></ul>
+      <div class="acts"><a class="btn" href="index.html#submit">행성 신청하기<i aria-hidden="true"></i></a><a class="txt" href="index.html#dex">지난 행성 도감</a></div>
+    </div>
+  </section>
+
+  <!-- 02 탑승 대기실(11-28 대표 「탑승 대기실로 만들고 팔로우 3만되면 열거니까 접속 안되게 하고, 클릭하면 팔로우 탑승자 3만명시 열린다는 식으로 막아놔」)
+       탑승자 = data.js ship.boarded(인스타 팔로워 + 유튜브 구독자 · 탑승집계.py가 공식 API로 씀) · 문 = ship.openAt(30,000). 광장 화면(world·town·maker)은 열릴 때까지 여기로 돌아온다 -->
+  <section class="panel p-plaza is-locked" id="wait" aria-labelledby="pPlazaT">
+    <video class="bg" id="plazaVid" muted playsinline preload="metadata" poster="media/gate_drop_p_poster.jpg" aria-hidden="true" tabindex="-1" disablepictureinpicture disableremoteplayback></video><!-- 광장 낙하 연출(world.html?film=1 을 1/30초씩 찍음 · 2026-11-28) -->
+    <div class="cap">
+      <p class="eyebrow"><span>02</span>탑승</p>
+      <h2 id="pPlazaT">탑승 대기실</h2>
+      <p class="sub" id="waitSub">팔로우가 곧 탑승권이야. 탑승자 3만 명이 모이면 문이 열려.</p>
+      <div class="board" id="board" hidden>
+        <div class="board-n"><b id="boardN"></b><span id="boardGoal"></span></div>
+        <div class="board-bar" aria-hidden="true"><i id="boardBar"></i></div>
+        <p class="board-src" id="boardSrc"></p>
+      </div>
+      <div class="acts"><button class="btn is-lock" id="goWait" type="button" aria-describedby="waitNote">문 열기<i aria-hidden="true"></i></button><a class="txt" id="goFollow" href="#" target="_blank" rel="noopener">팔로우하고 탑승하기</a></div>
+      <p class="note" id="waitNote" role="status" aria-live="polite" hidden></p>
+    </div>
+  </section>
+
+  <!-- 03 잠깐 놀 사람 -->
+  <section class="panel p-game" aria-labelledby="pGameT">
+    <img class="bg" src="img/door/land.jpg" alt="" decoding="async">
+    <div class="cap">
+      <p class="eyebrow"><span>03</span>게임</p>
+      <h2 id="pGameT">1분 게임</h2>
+      <ul class="games" aria-label="게임 — 누르면 바로 시작">
+        <li><a href="merge.html">행성 합치기<small id="bestMerge"></small></a></li>
+        <li><a href="survive.html">행성 생존<small id="bestSurvive"></small></a></li>
+        <li><a href="land.html">행성 착륙</a></li>
+      </ul>
+      <div class="acts"><a class="btn" href="arcade.html">게임 전부 보기<i aria-hidden="true"></i></a></div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <a href="plaza.html">자랑 게시판</a>
+  <a href="index.html#pick">영상 속 행성 고르기</a>
+  <a href="#" data-dwk-account hidden>내 기록 지키기</a>
+  <span>© 돈워너노우</span>
+</footer>
+
+<script src="data.js?v=15"></script>
+<script src="dwk-track.js?v=2"></script><!-- 방문 기록(11-28 · 쿠키 없음 · 설계 reports/돈워너노우_사이트데이터_20261128/REPORT.md) -->
+<script src="dwk-account.js?v=1"></script><!-- 내 기록 지키기(11-28 · 선택 로그인 · data.js world.providers 가 비면 안 보임) -->
+<script src="start-doors.js?v=7"></script>
+<script type="module" src="dwk-chat.js?v=7"></script><!-- 라운지(전체 대화방 · 11-28 대표 「수다도 클릭하면 준비중으로」 → 지금은 준비 중 안내만) -->
+</body>
+</html>

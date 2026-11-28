@@ -1,0 +1,111 @@
+/* board.css — 「자랑 게시판」(plaza.html)만의 옷(2026-11-28 대표 「자랑 게시판은 왜 안고친거야?」)
+   바깥 틀(머리 줄 · 단추 · 가는 선 목록 · 알림 · 팔로우 안내)은 game-ui.css(body.gx)를 그대로 쓰고, 여기엔 게시판 부품만 둔다.
+   문법: 입구 start-doors.css와 같은 SpaceX·NASA 실측 — 검정 · 굵고 큰 흰 제목 · 글은 왼쪽 · 얇은 테 단추(누르면 흰 바탕) · 가는 선 목록.
+   뺀 것: 크림 종이 · 두꺼운 잉크 테 · 도트 글꼴 · 노란 칩 · 점선 상자 · 카드 속 카드 · 눌리는 그림자. */
+body.bd { --pic: #0b0d14; }
+
+/* 폰: 한 줄로 쌓되 「글 열기」(#c=코드)는 맨 위로 — 인스타 링크로 온 사람이 캐릭터부터 보게 */
+.bd-wrap { display: flex; flex-direction: column; padding: 0 20px 48px; }
+.bd-side, .bd-feed { display: contents; }
+.bd-spot { order: 1; } .bd-hero { order: 2; } .bd-mine { order: 3; } .bd-entries { order: 4; } .bd-hall { order: 5; } .bd-how { order: 6; } .bd-foot { order: 7; } #admin { order: 8; } #follow { order: 9; }
+.bd-spot:empty { display: none; }
+
+/* 머리(제목 · 지금 상태) */
+.bd-hero { display: grid; gap: 12px; padding: 28px 0 8px; }
+.bd-live { margin: 4px 0 0; display: flex; align-items: center; gap: 10px; padding: 12px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); font: 500 13px/1.4 var(--sans); color: var(--fg); }
+.bd-live b { flex: none; font: 700 11px/1 var(--sans); letter-spacing: .02em; padding: 4px 6px; border: 1px solid var(--fg); border-radius: 2px; }
+.bd-live.off b { border-color: var(--line); color: var(--fg2); font-weight: 500; }
+.bd-live span { min-width: 0; }
+
+/* 캐릭터 그림 자리 — 어두운 바탕 하나(테 없음). 그리는 동안 은은하게 흐르고, 못 그리면 이름 첫 글자 */
+.bd-pic { position: relative; display: grid; place-items: center; overflow: hidden; aspect-ratio: 1; background: var(--pic); border-radius: 4px; }
+.bd-pic img { width: 100%; height: 100%; object-fit: contain; display: block; animation: bdIn .4s ease both; }
+.bd-pic.wait::after { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, rgba(240, 240, 250, 0) 30%, rgba(240, 240, 250, .06) 50%, rgba(240, 240, 250, 0) 70%); background-size: 250% 100%; animation: bdWait 1.4s linear infinite; }
+.bd-pic .ini { font: 700 22px/1 var(--sans); color: var(--fg3); }
+@keyframes bdWait { from { background-position: 120% 0; } to { background-position: -120% 0; } }
+@keyframes bdIn { from { opacity: 0; } }
+
+/* 글 하나(구경 중인 캐릭터) — 장면 하나 + 말 하나 */
+.bd-spot { margin: 0 -20px; }
+.bd-spot .bd-pic { border-radius: 0; aspect-ratio: auto; height: min(100vw, 56svh); background: radial-gradient(70% 60% at 50% 45%, #121826 0%, #000 75%); }
+.bd-spot .bd-pic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; } /* 높이 %가 그리드 칸에서 안 풀려 컴퓨터 460px 칸에 640px 그림이 위아래 잘렸다(2026-11-28 실측) — 칸에 못 박는다 */
+.bd-spotcap { display: grid; gap: 10px; padding: 18px 20px 28px; border-bottom: 1px solid var(--line); }
+.bd-spotcap .gx-h1 { font-size: 32px; }
+.bd-spotcap .gx-acts { margin-top: 6px; }
+.bd-close { justify-self: start; }
+
+/* 내 캐릭터 · 올리기 */
+.bd-sec { padding-top: 8px; }
+.bd-sec > .gx-label { margin-top: 32px; }
+.bd-me { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 16px; align-items: end; padding: 4px 0 18px; }
+.bd-me b { display: block; font: 700 24px/1.2 var(--sans); letter-spacing: -.02em; word-break: keep-all; }
+.bd-me .gx-note { margin-top: 6px; }
+.bd-steps { counter-reset: s; margin: 0 0 16px; }
+.bd-steps li { counter-increment: s; justify-content: flex-start !important; gap: 14px !important; }
+.bd-steps li::before { content: counter(s, decimal-leading-zero); flex: none; width: 22px; font: 600 11px/1.6 var(--sans); letter-spacing: .08em; color: var(--fg3); }
+.bd-steps li span { font: 500 14px/1.45 var(--sans); color: var(--fg); word-break: keep-all; }
+.bd-steps li small { display: block; margin-top: 2px; font: 400 12px/1.4 var(--sans); color: var(--fg2); }
+.bd-empty { display: grid; gap: 12px; justify-items: start; padding: 16px 0 20px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.bd-empty p { margin: 0; }
+
+/* 목록 — 가는 선으로 나눈 줄: 번호 · 작은 그림 · 이름 · 하트 */
+.bd-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 32px; padding-bottom: 10px; }
+.bd-head .gx-label { margin: 0; padding: 0; }
+.bd-head small { font: 500 12px/1.3 var(--sans); color: var(--fg2); text-align: right; }
+.bd-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.bd-item { display: grid; grid-template-columns: 24px 64px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 88px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.bd-item .n { align-self: start; padding-top: 6px; font: 600 11px/1 var(--sans); letter-spacing: .08em; color: var(--fg3); }
+.bd-item > a { display: contents; }
+.bd-item .t { min-width: 0; }
+.bd-item .t b { display: block; font: 700 17px/1.25 var(--sans); letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bd-item .t small { display: block; margin-top: 4px; font: 400 12px/1.35 var(--sans); color: var(--fg2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bd-item .go { font: 500 15px/1 var(--sans); color: var(--fg3); padding: 0 2px; }
+.bd-item:has(> a:active) { background: rgba(240, 240, 250, .05); }
+.bd-left { margin: 0; padding: 0 0 10px; font: 500 13px/1.4 var(--sans); color: var(--fg2); }
+.bd-left b { color: var(--fg); font-weight: 700; }
+.bd-msg { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.bd-msg p { margin: 0; flex: 1 1 220px; font: 400 14px/1.5 var(--sans); color: var(--fg2); word-break: keep-all; }
+.bd-msg.err p { color: var(--fg); }
+.bd-msg.err p::before { content: ''; display: inline-block; width: 6px; height: 6px; margin-right: 8px; border-radius: 50%; background: var(--bad); vertical-align: 2px; }
+
+/* 하트 단추 — 얇은 테 · 준 뒤엔 흰 바탕 */
+.bd-heart { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; min-width: 64px; justify-content: center; padding: 0 12px; border: 1px solid var(--hair); border-radius: 4px; background: rgba(0, 0, 0, .5);
+  color: var(--fg); font: 600 13px/1 var(--sans); font-variant-numeric: tabular-nums; cursor: pointer; transition: background .2s, color .2s, border-color .2s; }
+.bd-heart .ic { width: 16px; height: 16px; }
+.bd-heart:hover:not([disabled]) { border-color: var(--fg); }
+.bd-heart.on { background: var(--fg); color: #000; border-color: var(--fg); }
+.bd-heart[disabled]:not(.on) { opacity: .4; cursor: default; }
+.bd-heart.big { min-height: 48px; padding: 0 20px; font-size: 14px; }
+
+/* 어떻게 하는 거야 · 규칙 — 접는 줄 하나 */
+.bd-how { margin-top: 32px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.bd-how > summary { list-style: none; display: flex; align-items: center; justify-content: space-between; min-height: 56px; font: 600 15px/1 var(--sans); cursor: pointer; }
+.bd-how > summary::-webkit-details-marker { display: none; }
+.bd-how > summary::after { content: '열기 +'; font: 500 12px/1 var(--sans); color: var(--fg2); }
+.bd-how[open] > summary::after { content: '접기 −'; }
+.bd-how .bd-steps { margin: 0; }
+.bd-rules { margin: 0; padding: 16px 0 20px 18px; font: 400 13px/1.7 var(--sans); color: var(--fg2); }
+.bd-rules li::marker { color: var(--fg3); }
+
+.bd-foot { display: flex; flex-wrap: wrap; gap: 4px 22px; padding-top: 22px; }
+body.bd .admin { margin-top: 28px; padding: 16px 0; border-top: 1px solid var(--line); display: grid; gap: 10px; justify-items: start; }
+body.bd .admin img { width: 100%; max-width: 360px; border-radius: 4px; }
+
+/* 넓은 화면: 왼쪽 = 제목·내 캐릭터(따라 내려옴) · 오른쪽 = 글 열기·목록·명예의 전당 */
+@media (min-width: 900px) {
+  /* style.css의 옛 `main { max-width: 560px; margin: 0 auto }`이 두 칸을 480px에 가뒀다(2026-11-28 실측 · 이름이 안 보임) — 컴퓨터에선 풀고 머리 줄과 같은 왼쪽 40px 선에서 시작 */
+  .bd-wrap { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 640px); gap: 0 72px; align-items: start; max-width: none; margin: 0; padding: 0 40px 72px; }
+  .bd-side { display: block; position: sticky; top: 64px; padding-bottom: 32px; }
+  .bd-feed { display: block; padding-top: 28px; }
+  .bd-hero { padding-top: 56px; }
+  .bd-spot { margin: 0 0 8px; }
+  .bd-spot .bd-pic { height: 460px; border-radius: 4px; }
+  .bd-spotcap { padding: 20px 0 32px; }
+  .bd-spotcap .gx-h1 { font-size: 44px; }
+  .bd-feed > .bd-entries > .bd-head:first-child, .bd-feed > .bd-spot:empty + .bd-entries > .bd-head:first-child { margin-top: 56px; }
+  .bd-item { grid-template-columns: 28px 76px minmax(0, 1fr) auto; min-height: 100px; }
+  .bd-item .t b { font-size: 19px; }
+  #admin, #follow, .bd-foot { grid-column: 2; }
+}
+@media (max-width: 360px) { .bd-item { grid-template-columns: 20px 56px minmax(0, 1fr) auto; gap: 10px; } .bd-me { grid-template-columns: 92px minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .bd-pic img, .bd-pic.wait::after { animation: none; } }

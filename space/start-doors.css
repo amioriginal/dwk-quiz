@@ -1,0 +1,155 @@
+/* start-doors.css v2 — 입구 「세 갈래」(2026-11-28 대표 「nasa랑 spacex 사이트 디자인 분석해서 적용해」)
+   SpaceX 실측(spacex.com · 2026-11-28 조회): 검은 바탕 · 화면을 꽉 채운 장면 하나에 제목 하나 · 글은 왼쪽 아래 ·
+     제목 400 굵기·자간 +0.02em·색 #f0f0fa · 단추 = 1px rgba(240,240,250,.35) 테 + rgba(0,0,0,.5) 바탕 + 4px 모서리 · 상자·빛·모서리 장식 없음.
+   NASA 실측(nasa.gov · 같은 날): 맨 위에 「지금 일어난 일」 한 줄(LIVE) · 굵고 큰 글자 · 높은 흑백 대비.
+   그래서 뺀 것(v1): 모서리 꺾쇠 · 청록 빛 · 도트 글꼴 · 노란 단추 · 칸 안의 칸. */
+body.gate {
+  --fg: #f0f0fa; --fg2: rgba(240, 240, 250, .72); --fg3: rgba(240, 240, 250, .5); --hair: rgba(240, 240, 250, .35);
+  --sans: 'Pretendard Variable', Pretendard, -apple-system, 'Apple SD Gothic Neo', 'Helvetica Neue', system-ui, sans-serif;
+  margin: 0; background: #000; color: var(--fg); font-family: var(--sans); -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
+}
+* { box-sizing: border-box; }
+a { color: inherit; text-decoration: none; }
+
+/* 머리 줄 — 글자 표지 하나 + 오른쪽 하나(SpaceX처럼 적게) */
+.nav { position: fixed; z-index: 20; top: 0; left: 0; right: 0; height: calc(56px + env(safe-area-inset-top)); padding: env(safe-area-inset-top) 20px 0;
+  display: flex; align-items: center; justify-content: space-between; background: linear-gradient(rgba(0, 0, 0, .7), rgba(0, 0, 0, 0)); }
+.mark { font: 800 17px/1 var(--sans); letter-spacing: .02em; color: var(--fg); white-space: nowrap; }
+.nav-r { font: 500 12px/1 var(--sans); letter-spacing: .08em; color: var(--fg2); padding: 10px 0 10px 10px; }
+
+/* 지금 일어난 일(NASA의 LIVE 줄) — 새 편 · 또는 다시 온 사람의 「이어서」 */
+.live { position: relative; z-index: 15; display: flex; align-items: center; gap: 10px; margin-top: calc(56px + env(safe-area-inset-top)); padding: 12px 20px;
+  border-bottom: 1px solid rgba(240, 240, 250, .14); font: 500 13px/1.35 var(--sans); color: var(--fg); }
+.live[hidden] { display: none; }
+.live b { flex: none; font: 700 11px/1 var(--sans); letter-spacing: .02em; padding: 4px 6px; border: 1px solid var(--fg); border-radius: 2px; }
+.live span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.live::after { content: '→'; flex: none; color: var(--fg2); }
+.live:not([hidden]) + .tri { padding-top: 0; }
+
+/* 세 갈래 — 폰: 세로로 세 장면, 첫 화면에 셋 다 보이게(각 1/3 · 최소 250px) */
+.tri { display: flex; flex-direction: column; padding-top: calc(56px + env(safe-area-inset-top)); }
+.panel { position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end;
+  min-height: max(250px, calc((100svh - 56px - 46px) / 3)); padding: 20px 20px 22px; isolation: isolate; }
+.panel + .panel { border-top: 1px solid rgba(240, 240, 250, .1); }
+.bg { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; transition: transform 1.2s cubic-bezier(.2, .7, .2, 1); }
+.panel::before { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(0, 0, 0, .15) 0%, rgba(0, 0, 0, .35) 35%, rgba(0, 0, 0, .78) 68%, rgba(0, 0, 0, .95) 100%); }
+/* 장면 색을 사진 쪽으로 — 밝은 만화 색을 눌러 검은 바탕과 한 덩어리로(SpaceX 장면은 어둡고 채도가 낮다) */
+.bg { filter: brightness(.72) saturate(.78) contrast(1.05); }
+.p-plaza .bg { object-position: 50% 62%; filter: brightness(.9) saturate(.9); } /* 영상은 이미 어두운 우주라 덜 누른다 · 착지한 캐릭터가 칸 가운데쯤 오게 */
+.p-game .bg { object-position: 50% 70%; filter: brightness(.55) saturate(.7) contrast(1.1); }
+.p-pick { background: radial-gradient(90% 70% at 70% 20%, #0d1420 0%, #000 70%); }
+
+.cap { position: relative; display: grid; gap: 8px; max-width: 520px; }
+.eyebrow { margin: 0; display: flex; align-items: center; gap: 10px; font: 600 11px/1 var(--sans); letter-spacing: .08em; color: var(--fg2); }
+.eyebrow span { letter-spacing: .08em; color: var(--fg); }
+.eyebrow span::after { content: ''; display: inline-block; width: 18px; height: 1px; margin-left: 10px; background: var(--fg3); vertical-align: middle; }
+.panel h2 { margin: 0; font: 700 28px/1.18 var(--sans); letter-spacing: -.02em; color: var(--fg); word-break: keep-all; }
+.sub { margin: 0; font: 400 14px/1.45 var(--sans); color: var(--fg2); word-break: keep-all; }
+.acts { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 18px; margin-top: 6px; }
+
+/* 단추 — SpaceX 실측 그대로: 얇은 테 · 반투명 검정 · 4px. 누르면 흰 바탕으로 뒤집힌다 */
+.btn { display: inline-flex; align-items: center; gap: 12px; height: 44px; padding: 0 18px; border: 1px solid var(--hair); border-radius: 4px; background: rgba(0, 0, 0, .5);
+  font: 600 13px/1 var(--sans); letter-spacing: .04em; color: var(--fg); transition: background .2s, color .2s, border-color .2s; }
+.btn i { width: 14px; height: 10px; background: currentColor; clip-path: polygon(0 45%, 78% 45%, 55% 0, 66% 0, 100% 50%, 66% 100%, 55% 100%, 78% 55%, 0 55%); }
+.btn:hover, .btn:active { background: var(--fg); color: #000; border-color: var(--fg); }
+.txt { display: inline-flex; align-items: center; min-height: 44px; font: 500 13px/1 var(--sans); color: var(--fg2); text-decoration: underline; text-decoration-color: var(--fg3); text-underline-offset: 4px; }
+.txt:hover { color: var(--fg); }
+
+/* 01 행성 — 이번 편 행성들이 우주에 떠 있다(누르면 바로 고른다) */
+.orbs { list-style: none; margin: 0 0 auto; padding: 4px 0 12px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.orbs a { display: grid; justify-items: center; gap: 8px; }
+.orbs img { width: 100%; max-width: 72px; aspect-ratio: 1; object-fit: cover; border-radius: 50%; display: block;
+  box-shadow: 0 0 0 1px rgba(240, 240, 250, .12), 0 10px 30px rgba(0, 0, 0, .8); transition: transform .4s cubic-bezier(.2, .7, .2, 1), box-shadow .3s; }
+.orbs a:hover img, .orbs a:active img { transform: scale(1.06); box-shadow: 0 0 0 1px var(--fg), 0 10px 30px rgba(0, 0, 0, .8); }
+.orbs span { font: 500 11px/1.3 var(--sans); color: var(--fg2); text-align: center; word-break: keep-all; }
+.orbs em { font-style: normal; font: 600 9px/1 var(--sans); letter-spacing: .14em; color: var(--fg); }
+.p-pick.is-new .eyebrow::after { content: '새 편'; margin-left: 4px; font: 700 9px/1 var(--sans); letter-spacing: .16em; padding: 3px 5px; border: 1px solid var(--fg); border-radius: 2px; color: var(--fg); }
+
+/* 01 행성 신청(v3 · 11-28) — 네 단계를 SpaceX 「발사 순서」처럼 번호 없는 글자 목록으로. 상자·아이콘 없음, 얇은 선만.
+   규칙을 칸 위에 그대로 둔다(픽세는 「?」 13개 뒤에 숨겨 아무도 못 봄). 숫자 칸(em)은 서버 집계가 올 때만 찬다. */
+.p-apply { background: radial-gradient(90% 70% at 70% 20%, #0d1420 0%, #000 70%); }
+.flow { list-style: none; margin: 0 0 auto; padding: 4px 0 14px; display: grid; counter-reset: st; max-width: 420px; }
+.flow li { counter-increment: st; display: grid; grid-template-columns: 26px auto 1fr auto; align-items: baseline; gap: 0 10px; padding: 9px 0; border-bottom: 1px solid rgba(240, 240, 250, .14); }
+.flow li::before { content: counter(st, decimal-leading-zero); font: 600 10px/1 var(--sans); letter-spacing: .12em; color: var(--fg3); }
+.flow b { font: 700 15px/1.2 var(--sans); color: var(--fg); white-space: nowrap; }
+.flow span { min-width: 0; font: 400 12px/1.35 var(--sans); color: var(--fg2); word-break: keep-all; }
+.flow em { font: 600 12px/1 var(--sans); font-style: normal; color: var(--fg); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.flow em:empty { display: none; }
+.queue { list-style: none; margin: 2px 0 0; padding: 0; display: grid; max-width: 420px; }
+.queue[hidden] { display: none; }
+.queue li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid rgba(240, 240, 250, .14); font: 600 14px/1.3 var(--sans); }
+.queue li a { text-decoration: underline; text-decoration-color: var(--fg3); text-underline-offset: 4px; }
+.queue li span { font: 500 11px/1 var(--sans); color: var(--fg2); white-space: nowrap; }
+
+/* 03 게임 — 글자 목록(SpaceX 「다가오는 발사」 목록처럼) */
+.games { list-style: none; margin: 2px 0 0; padding: 0; display: grid; }
+.games a { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; min-height: 40px; padding: 10px 0; border-bottom: 1px solid rgba(240, 240, 250, .16);
+  font: 600 15px/1.2 var(--sans); color: var(--fg); }
+.games a::after { content: '→'; color: var(--fg3); }
+.games small { margin-left: auto; font: 500 12px/1 var(--sans); color: var(--fg2); }
+.games small:empty { display: none; }
+.games a:hover::after { color: var(--fg); }
+
+.foot { display: flex; flex-wrap: wrap; gap: 4px 22px; justify-content: center; padding: 26px 20px calc(96px + env(safe-area-inset-bottom)); border-top: 1px solid rgba(240, 240, 250, .1);
+  font: 500 12px/1 var(--sans); letter-spacing: .02em; color: var(--fg3); }
+.foot a { display: inline-flex; align-items: center; min-height: 36px; color: var(--fg2); }
+
+.btn:focus-visible, .txt:focus-visible, .orbs a:focus-visible, .games a:focus-visible, .live:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+
+/* 수다 단추도 같은 문법(얇은 테 · 반투명 검정) — 이 화면에서만 */
+body.gate .dch-fab { background: rgba(0, 0, 0, .55); border: 1px solid var(--hair); border-radius: 4px; color: var(--fg); box-shadow: none; font-family: var(--sans); letter-spacing: .04em;
+  bottom: calc(16px + env(safe-area-inset-bottom)); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+body.gate .dch-new { background: var(--fg); color: #000; box-shadow: none; border-radius: 2px; }
+
+/* 넓은 화면: 세 장면을 나란히, 화면 높이 꽉. 마우스를 올린 쪽이 넓어진다 */
+/* 폰: 광장 칸은 영상을 위에 따로 두고 글을 그 아래로 — 착지한 캐릭터가 제목 뒤에 가려지지 않게(11-28 대표 「폰에서 캐릭터 안 가리게 고쳐」)
+   가로판 영상(1280×592)이 칸 폭을 꽉 채우는 높이 = 폭의 약 46% → 상자는 52vw(조금 잘라 캐릭터를 크게) */
+@media (max-width: 899px) {
+  .p-plaza { min-height: 0; padding-top: calc(52vw + 14px); }
+  .p-plaza .bg { inset: 0 0 auto 0; height: 52vw; object-position: 50% 70%; }
+  .p-plaza::before { inset: 0 0 auto 0; height: 52vw; background: linear-gradient(180deg, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, .85) 100%); }
+}
+@media (min-width: 900px) {
+  .nav { padding: 0 40px; height: 64px; }
+  .mark { font-size: 18px; }
+  .live { margin-top: 64px; padding: 14px 40px; }
+  .tri { flex-direction: row; height: calc(100vh - 64px); min-height: 620px; padding-top: 64px; }
+  .live:not([hidden]) + .tri { height: calc(100vh - 64px - 47px); }
+  .panel { flex: 1 1 0; min-height: 0; padding: 40px 36px 48px; transition: flex-grow .7s cubic-bezier(.2, .7, .2, 1); }
+  .panel + .panel { border-top: 0; border-left: 1px solid rgba(240, 240, 250, .1); }
+  .tri:hover .panel:hover { flex-grow: 1.3; }
+  .panel:hover .bg { transform: scale(1.04); }
+  .panel h2 { font-size: 40px; }
+  .sub { font-size: 15px; }
+  .orbs { grid-template-columns: repeat(2, minmax(0, 132px)); justify-content: center; gap: 28px 34px; margin: auto 0; padding: 0; }
+  .orbs img { max-width: 132px; }
+  .orbs span { font-size: 13px; }
+}
+@media (max-width: 360px) { .panel h2 { font-size: 25px; } .orbs { gap: 6px; } }
+@media (prefers-reduced-motion: reduce) { .bg, .panel, .orbs img, .btn { transition: none; } }
+
+/* 채널 바로가기 — 머리 줄 오른쪽, 작게(11-28 대표 「조그만하게」) · 테·빛 없이 아이콘만 */
+.sns { display: flex; align-items: center; gap: 2px; margin-right: -8px; }
+.sns a { display: grid; place-items: center; width: 32px; height: 32px; color: var(--fg2); transition: color .2s; }
+.sns a:hover, .sns a:focus-visible { color: var(--fg); }
+.sns svg { width: 16px; height: 16px; display: block; }
+
+/* 02 탑승 대기실 — 잠긴 문(11-28 대표 「팔로우 3만되면 열거니까 접속 안되게」) */
+.p-plaza.is-locked .bg { filter: brightness(.6) saturate(.55); }
+.board { display: grid; gap: 6px; margin-top: 4px; max-width: 360px; }
+.board[hidden] { display: none; }
+.board-n { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; font: 600 13px/1 var(--sans); color: var(--fg); font-variant-numeric: tabular-nums; }
+.board-n span { font-weight: 500; font-size: 12px; color: var(--fg2); }
+.board-bar { height: 1px; background: rgba(240, 240, 250, .22); }
+.board-bar i { display: block; height: 1px; background: var(--fg); }
+.board-src { margin: 0; font: 400 11px/1.3 var(--sans); color: var(--fg3); }
+.btn.is-lock { cursor: pointer; font-family: inherit; }
+.btn.is-lock i { width: 10px; height: 12px; clip-path: none; background: none; border: 1.5px solid currentColor; border-radius: 2px; position: relative; top: 2px; }
+.btn.is-lock i::before { content: ''; position: absolute; left: 50%; top: -6px; width: 6px; height: 6px; margin-left: -3px; border: 1.5px solid currentColor; border-bottom: 0; border-radius: 4px 4px 0 0; }
+.note { margin: 2px 0 0; max-width: 420px; padding: 10px 0 0; border-top: 1px solid rgba(240, 240, 250, .16); font: 500 13px/1.5 var(--sans); color: var(--fg); word-break: keep-all; }
+.note[hidden] { display: none; }
+.note.pop { animation: notePop .35s cubic-bezier(.2, .7, .2, 1); }
+@keyframes notePop { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .note.pop { animation: none; } }
+/* 01 행성 신청 — 넓은 화면에선 네 단계를 칸 가운데 높이로(옛 행성 4개 자리) */
+@media (min-width: 900px) { .flow { margin: auto 0; padding: 0; } .flow b { font-size: 17px; } .flow span { font-size: 13px; } }

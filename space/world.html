@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<link rel="icon" href="data:,">
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data: https://cdn.jsdelivr.net; img-src 'self' data: blob: https://i.ytimg.com; media-src 'self' data: blob:; connect-src 'self' https://yvjhsqbymgomicjqmuok.supabase.co wss://yvjhsqbymgomicjqmuok.supabase.co wss://dwk-realtime.dwk-plaza.workers.dev https://dwk-feed.dwk-plaza.workers.dev https://cdn.jsdelivr.net ws://127.0.0.1:* ws://localhost:*; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'"><!-- 보안(2026-11-28): 정해 둔 곳에서만 스크립트·연결 · 근거 reports/돈워너노우_사이트보안_20261128/REPORT.md -->
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<title>돈워너노우 우주 광장 · 탑승 대기장</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="내 생존자로 광장에 들어와서 같이 놀고, 명예의 전당에 올라가 봐">
+<meta property="og:title" content="돈워너노우 우주 광장">
+<meta property="og:image" content="img/og.jpg">
+<meta name="theme-color" content="#05060d">
+<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="world.css?v=18">
+<link rel="stylesheet" href="doom.css?v=1">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+} }
+</script>
+</head>
+<body class="world">
+<canvas id="scene" aria-label="3D 우주 광장"></canvas>
+<div id="tags" aria-hidden="true"></div>
+
+<!-- 위 -->
+<header class="w-top">
+  <a class="w-icon k" href="start.html" aria-label="시작화면으로" data-ic="back"></a>
+  <div class="w-title"><b>우주 광장</b><span id="online" class="w-online" title="지금 광장에 있는 주민 수(실제 접속만)">나 혼자</span></div>
+  <button class="w-icon k" id="menuBtn" type="button" aria-label="메뉴" data-ic="menu"></button>
+</header>
+<button class="w-stat" id="stat" type="button" aria-label="레벨과 코인 · 오늘의 미션">
+  <b id="lv">Lv.1</b><span class="xp"><i id="xpBar"></i></span><span class="coin"><i class="cn" aria-hidden="true"></i><b id="coins">0</b></span>
+</button>
+<div class="w-side">
+  <button class="k" id="questBtn" type="button" data-ic="check"><span>미션</span></button>
+  <button class="k" id="bookBtn" type="button" data-ic="board"><span id="bookCount">0/0</span></button>
+</div>
+<p class="w-guest hidden" id="guestBar">구경 중 · <a href="maker.html?flow=join">내 캐릭터 만들기 ▸</a></p>
+
+<!-- 채팅 기록(최근 몇 줄) -->
+<ol class="w-log" id="log" aria-live="polite" aria-label="채팅"></ol>
+
+<!-- 튜토리얼 -->
+<div class="w-coach hidden" id="coach" role="status">
+  <div class="bot" id="coachBot" aria-hidden="true"></div>
+  <div>
+    <div class="who"><span>안내봇 삐삐</span><span class="w-coach-dots" id="coachDots"></span></div>
+    <p id="coachText"></p>
+    <button type="button" id="coachSkip">안내 건너뛰기</button>
+  </div>
+</div>
+
+<!-- 가까운 시설 들어가기 -->
+<button class="w-act k hidden" id="act" type="button"><span id="actIcon"></span><b id="actText">들어가기</b><kbd id="actKey" hidden>E</kbd></button>
+
+<!-- 아래: 조이스틱 · 채팅 · 손 흔들기 -->
+<div class="w-joy" id="joy" aria-label="이동 조이스틱"><i id="knob"></i></div>
+<p class="w-keys" aria-hidden="true"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 걷기 · 땅 클릭 = 그곳으로<br><kbd>Enter</kbd> 채팅 · <kbd>E</kbd> 들어가기 · 끌기 = 시점 · 휠 = 확대</p>
+<div class="w-chat">
+  <div class="w-quick" id="quick" role="toolbar" aria-label="빠른 말"></div>
+  <form class="w-say" id="sayForm" autocomplete="off">
+    <input id="say" maxlength="60" placeholder="말하기…" aria-label="채팅 입력" enterkeyhint="send">
+    <button class="k" type="submit" aria-label="보내기" data-ic="send"></button>
+  </form>
+</div>
+<button class="w-emote k" id="emote" type="button" aria-label="손 흔들기" data-ic="wave"></button>
+
+<!-- 시트(전당·극장·내 정보·가입 등 공용) -->
+<section class="w-sheet hidden" id="sheet" role="dialog" aria-modal="true">
+  <div class="w-box">
+    <div class="w-head"><b id="sheetTitle"></b><button class="k" type="button" id="sheetClose" aria-label="닫기" data-ic="x"></button></div>
+    <div id="sheetBody"></div>
+  </div>
+</section>
+
+<div class="w-load ship" id="loading"><div class="w-door l"></div><div class="w-door r"></div><div class="w-cabin"><div class="w-port"><b style="--a:0deg;--d:0.00s"></b><b style="--a:24deg;--d:0.37s"></b><b style="--a:48deg;--d:0.74s"></b><b style="--a:72deg;--d:0.01s"></b><b style="--a:96deg;--d:0.38s"></b><b style="--a:120deg;--d:0.75s"></b><b style="--a:144deg;--d:0.02s"></b><b style="--a:168deg;--d:0.39s"></b><b style="--a:192deg;--d:0.76s"></b><b style="--a:216deg;--d:0.03s"></b><b style="--a:240deg;--d:0.40s"></b><b style="--a:264deg;--d:0.77s"></b><b style="--a:288deg;--d:0.04s"></b><b style="--a:312deg;--d:0.41s"></b><b style="--a:336deg;--d:0.78s"></b></div><p id="loadMain">탑승 대기장으로 가는 중</p><small id="loadSub">도착하면 문이 열려. 뛰어내려서 탑승구로 가.</small></div></div>
+<script>if(/[?&](from|nodrop)=/.test(location.search)){loadMain.textContent='탑승 대기장으로 돌아가는 중';loadSub.textContent='곧 도착해.';}</script>
+
+<script src="data.js?v=15"></script>
+<script src="dwk-track.js?v=2"></script><!-- 방문 기록(11-28 · 쿠키 없음 · 설계 reports/돈워너노우_사이트데이터_20261128/REPORT.md) -->
+<script src="wait-gate.js?v=1"></script><!-- 11-28 탑승 대기실 잠금: 3만 명 전엔 start.html#wait 로 -->
+<script src="dwk-core.js?v=5"></script>
+<script src="dwk-prog.js?v=14"></script>
+<script type="module" src="world.js?v=57"></script>
+<script type="module" src="dwk-chat.js?v=7"></script><!-- 다 같이 수다(모든 화면 · 2026-11-28 대표 「픽세처럼 채팅방도」) -->
+</body>
+</html>
