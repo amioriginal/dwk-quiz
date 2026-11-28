@@ -83,17 +83,17 @@
   const bm = +ls.get('best_merge', 0); if (bm > 0) $('bestMerge').textContent = `내 최고 ${bm.toLocaleString('ko-KR')}점`;
   const bs = ls.get('best_survive', null); if (bs && bs.days) $('bestSurvive').textContent = `내 최고 ${bs.days}일`;
 
-  // ── 02 광장: 지금 광장의 낙하 영상 — 칸이 보이면 한 번 재생하고 착지 장면에서 멈춘다(반복 없음) ──
+  // ── 02 탑승: 대기장 이륙 영상(11-28 대표 「우주선 이륙하는 영상으로 좀 간지나게」) — 칸이 보이면 재생, 반복 ──
   const vid = $('plazaVid');
   if (vid) {
     const panel = vid.closest('.panel');
     const kind = () => (vid.clientWidth > vid.clientHeight * 1.1 ? 'l' : 'p'); // 영상 상자 모양으로 고른다: 넓은 상자(폰) = 가로판 · 키 큰 상자(컴퓨터 세로 칸) = 세로판
     const reduce = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
     let cur = '';
-    const pick = () => { const k = kind(); if (k === cur) return; cur = k; vid.poster = `media/gate_drop_${k}_${reduce ? 'end' : 'poster'}.jpg`; if (!reduce) { vid.src = `media/gate_drop_${k}.mp4`; vid.load(); } };
-    const fallback = () => { const img = h('img', { class: 'bg', src: `media/gate_drop_${cur || 'p'}_end.jpg`, alt: '', decoding: 'async' }); vid.replaceWith(img); };
+    const pick = () => { const k = kind(); if (k === cur) return; cur = k; vid.poster = `media/launch_${k}_poster.jpg`; if (!reduce) { vid.src = `media/launch_${k}.mp4`; vid.loop = true; vid.load(); } };
+    const fallback = () => { const img = h('img', { class: 'bg', src: `media/launch_${cur || 'p'}_poster.jpg`, alt: '', decoding: 'async' }); vid.replaceWith(img); };
     vid.addEventListener('error', fallback);
-    const play = () => { if (reduce) return; try { vid.currentTime = 0; } catch (e) { /* 처음부터 못 돌려도 이어서 재생 */ } const p = vid.play(); if (p && p.catch) p.catch(() => { vid.poster = `media/gate_drop_${cur}_end.jpg`; }); };
+    const play = () => { if (reduce) return; try { vid.currentTime = 0; } catch (e) { /* 처음부터 못 돌려도 이어서 재생 */ } const p = vid.play(); if (p && p.catch) p.catch(() => { vid.poster = `media/launch_${cur}_poster.jpg`; }); };
     pick();
     let played = false;
     if ('IntersectionObserver' in window) new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting && !played) { played = true; play(); } }, { threshold: 0.45 }).observe(panel);

@@ -8,7 +8,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>돈워너노우 우주</title>
-<link rel="icon" href="data:,">
+<link rel="icon" href="img/icon-32.png" sizes="32x32"><link rel="apple-touch-icon" href="img/icon-180.png"><!-- 11-28 대표 「유튜브 링크에 인스타·페북은 사이트 이미지가 보이는데 우리는 안 보여」 → 프로필 사진(인스타 공식 API 11-28) -->
 <meta name="description" content="행성 신청 · 탑승 대기실 · 1분 게임. 떨어지면 1년 버텨야 해.">
 <meta property="og:title" content="돈워너노우 우주">
 <meta property="og:description" content="행성 신청 · 탑승 대기실 · 1분 게임. 떨어지면 1년 버텨야 해.">
@@ -16,7 +16,7 @@
 <link rel="canonical" href="https://dontwannaknow.kr/">
 <meta name="theme-color" content="#000000">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" integrity="sha384-GIdEBaqGN9mNkDkMkzMHW8EKUqtpPIe/sLj1X7DIrnc9uPtLROJgmuDlh+3rBw0j" crossorigin="anonymous">
-<link rel="stylesheet" href="start-doors.css?v=9">
+<link rel="stylesheet" href="start-doors.css?v=10">
 </head>
 <body class="gate">
 <!-- 입구(2026-11-28 대표 「픽세 사이트 들어가면 처음에 3개로 … 목적에 따라서 ㄱ」 → 「똑같이 만들지 말고 … 세계 최고인거 보고」
@@ -24,7 +24,7 @@
      SpaceX: 화면을 꽉 채운 장면 하나에 말 하나 · 글은 왼쪽 아래 · 상자·테두리·빛 없음 · 단추는 얇은 테 하나.
      NASA: 맨 위 한 줄에 「지금 일어난 일」. 우리 것: 문 이름 = 하고 싶은 일 · 행성·게임은 누르면 바로 · 다시 온 사람에겐 「이어서」. -->
 <header class="nav">
-  <a class="mark" href="start.html" aria-label="돈워너노우 처음으로">돈워너노우</a>
+  <a class="mark" href="start.html" aria-label="Don't Wanna Know 처음으로"><img src="img/profile.jpg" alt="" width="28" height="28">DON'T WANNA KNOW</a><!-- 11-28 대표 「돈워너노우 영어로 바꾸고 우리 프로필 사진도 옆에 붙여줘」 · 영문 표기 = 11-03 계정명 결정 「Don’t Wanna Know」 -->
   <nav class="sns" id="sns" aria-label="돈워너노우 채널"></nav><!-- 11-28 대표 「유튜브,틱톡,페이스북 바로 연결되도록 버튼 … 조그만하게」 · 주소는 data.js site.links -->
 </header>
 <a class="live" id="live" href="index.html#pick" hidden></a>
@@ -34,6 +34,7 @@
        픽세 상상 대기열의 작동 원리를 가져옴: 규칙을 「?」 뒤에 숨기지 않고 네 단계를 칸 위에 그대로 · 단계마다 실제 집계 숫자 · 검수 통과한 것만 공개.
        숫자는 서버(planet_apps_board)가 센 값만 — 못 받으면 숫자 없이 단계만(IMM-1). 근거: reports/돈워너노우_사이트입구_20261128/행성신청_자동갱신.md -->
   <section class="panel p-apply" id="apply" aria-labelledby="pApplyT">
+    <img class="bg" src="img/door/apply.jpg" alt="" decoding="async"><!-- 11-28 세 칸 모두 그림(픽세처럼) · 행성 10개 = img/og.jpg 아랫부분 -->
     <ol class="flow" id="flow" aria-label="신청한 행성이 영상이 되기까지">
       <li data-k="total"><b>신청</b><span>행성 · 좋은 점 · 숨은 함정</span><em></em></li>
       <li data-k="queued"><b>검수</b><span>사람이 읽고 대기열에 세워</span><em></em></li>
@@ -52,7 +53,7 @@
   <!-- 02 탑승 대기실(11-28 대표 「탑승 대기실로 만들고 팔로우 3만되면 열거니까 접속 안되게 하고, 클릭하면 팔로우 탑승자 3만명시 열린다는 식으로 막아놔」)
        탑승자 = data.js ship.boarded(인스타 팔로워 + 유튜브 구독자 · 탑승집계.py가 공식 API로 씀) · 문 = ship.openAt(30,000). 광장 화면(world·town·maker)은 열릴 때까지 여기로 돌아온다 -->
   <section class="panel p-plaza is-locked" id="wait" aria-labelledby="pPlazaT">
-    <video class="bg" id="plazaVid" muted playsinline preload="metadata" poster="media/gate_drop_p_poster.jpg" aria-hidden="true" tabindex="-1" disablepictureinpicture disableremoteplayback></video><!-- 광장 낙하 연출(world.html?film=1 을 1/30초씩 찍음 · 2026-11-28) -->
+    <video class="bg" id="plazaVid" muted playsinline preload="metadata" poster="media/launch_p_poster.jpg" loop aria-hidden="true" tabindex="-1" disablepictureinpicture disableremoteplayback></video><!-- 11-28 대표 「탑승 대기실 우주선 이륙하는 영상으로 좀 간지나게」 → 탑승 캐러셀 확정 촬영본 launch_9x16(대기장 이륙) · 폰=가로로 자른 판 launch_l · 컴=세로판 launch_p · 반복 -->
     <div class="cap">
       <p class="eyebrow"><span>02</span>탑승</p>
       <h2 id="pPlazaT">탑승 대기실</h2>
@@ -93,7 +94,7 @@
 <script src="data.js?v=15"></script>
 <script src="dwk-track.js?v=2"></script><!-- 방문 기록(11-28 · 쿠키 없음 · 설계 reports/돈워너노우_사이트데이터_20261128/REPORT.md) -->
 <script src="dwk-account.js?v=1"></script><!-- 내 기록 지키기(11-28 · 선택 로그인 · data.js world.providers 가 비면 안 보임) -->
-<script src="start-doors.js?v=7"></script>
+<script src="start-doors.js?v=8"></script>
 <script type="module" src="dwk-chat.js?v=7"></script><!-- 라운지(전체 대화방 · 11-28 대표 「수다도 클릭하면 준비중으로」 → 지금은 준비 중 안내만) -->
 </body>
 </html>

@@ -180,8 +180,8 @@ body.gate .dch-new { background: var(--fg); color: #000; box-shadow: none; borde
   .p-apply .flow { position: absolute; top: 16px; left: 20px; right: 20px; }
   /* 02 탑승 — 영상을 칸 전체 배경으로(따로 떼면 칸이 길어진다). 착지한 캐릭터가 글 위쪽에 오게 위로 올린다 */
   .p-plaza { min-height: 0; padding-top: 14px; }
-  .p-plaza .bg { inset: -24% 0 auto 0; height: 100%; object-position: 50% 50%; } /* 가로 영상이라 위아래 잘림이 없다 → 칸째 위로 24% 올려 착지 캐릭터가 제목 위에 오게(11-28 대표 「폰에서 캐릭터 안 가리게」 유지) */
-  .p-plaza::before { inset: 0; height: auto; background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, .2) 38%, rgba(0, 0, 0, .88) 62%, #000 72%); } /* 올린 영상의 아래 끝(76%)이 선으로 안 보이게 72%에서 완전히 검게 */
+  .p-plaza .bg { inset: 0; height: 100%; object-position: 50% 30%; } /* 이륙 영상(가로판): 우주선이 칸 위쪽 가운데 오게 */
+  .p-plaza::before { inset: 0; height: auto; background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, .1) 40%, rgba(0, 0, 0, .7) 72%, rgba(0, 0, 0, .9) 100%); }
   .board { margin-top: 0; }
   .board-n { font-size: 12px; justify-content: flex-start; }
   .p-plaza .sub { display: none; } /* 탑승 숫자(「5,891명 탑승 · 30,000명이면 열림」)가 한 줄 설명을 대신한다 */
@@ -195,3 +195,23 @@ body.gate .dch-new { background: var(--fg); color: #000; box-shadow: none; borde
   .btn { height: 36px; font-size: 12px; }
   .panel { padding-bottom: 10px; }
 }
+
+/* ── 세 칸을 딱딱 나눠 보이게(11-28 대표 「3개가 딱딱 나눠져 있게 보이지가 않아」) ──
+   픽세 실측(같은 390×844 캡처): 칸 사이에 굵은 남색 줄(약 6px) + 칸마다 꽉 찬 그림. 우리는 1px 흐린 선 + 1칸(신청)이 그림 없는 검정이라 칸 경계가 안 보였다.
+   → 칸 사이 6px 틈(남색 #141826) · 세 칸 모두 그림(신청 = 행성 10개 img/door/apply.jpg) · 칸 위 경계선 대신 틈. */
+.tri { gap: 6px; background: #141826; }
+.panel + .panel { border-top: 0; }
+.p-apply .bg { filter: brightness(.5) saturate(.85); object-position: 50% 40%; }
+.p-plaza .bg { filter: brightness(.95) saturate(1); } /* 이륙 영상은 이미 어두운 밤하늘 — 덜 누른다 */
+.p-plaza.is-locked .bg { filter: brightness(.82) saturate(.9); }
+@media (min-width: 900px) {
+  .panel + .panel { border-left: 0; }
+  .p-apply .bg { object-position: 50% 50%; }
+  .p-plaza .bg { object-position: 50% 40%; }
+}
+
+/* 로고 — 영문 + 프로필 사진(11-28 대표 「돈워너노우 영어로 바꾸고 우리 프로필 사진도 옆에 붙여줘」) */
+.mark { display: inline-flex; align-items: center; gap: 9px; font: 800 14px/1 var(--sans); letter-spacing: .08em; }
+.mark img { width: 28px; height: 28px; border-radius: 50%; display: block; flex: none; box-shadow: 0 0 0 1px rgba(240, 240, 250, .25); }
+@media (max-width: 380px) { .mark { font-size: 12px; letter-spacing: .04em; gap: 7px; } .mark img { width: 24px; height: 24px; } .sns a { width: 28px; } }
+@media (min-width: 900px) { .mark { font-size: 15px; } .mark img { width: 32px; height: 32px; } }
