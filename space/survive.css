@@ -255,37 +255,3 @@ body.gx:has(.s-play) { overflow-x: clip; } /* 날아가는 카드가 가로 스�
   .s-play .card .art .img, .s-teach, .s-over .s-365, .s-play .card.golden .face::after, .s-pop, .s-banner, .s-over h3, .s-over .s-art.big, .s-cc.new .s-art, .s-memo, .s-play .hint-pip i { animation: none; }
   .s-play .card { transition: none; }
 }
-
-/* ── 5차(2026-11-28 게임3D): 카드·엔딩마다 새 3D 컷 ──
-   그림 = 투명 배경 사진관 정물(webp) · 바탕 = 행성 색(--p1 가운데 → --p2 가장자리, survive.js PCOL) — 같은 행성 카드는 같은 세트로 보인다.
-   자르기·확대(4차 CROPS)는 없앴다: 원본(720×840 · 카드 그림 칸 약 350×360 css의 2배 이상)을 그대로 cover로 깐다. */
-.s-play .card .art.g3 { background: radial-gradient(120% 95% at 50% 36%, var(--p1, #a8b0d6) 0%, var(--p2, #454c72) 100%); }
-.s-play .card .art.g3.night { background: radial-gradient(120% 95% at 50% 36%, color-mix(in srgb, var(--p1, #a8b0d6) 34%, #1a2048) 0%, color-mix(in srgb, var(--p2, #454c72) 30%, #04060e) 100%); }
-.s-play .card .art.g3 .img { inset: 0; background-size: cover; background-position: 50% 42%; background-repeat: no-repeat; transform: none; animation: s-g3 8s ease-in-out infinite alternate; }
-.s-play .card.under .art.g3 .img { animation: none; }
-.s-play .card .art.g3.clue .img { filter: none; }
-.s-play .card .art.g3.clue { box-shadow: inset 0 0 0 2px rgba(255, 214, 130, .55); }
-.s-play .card .art.g3.own { box-shadow: inset 0 0 0 2px rgba(255, 140, 160, .38); }
-/* 그림 → 글 상자 이음: 4차의 smoothstep 곡선은 그대로, 깔리는 높이만 아래 30%로(주인공 사물이 그늘에 묻히지 않게) */
-.s-play .card .art.g3::after { inset: 70% 0 -1px; }
-@keyframes s-g3 { from { transform: translateY(0); } to { transform: translateY(-1.2%); } }
-
-/* 엔딩 그림(끝 화면·엔딩 판·수집 카드·도감): 행성 색 바탕 + 엔딩 컷. 숨은 규칙은 붉게, 생존은 금빛, 밤 장면은 어둡게 */
-.s-art.g3 { background: radial-gradient(circle at 50% 42%, var(--p1, #a8b0d6) 0%, var(--p2, #454c72) 92%); }
-.s-art.g3 > i { inset: 0; transform: none; background-size: cover; background-position: center; filter: none; }
-.s-art.g3::after { background: none; }
-.s-art.g3.k-rule { background: radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--p1, #a8b0d6) 62%, #e0455a) 0%, color-mix(in srgb, var(--p2, #454c72) 45%, #3c0010) 92%); }
-.s-art.g3.k-win { background: radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--p1, #a8b0d6) 50%, #ffe3a0) 0%, color-mix(in srgb, var(--p2, #454c72) 55%, #6a4a08) 92%); }
-.s-art.g3.night { background: radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--p1, #a8b0d6) 34%, #1a2048) 0%, color-mix(in srgb, var(--p2, #454c72) 30%, #04060e) 92%); }
-.s-art.g3.night.k-rule { background: radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--p1, #a8b0d6) 30%, #5a1530) 0%, #12030a 92%); }
-.s-art.g3.k-hp, .s-art.g3.k-food, .s-art.g3.k-mind { background: radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--p1, #a8b0d6) 70%, #6a6f86) 0%, color-mix(in srgb, var(--p2, #454c72) 60%, #15161f) 92%); } /* 바닥 엔딩 = 빛이 빠진 행성 색 */
-.end .s-endart.g3 { -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 6%, #000 94%, transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 6%, #000 94%, transparent 100%); }
-
-/* 적응기(1~3월): 머리줄 초록 글 · 달 줄 초록 밑줄 · 끝에 닿아 버틴 게이지는 초록 테두리로 깜빡 · 띠는 초록 */
-.s-play .hud-top small.grace { color: #a8f0c0; }
-.s-play .months span.g { box-shadow: inset 0 -1px 0 rgba(150, 240, 180, .6); }
-.s-play .gauge.saved .bar { outline: 2px solid #8ff0b0; outline-offset: 2px; animation: s-saved .4s ease-in-out 4 alternate; }
-.s-banner.grace { background: linear-gradient(90deg, rgba(8, 30, 18, 0), rgba(8, 30, 18, .94) 20%, rgba(8, 30, 18, .94) 80%, rgba(8, 30, 18, 0)); border-color: rgba(150, 240, 180, .4); }
-.s-banner.grace b { font-size: 22px; color: #e6fff0; } .s-banner.grace small { color: #a8f0c0; font-size: 14px; }
-@keyframes s-saved { from { outline-color: rgba(143, 240, 176, .2); } to { outline-color: #8ff0b0; } }
-@media (prefers-reduced-motion: reduce) { .s-play .card .art.g3 .img, .s-play .gauge.saved .bar { animation: none; } }
