@@ -9,6 +9,10 @@ body.pass .mark img { width: 24px; height: 24px; border-radius: 50%; display: bl
 .pass .hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, .78) 85%); pointer-events: none; }
 .pass .hero .cap { z-index: 1; width: 100%; }
 
+.src { display: flex; gap: 22px; margin-top: 4px; }
+.src button { min-height: 40px; padding: 0; border: 0; border-bottom: 1px solid transparent; background: none; cursor: pointer;
+  font: 600 14px/1 var(--sans); color: var(--fg3); letter-spacing: .02em; }
+.src button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--fg); }
 .find { display: flex; gap: 8px; margin-top: 6px; }
 .find .id { flex: 1; min-width: 0; display: flex; align-items: center; gap: 4px; height: 48px; padding: 0 14px; border: 1px solid var(--hair); border-radius: 4px; background: rgba(0, 0, 0, .5); }
 .find .id span { color: var(--fg3); font: 500 16px/1 var(--sans); }

@@ -11,7 +11,7 @@
 <meta name="theme-color" content="#000000">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" integrity="sha384-GIdEBaqGN9mNkDkMkzMHW8EKUqtpPIe/sLj1X7DIrnc9uPtLROJgmuDlh+3rBw0j" crossorigin="anonymous">
 <link rel="stylesheet" href="settle.css?v=3">
-<link rel="stylesheet" href="pass.css?v=1">
+<link rel="stylesheet" href="pass.css?v=2">
 </head>
 <body class="settle pass">
 <!-- 내 탑승권(2026-11-29 · 대표 「영상 싹다 보고 분석해서 우리 사이트도 디벨롭하고 …」 → jointhebunker 비교 1단계)
@@ -30,9 +30,13 @@
     <div class="cap">
       <p class="eyebrow">02 탑승</p>
       <h1 id="passT">내 탑승권</h1>
-      <p class="sub">인스타 아이디를 넣으면 돈워너노우호 좌석 번호를 찾아 줘. 좌석은 팔로우한 순서대로 새겨져.</p>
+      <p class="sub" id="passSub">인스타 아이디를 넣으면 돈워너노우호 좌석 번호를 찾아 줘. 좌석은 팔로우한 순서대로 새겨져.</p>
+      <div class="src" role="tablist" aria-label="어디서 탔어?"><!-- 11-29 대표 「유튜브는?? 구독자는??」 → 유튜브 공개 구독자도 같은 번호 줄 -->
+        <button type="button" role="tab" id="srcIg" aria-selected="true">인스타 팔로워</button>
+        <button type="button" role="tab" id="srcYt" aria-selected="false">유튜브 구독자</button>
+      </div>
       <form class="find" id="find" autocomplete="off">
-        <label class="id"><span aria-hidden="true">@</span><input id="idIn" name="id" type="text" inputmode="email" autocapitalize="none" spellcheck="false" maxlength="31" placeholder="인스타 아이디" aria-label="인스타 아이디" required></label>
+        <label class="id"><span aria-hidden="true" id="idAt">@</span><input id="idIn" name="id" type="text" inputmode="email" autocapitalize="none" spellcheck="false" maxlength="120" placeholder="인스타 아이디" aria-label="인스타 아이디" required></label>
         <button class="btn" id="go" type="submit">찾기<i aria-hidden="true"></i></button>
       </form>
       <div class="ticket" id="ticket" aria-live="polite" hidden>
@@ -57,6 +61,6 @@
 
 <script src="data.js?v=16"></script>
 <script src="dwk-track.js?v=2"></script>
-<script src="pass.js?v=1"></script>
+<script src="pass.js?v=2"></script>
 </body>
 </html>

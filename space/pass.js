@@ -2,6 +2,7 @@
    ship_pass(아이디)  = 그 한 사람 줄(좌석·등급·탑승일·짐·벽 여부 + 명단 날짜)
    ship_wall()        = 스스로 벽에 건 사람만
    ship_wall_join(아이디) = 명단에 자리가 있는 아이디만 벽에 건다
+   ship_pass_yt(채널 이름·@핸들·주소) · ship_wall_join_yt(채널 id) = 유튜브 공개 구독자판(11-29 대표 「유튜브는?? 구독자는??」)
    ship_stats(id=1)   = 지금 탑승 인원(탑승집계.py --push 가 30분마다 공식 API 값으로 씀)
    서버가 안 되면 숫자·좌석을 지어내지 않고 「못 불러왔어」라고 쓴다(IMM-1). */
 (function () {
@@ -34,9 +35,25 @@
   const showErr = (msg) => { err.textContent = msg; err.hidden = !msg; };
   if (!B.url || !B.anonKey) { showErr('지금은 명단을 불러올 수 없어.'); $('go').disabled = true; return; }
 
+  // ── 인스타 / 유튜브 고르기 ──
+  let mode = ls.get('pass_src', 'ig') === 'yt' ? 'yt' : 'ig';
+  const idIn = $('idIn');
+  const setMode = (m, keep) => {
+    mode = m; ls.set('pass_src', m);
+    $('srcIg').setAttribute('aria-selected', String(m === 'ig')); $('srcYt').setAttribute('aria-selected', String(m === 'yt'));
+    $('idAt').hidden = m !== 'ig';
+    idIn.placeholder = m === 'ig' ? '인스타 아이디' : '유튜브 채널 이름 또는 @핸들'; idIn.setAttribute('aria-label', idIn.placeholder);
+    idIn.setAttribute('inputmode', m === 'ig' ? 'email' : 'text');
+    $('passSub').textContent = m === 'ig' ? '인스타 아이디를 넣으면 돈워너노우호 좌석 번호를 찾아 줘. 좌석은 팔로우한 순서대로 새겨져.'
+      : '유튜브 채널 이름이나 @핸들을 넣으면 좌석 번호를 찾아 줘. 구독을 공개로 둔 구독자만 명단에 들어와.';
+    if (!keep) { idIn.value = ''; ticket.hidden = true; showErr(''); }
+  };
+  $('srcIg').addEventListener('click', () => mode !== 'ig' && setMode('ig'));
+  $('srcYt').addEventListener('click', () => mode !== 'yt' && setMode('yt'));
+
   // ── 탑승권 ──
   const ticket = $('ticket'), tSeat = $('tSeat'), tClass = $('tClass'), tBag = $('tBag'), tNote = $('tNote'), tActs = $('tActs'), wallBtn = $('wallJoin');
-  let cur = null;
+  let cur = null; // { src: 'ig'|'yt', key: 아이디|채널 id }
   const setWall = (on) => {
     wallBtn.classList.toggle('done', !!on); wallBtn.disabled = !!on;
     wallBtn.firstChild.textContent = on ? '좌석 벽에 걸려 있어' : '좌석 벽에 내 아이디 걸기';
@@ -62,14 +79,44 @@
       tNote.textContent = `좌석 번호는 아직이야. ${list ? list + ' ' : ''}명단 다음에 탔다면 다음 명단을 받을 때 팔로우한 순서대로 새겨져.`;
     }
   };
+  const renderYt = (r, q) => {
+    ticket.hidden = false; showErr('');
+    const at = (() => { const d = new Date(r.yt_as_of); if (isNaN(d)) return ''; const k = new Date(d.getTime() + 9 * 3600e3); return `${String(k.getUTCMonth() + 1).padStart(2, '0')}-${String(k.getUTCDate()).padStart(2, '0')} ${String(k.getUTCHours()).padStart(2, '0')}시`; })(); // 한국 시각(서버는 UTC)
+    tSeat.classList.remove('word'); tBag.hidden = true; tActs.hidden = true;
+    if (!r.found) {
+      $('tLabel').textContent = q;
+      tSeat.textContent = r.many ? '같은 이름이 여럿이야' : '아직 명단에 없어'; tSeat.classList.add('word'); tClass.textContent = '';
+      tNote.textContent = r.many ? '같은 이름의 채널이 둘 이상이야. 채널 주소의 @핸들로 찾아 줘.'
+        : `유튜브 구독자 ${nf(r.yt_total)}명 중 구독을 공개로 둔 ${nf(r.yt_public)}명만 우리가 볼 수 있어. 유튜브 설정 → 개인정보 보호에서 「내 구독정보 모두 비공개」를 끄면, 1시간마다 하는 다음 갱신 때 구독한 순서대로 좌석이 생겨. 채널 이름 철자나 @핸들도 한 번 봐 줘.`;
+      return;
+    }
+    $('tLabel').textContent = `${r.title || '@' + r.handle} · 좌석 번호`;
+    tSeat.textContent = seatNo(r.seat);
+    tClass.textContent = [r.first ? '퍼스트클래스' : '일반석', '유튜브 구독', r.subscribed_on && `${md(r.subscribed_on)} 탑승`].filter(Boolean).join(' · ');
+    tNote.textContent = `${at ? at + ' ' : ''}유튜브 공개 구독 명단 기준이야.`;
+    if (r.wall_ok) { setWall(r.on_wall); tActs.hidden = false; }
+  };
+  const findYt = async (raw) => {
+    let q = String(raw || '').trim();
+    if (/%[0-9a-f]{2}/i.test(q)) { try { q = decodeURIComponent(q); } catch (e) { /* 그대로 */ } } // 한글 핸들 주소를 붙여 넣으면 %EC.. 로 온다
+    if (q.length < 1 || q.length > 120) { ticket.hidden = true; showErr('유튜브 채널 이름이나 @핸들을 넣어 줘.'); return; }
+    $('go').disabled = true;
+    try {
+      const r = await rpc('ship_pass_yt', { p_q: q });
+      if (!r || !r.ok) throw new Error('bad');
+      cur = r.found ? { src: 'yt', key: r.cid } : null; ls.set('pass_yt', q); renderYt(r, q);
+    } catch (e) { ticket.hidden = true; showErr('지금 명단을 못 불러왔어. 잠시 뒤에 다시 찾아 줘.'); }
+    finally { $('go').disabled = false; }
+  };
   const find = async (raw) => {
+    if (mode === 'yt') return findYt(raw);
     const id = clean(raw);
     if (!ID_RE.test(id)) { ticket.hidden = true; showErr('인스타 아이디는 영문 소문자·숫자·마침표·밑줄만 써.'); return; }
     $('idIn').value = id; $('go').disabled = true;
     try {
       const r = await rpc('ship_pass', { p_id: id });
       if (!r || !r.ok) throw new Error('bad');
-      cur = r.found ? r.id : null; ls.set('pass_id', id); render(r, id);
+      cur = r.found ? { src: 'ig', key: r.id } : null; ls.set('pass_id', id); render(r, id);
     } catch (e) { ticket.hidden = true; showErr('지금 명단을 못 불러왔어. 잠시 뒤에 다시 찾아 줘.'); }
     finally { $('go').disabled = false; }
   };
@@ -77,7 +124,7 @@
   wallBtn.addEventListener('click', async () => {
     if (!cur) return; wallBtn.disabled = true;
     try {
-      const r = await rpc('ship_wall_join', { p_id: cur });
+      const r = cur.src === 'yt' ? await rpc('ship_wall_join_yt', { p_cid: cur.key }) : await rpc('ship_wall_join', { p_id: cur.key });
       if (!r || !r.ok) throw new Error(r && r.why);
       setWall(true); loadWall();
     } catch (e) { wallBtn.disabled = false; showErr('벽에 못 걸었어. 잠시 뒤에 다시 눌러 줘.'); }
@@ -99,13 +146,14 @@
   function loadWall() {
     rpc('ship_wall').then((w) => {
       const rows = (w && Array.isArray(w.list) ? w.list : []).filter((x) => x && x.no && x.id).sort((a, b) => a.no - b.no);
-      const kids = rows.map((x) => li(seatNo(x.no), '@' + x.id));
+      const kids = rows.map((x) => li(seatNo(x.no), x.src === 'yt' ? `${x.id} · 유튜브` : '@' + x.id));
       if (rows.length <= 1) kids.push(li('', '아직 스스로 건 탑승객이 없어.', true));
       plates.replaceChildren(...kids);
     }).catch(() => plates.replaceChildren(li('', '벽을 못 불러왔어.', true)));
   }
   loadWall();
 
-  const saved = ls.get('pass_id', '');
-  if (saved && ID_RE.test(saved)) find(saved);
+  setMode(mode, true);
+  const saved = mode === 'yt' ? ls.get('pass_yt', '') : ls.get('pass_id', '');
+  if (saved && (mode === 'yt' || ID_RE.test(saved))) { idIn.value = saved; find(saved); }
 })();
