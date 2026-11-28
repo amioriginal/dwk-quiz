@@ -13,7 +13,7 @@
 <meta name="theme-color" content="#000000">
 <link rel="stylesheet" href="style.css?v=4">
 <link rel="stylesheet" href="game-ui.css?v=2">
-<link rel="stylesheet" href="survive.css?v=13">
+<link rel="stylesheet" href="survive.css?v=14">
 <style>
   body.gx { overscroll-behavior: none; }
   /* 시작 — 오늘의 행성 장면이 화면을 채운다 */
@@ -74,10 +74,11 @@
 </header>
 <main id="stage" class="gx-main" aria-live="polite"><div class="gx-state"><p class="gx-dots">행성을 불러오는 중</p></div></main>
 <script src="data.js?v=15"></script>
+<script src="dwk-track.js?v=2"></script>
 <script src="dwk-core.js?v=5"></script>
 <script src="icons.js?v=1"></script>
 <script src="dwk-prog.js?v=14"></script>
 <script>new MutationObserver(() => document.querySelectorAll('.dp-flash b:not(.gx-gone)').forEach(b => { if (b.textContent.includes('광장')) b.classList.add('gx-gone'); })).observe(document.body, { childList: true, subtree: true });</script>
-<script src="survive.js?v=20"></script>
+<script src="survive.js?v=21"></script>
 </body>
 </html>

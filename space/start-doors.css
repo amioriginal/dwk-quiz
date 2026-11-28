@@ -215,3 +215,11 @@ body.gate .dch-new { background: var(--fg); color: #000; box-shadow: none; borde
 .mark img { width: 28px; height: 28px; border-radius: 50%; display: block; flex: none; box-shadow: 0 0 0 1px rgba(240, 240, 250, .25); }
 @media (max-width: 380px) { .mark { font-size: 12px; letter-spacing: .04em; gap: 7px; } .mark img { width: 24px; height: 24px; } .sns a { width: 28px; } }
 @media (min-width: 900px) { .mark { font-size: 15px; } .mark img { width: 32px; height: 32px; } }
+
+/* ── 컴퓨터 화면 점검(11-28 대표 「컴퓨터 화면도 체킹해봐」) ──
+   실측(공개 주소 · 1024×768 ~ 1920×1080 5크기): ① 세 칸 아래 끝이 화면보다 3px 넘침 — 새 편 줄 실제 높이가 50px인데 47px로 뺐다
+   ② 신청 칸 그림이 가로판을 세로 칸에 꽉 채우느라 행성 하나만 크게 · 숫자 「3」「8」이 글자 뒤로 비침 → 숫자 뺀 2열 5행 세로판(apply_tall.jpg)으로 */
+@media (min-width: 900px) {
+  .live:not([hidden]) + .tri { height: calc(100vh - 64px - 50px); min-height: 560px; }
+  .p-apply .bg { filter: brightness(.45) saturate(.85); object-position: 50% 30%; }
+}

@@ -16,6 +16,10 @@
   const params = new URLSearchParams(location.search);
   const seat = (params.get('seat') || '').replace(/\D/g, '').slice(0, 3);
   const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // 5차: 모의 실험(?sim=1) — 같은 게임 코드를 가상 시계로 빨리 돌려 판 길이·점수 분포를 잰다(그리기·소리·저장·방문 기록 없음)
+  const SIMN = +(params.get('sim') || 0);
+  let SIM = false, VT = 0;
+  const NOW = () => SIM ? VT : performance.now();
 
   // 작은 행성 → 큰 행성 (10단계). 마지막 두 개가 합쳐지면 「새 은하」로 사라지며 큰 점수.
   // cut = 공 모양이 아닌 행성(도넛·양·손) — 원으로 자르지 않고 검은 배경만 지운다
@@ -47,9 +51,13 @@
     { id: '2-3', name: '하얀 숲', col: '#ffe9a0' },      // 금빛
   ].map((t, i) => { const img = (DC.planet(t.id) || {}).img || ''; return { ...t, i, img, icon: img, cut: CUT.has(t.id), r: 18.5 * Math.pow(1.255, i), pts: (i + 1) * (i + 2) / 2 }; });
   const SPAWN_MAX = 4;          // 떨어뜨리는 건 0~4단계만
-  // 3차: 시간제 대신 「넘치면 끝」(수박 게임과 같다). 한 판 약 1분은 빨간 선이 내려오는 압박으로 맞춘다 —
-  // 첫 행성을 놓고 LINE_T0 뒤부터 선이 초당 LINE_V씩 내려오고(최대 LINE_MAX), 큰 합치기는 선을 밀어 올린다.
-  const LINE_T0 = 25000, LINE_V = 7, LINE_MAX = 380;
+  // 3차: 시간제 대신 「넘치면 끝」(수박 게임과 같다). 한 판 약 1분은 빨간 선이 내려오는 압박으로 맞춘다.
+  // 5차: 예전엔 선이 실력과 상관없이 같은 속도로 내려와 누구나 약 64초에 끝났다(4차 검수). 이제 선 압박이 합치기 실력에 반응한다 —
+  //   첫 행성을 놓고 T0 뒤부터 선이 V0(초당)로 내려오기 시작해 초마다 ACC씩 빨라지고(최대 MAX까지),
+  //   합칠 때마다 (LA + LB × 새 단계) × 콤보 덤만큼 밀려 올라간다. 잘 합치면 선이 위에 머물러 오래 살고 점수가 커지고, 못 합치면 판이 빨리 조여 일찍 끝난다.
+  //   값은 자동 플레이 모의 실험(?sim=1 · 무작위 봇 vs 같은 행성 근처에 놓는 봇)으로 맞췄다 — REPORT_merge.md
+  const TUNE = { T0: 12000, V0: 5, ACC: 0.12, MAX: 430, LA: 1.5, LB: 1.2 };
+  const lift = (nt, combo) => (TUNE.LA + TUNE.LB * nt) * (1 + 0.25 * Math.min(4, Math.max(0, combo - 1)));
   const GRACE = 2000;           // 빨간 선 위에 이만큼 머물면 끝
   // 3차: 넘친 뒤 순서 = 마지막 합치기 연출이 마저 끝나는 동안 판이 멈춤(STOP_MS) → 「넘쳤어!」 선언(받침판) → (4차) 선언이 다 보인 뒤 HOLD_MS·HOLD_FR가 지나면 결과 화면
   // 4차: 결과 화면은 시계(END_MS)가 아니라 「선언이 다 보인 첫 프레임」부터 HOLD_MS가 지나고, 그 뒤로 실제로 그린 프레임이 HOLD_FR장 넘을 때 넘어간다
@@ -173,7 +181,7 @@
   // ── 소리: Web Audio 합성(파일 없음). 끄기는 DC.sfx 설정을 그대로 따른다. 큰 순간은 DC.sfx 것을 쓴다 ──
   const SND = (() => {
     let ac = null, out = null, nb = null, lastLand = 0;
-    const on = () => !DC.sfx.on || DC.sfx.on();
+    const on = () => !SIM && (!DC.sfx.on || DC.sfx.on());
     function ctx() {
       if (!on()) return null;
       try {
@@ -243,7 +251,7 @@
         el('div', { class: 'gx-cap' },
           el('p', { class: 'gx-eyebrow' }, el('span', {}, '01'), '1분 게임'),
           el('h1', { class: 'gx-h1' }, '행성 합치기'),
-          el('p', { class: 'gx-sub' }, '같은 행성끼리 닿으면 한 단계 큰 행성이 돼. 25초가 지나면 빨간 선이 점점 내려와. ', el('b', {}, '선 위로 넘치면 끝.')),
+          el('p', { class: 'gx-sub' }, '같은 행성끼리 닿으면 한 단계 큰 행성이 돼. 빨간 선은 점점 내려오고, 합칠 때마다 밀려 올라가. ', el('b', {}, '선 위로 넘치면 끝.')),
           el('div', { class: 'gx-acts' },
             el('button', { class: 'gx-btn main', type: 'button', onclick: () => start(false) }, '시작', el('i')),
             el('button', { class: 'gx-btn', type: 'button', onclick: () => start(true) }, done ? '오늘 문제 다시' : '오늘 문제')),
@@ -255,9 +263,8 @@
     scrollTo(0, 0);
   }
 
-  function start(daily) {
-    cancelAnimationFrame(raf);
-    const rnd = daily ? DC.rng(DC.seed('merge' + DC.today())) : Math.random;
+  // 5차: 한 판의 상태·물리·시작 더미(그림·화면 없음) — 실제 판과 모의 실험이 함께 쓴다
+  function begin(daily, rnd) {
     // 난이도 곡선(떨어뜨린 개수 기준 — 오늘 문제는 모두 같은 순서): 첫 둘은 같은 행성(바로 합쳐 보며 규칙을 안다) → 작은 것 위주 → 점점 큰 것도
     // 3차: 첫 손에 든 행성은 1단계(조금 더 크게) — 판에 미리 깔린 1단계 위에 놓으면 바로 합쳐지고, 옆의 2단계와 이어 합쳐질 수 있다
     const spawn = (k) => {
@@ -270,6 +277,17 @@
     st = { daily, spawn, k: 2, score: 0, combo: 0, comboT: 0, cur: spawn(0), next: spawn(1), x: W / 2, canDrop: true, holdPop: 1, grip: 0, down: false,
       over: false, reason: '', overT: 0, warnT: 0, maxTier: 0, drops: 0, merges: 0, galaxies: 0,
       shake: 0, flash: 0, freeze: 0, slow: 0, started: false, el: 0, lastSec: 0, dz: DANGER, dzT: DANGER, lineOn: false, lineSoon: false, intro: 1, endT: 0, declared: false, banner: null, firstMerge: false, t0: 0 };
+    setupPhysics();
+    // 3차: 판이 빈 채로 시작하지 않게 — 시작하자마자 작은 행성 13개가 위에서 차례로 쏟아져 바닥 두 줄을 채운다(첫 1.5초 안에 판 아래 약 3분의 1이 찬다).
+    // 이웃끼리는 다른 단계라 저절로 합쳐지지 않는다(아랫줄 이웃·윗줄 이웃·위아래로 닿는 둘 모두). 1단계는 첫 손 행성과 같아 바로 합칠 자리, 그 곁 2단계·3단계는 이어 합쳐질 자리.
+    const PILE = [[0, 33], [3, 89], [2, 155], [1, 207], [0, 249], [3, 304], [0, 358], // 아랫줄: 지름 합 361 ≤ 판 안쪽 폭 372
+      [2, 61], [1, 122], [0, 181], [3, 228], [1, 276], [2, 331]];                     // 윗줄: 아랫줄 두 행성 사이 골에 앉는다
+    const t0 = NOW(); st.pileQ = PILE.map(([tier, x], i) => ({ at: t0 + 60 + i * 70 + (i >= 7 ? 180 : 0), tier, x, i }));
+  }
+  function start(daily) {
+    cancelAnimationFrame(raf);
+    window.dwkT?.gameStart('merge', { mode: daily ? 'daily' : 'free' });
+    begin(daily, daily ? DC.rng(DC.seed('merge' + DC.today())) : Math.random);
     const box = $('#stage'); box.replaceChildren(); box.classList.remove('gx-wide'); hwLast = '';
     cv = el('canvas', { id: 'board', 'aria-label': '행성 합치기 판' });
     const best = DC.store.get('best_merge', 0);
@@ -283,15 +301,9 @@
       el('div', { class: 'boardwrap' }, cv),
       el('div', { class: 'ladder', id: 'ladder', 'aria-label': '행성 단계' })));
     renderLadder();
-    setupPhysics();
     fit(); addEventListener('resize', fit);
     bindInput();
     if (!DC.store.get('seen_merge', false)) { box.querySelector('.boardwrap').append(el('div', { class: 'coach', id: 'coach' }, el('div', { class: 'hand' }, DI.ic('tap')))); placeCoach(); }
-    // 3차: 판이 빈 채로 시작하지 않게 — 시작하자마자 작은 행성 13개가 위에서 차례로 쏟아져 바닥 두 줄을 채운다(첫 1.5초 안에 판 아래 약 3분의 1이 찬다).
-    // 이웃끼리는 다른 단계라 저절로 합쳐지지 않는다(아랫줄 이웃·윗줄 이웃·위아래로 닿는 둘 모두). 1단계는 첫 손 행성과 같아 바로 합칠 자리, 그 곁 2단계·3단계는 이어 합쳐질 자리.
-    const PILE = [[0, 33], [3, 89], [2, 155], [1, 207], [0, 249], [3, 304], [0, 358], // 아랫줄: 지름 합 361 ≤ 판 안쪽 폭 372
-      [2, 61], [1, 122], [0, 181], [3, 228], [1, 276], [2, 331]];                     // 윗줄: 아랫줄 두 행성 사이 골에 앉는다
-    PILE.forEach(([tier, x], i) => setTimeout(() => { if (!st || st.over || cv !== $('#board')) return; const b = addPlanet(tier, x, st.dz + 24 + (i % 2) * 18); M.Body.setVelocity(b, { x: 0, y: 7 }); b.plugin.pre = true; }, 60 + i * 70 + (i >= 7 ? 180 : 0)));
     updHud();
     let last = performance.now(), acc = 0;
     const loop = (t) => {
@@ -335,25 +347,31 @@
   function addPlanet(tier, x, y, born = 0) {
     const t = TIERS[tier];
     const body = M.Bodies.circle(x, y, t.r, { restitution: 0.14, friction: 0.12, frictionStatic: 0.4, frictionAir: 0.004, density: 0.0012 + tier * 0.0002 });
-    body.plugin = { tier, born: performance.now() + born, pop: 1, sq: 0, landed: false };
+    body.plugin = { tier, born: NOW() + born, pop: 1, sq: 0, landed: false };
     M.Composite.add(world, body); bodies.push(body);
     return body;
   }
 
   // 실제 시간으로 흐르는 것(시간·연출)
+  function timers() {
+    const t = NOW();
+    while (st.pileQ && st.pileQ.length && t >= st.pileQ[0].at) { const p = st.pileQ.shift(); const b = addPlanet(p.tier, p.x, st.dz + 24 + (p.i % 2) * 18); M.Body.setVelocity(b, { x: 0, y: 7 }); b.plugin.pre = true; }
+    if (!st.canDrop && st.readyAt && t >= st.readyAt) { st.readyAt = 0; st.canDrop = true; st.holdPop = 0; st.x = clampX(st.x); }
+  }
   function frame(dt) {
+    if (!st.over) timers();
     if (st.over) {
-      if (!st.declared && performance.now() - st.endT > STOP_MS) { st.declared = true; DC.sfx('die'); DC.buzz(120); }
+      if (!st.declared && NOW() - st.endT > STOP_MS) { st.declared = true; DC.sfx('die'); DC.buzz(120); }
       tickFx(dt); return;
     }
     if (st.started) {
       st.el += dt;
       const sec = Math.floor(st.el / 1000);
       if (sec !== st.lastSec) { st.lastSec = sec; updTime(); }
-      // 3차: 시계로 끝내지 않는다. LINE_T0가 지나면 빨간 선이 내려오며 판을 조인다(큰 합치기는 선을 밀어 올림)
-      if (!st.lineSoon && st.el > LINE_T0 - 3000) { st.lineSoon = true; say('3초 뒤 빨간 선이 내려와!', '#ff8a92'); }
-      if (!st.lineOn && st.el > LINE_T0) { st.lineOn = true; SND.lineDown(); DC.buzz([15, 40, 15]); say('빨간 선이 내려온다 · 합쳐서 버텨!', '#ff8a92'); updTime(); }
-      if (st.lineOn && st.freeze <= 0) st.dzT = Math.min(LINE_MAX, st.dzT + LINE_V * dt / 1000);
+      // 3차: 시계로 끝내지 않는다. T0가 지나면 빨간 선이 내려오며 판을 조인다 · 5차: 점점 빨라지고, 모든 합치기가 밀어 올린다
+      if (!st.lineSoon && st.el > TUNE.T0 - 3000) { st.lineSoon = true; say('3초 뒤 빨간 선이 내려와!', '#ff8a92'); }
+      if (!st.lineOn && st.el > TUNE.T0) { st.lineOn = true; SND.lineDown(); DC.buzz([15, 40, 15]); say('선이 내려온다 · 합치면 올라가!', '#ff8a92'); updTime(); }
+      if (st.lineOn && st.freeze <= 0) st.dzT = Math.min(TUNE.MAX, st.dzT + (TUNE.V0 + TUNE.ACC * (st.el - TUNE.T0) / 1000) * dt / 1000);
       st.dz += (st.dzT - st.dz) * Math.min(1, dt / 160);
     }
     st.intro = st.started ? Math.max(0, st.intro - dt / 350) : 1;
@@ -392,7 +410,7 @@
     if (st.pending && st.pending.length) { for (const [a, b] of st.pending) merge(a, b); st.pending = []; }
     if (st.comboT > 0) { st.comboT -= dt; if (st.comboT <= 0) st.combo = 0; }
     // 끝 판정: 떨어진 지 1초 지난 행성이 빨간 선 위에 2초 머물면 끝(그동안 초읽기)
-    const now = performance.now();
+    const now = NOW();
     st.offenders = bodies.filter(b => now - b.plugin.born > 1000 && b.position.y - TIERS[b.plugin.tier].r < st.dz && Math.abs(b.velocity.y) < 1.2);
     st.overT = st.offenders.length ? st.overT + dt : Math.max(0, st.overT - dt * 2);
     if (st.offenders.length) { st.warnT -= dt; if (st.warnT <= 0) { SND.warn(); DC.buzz(10); st.warnT = 420; } } else st.warnT = 0;
@@ -413,7 +431,7 @@
       nt = tier; gain = 500 * st.combo; st.galaxies++;
       burst(x, y, '#ffe17a', 90, 9); burst(x, y, '#ffffff', 40, 6); flashes.push({ x, y, r: 90, t: 0, life: 520, tier: 0 });
       rings.push({ x, y, r0: 20, r1: 260, t: 0, life: 900, col: '#ffe17a', w: 10 });
-      st.shake = 1.6; st.flash = 0.7; st.freeze = 120; st.slow = 900; liftLine(70);
+      st.shake = 1.6; st.flash = 0.7; st.freeze = 120; st.slow = 900; liftLine(70, true);
       DC.sfx('win'); SND.boom(); DC.buzz([30, 50, 30]);
       st.banner = { tier, title: '새 은하 탄생!', sub: `+${gain}`, t: 0, life: 1800 };
       DC.endings.add('merge', 'galaxy', '새 은하 탄생'); DC.rewards.add('badge-galaxy', '은하 배지', '행성 합치기');
@@ -452,7 +470,7 @@
         drops(x, y, t.col, 6 + nt, 1.9 + nt * 0.25, R * 0.9, 190);
         rings.push({ x, y, r0: R * 1.0, r1: R * 1.45 + 4, t: 0, life: 190, col: t.col, w: 2.5 });
       }
-      if (nt >= 8) liftLine(45); else if (nt >= 6) liftLine(24); else if (nt >= 5) liftLine(10);
+      liftLine(lift(nt, st.combo), nt >= 6);
       SND.merge(nt, st.combo); DC.buzz(nt >= 5 ? 30 : 12);
       if (nt > st.maxTier) {
         const first = DC.endings.add('merge', 'tier' + nt, t.name);
@@ -474,7 +492,12 @@
     updHud(true);
   }
   // 3차: 큰 합치기 보상 = 내려온 빨간 선을 밀어 올림(예전의 「+초」 보상 자리). 선이 아직 안 내려왔으면 아무것도 안 한다
-  function liftLine(u) { if (!st.started || st.over || st.dzT <= DANGER + 1) return; st.dzT = Math.max(DANGER, st.dzT - u); say('빨간 선이 올라갔어!', '#9fe8b4', 1400); SND.bonus(); }
+  // 5차: 모든 합치기가 선을 조금씩 밀어 올린다(큰 단계·콤보일수록 많이). 올라간 만큼 선 위에 초록 ▲가 잠깐 흐르고, 큰 것(6단계~)만 알림·소리
+  function liftLine(u, loud) {
+    if (!st.started || st.over || !st.lineOn || st.dzT <= DANGER + 0.5) return;
+    const before = st.dzT; st.dzT = Math.max(DANGER, st.dzT - u); st.lifted = (st.lifted || 0) + (before - st.dzT); st.liftT = NOW();
+    if (loud) { say('빨간 선이 올라갔어!', '#9fe8b4', 1400); SND.bonus(); }
+  }
   function burst(x, y, col, n, sp, r0 = 0) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.283, s = (0.4 + Math.random()) * sp, ox = x + Math.cos(a) * r0, oy = y + Math.sin(a) * r0; parts.push({ x: ox, y: oy, px: ox, py: oy, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 1.2, life: 480 + Math.random() * 460, max: 940, col, w: 2 + Math.random() * 2.8, g: 0.13 }); } }
   // 4차: 작은 합치기의 즙 — 가장자리에서 짧게 튀고 life 안에 사라진다(불꽃 꼬리보다 짧은 방울)
   function drops(x, y, col, n, sp, r0, life) { for (let i = 0; i < n; i++) { const a = (i / n) * 6.283 + Math.random() * 0.5, s = (0.7 + Math.random() * 0.5) * sp, ox = x + Math.cos(a) * r0, oy = y + Math.sin(a) * r0; parts.push({ x: ox, y: oy, px: ox, py: oy, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 0.6, life: life * (0.75 + Math.random() * 0.25), max: life, col, w: 2.2 + Math.random() * 1.2, g: 0.1, drop: true }); } }
@@ -505,14 +528,14 @@
   function placeCoach() { const c = $('#coach'); if (!c || !cv) return; c.style.inset = 'auto 0 auto'; c.style.top = Math.round((holdY() + EX) * scale - 26) + 'px'; }
   function drop() {
     if (!st.canDrop || st.over) return;
-    if (!st.started) { st.started = true; st.t0 = performance.now(); }
+    if (!st.started) { st.started = true; st.t0 = NOW(); }
     st.canDrop = false; st.drops++; hideCoach();
     st.x = clampX(st.x);
     const b = addPlanet(st.cur, st.x, holdY()); M.Body.setVelocity(b, { x: 0, y: 5 }); M.Body.setAngle(b, st.holdAng || 0); // 3차: 처음 속도 3 → 5
     SND.drop(st.cur); DC.buzz(8);
     st.cur = st.next; st.next = st.spawn(st.k++);
     updHud();
-    setTimeout(() => { if (!st.over) { st.canDrop = true; st.holdPop = 0; st.x = clampX(st.x); } }, 420);
+    st.readyAt = NOW() + 420; // 5차: setTimeout 대신 시계로(모의 실험이 같은 코드를 쓰게)
   }
 
   // ── 그리기 ──
@@ -601,6 +624,8 @@
     cx.beginPath(); cx.moveTo(WALL + 2, DZ); cx.lineTo(W - WALL - 2, DZ); cx.stroke(); cx.setLineDash([]);
     // 선이 내려오는 중: 선 아래로 작은 ▼ 셋이 흐른다
     if (falling) { const o = RM ? 4 : (now / 40) % 12; cx.fillStyle = 'rgba(255,110,120,.75)'; for (const ax of [W * 0.25, W * 0.5, W * 0.75]) { const ay = DZ + 6 + o; cx.globalAlpha = 1 - o / 12; cx.beginPath(); cx.moveTo(ax - 6, ay); cx.lineTo(ax + 6, ay); cx.lineTo(ax, ay + 6); cx.closePath(); cx.fill(); } cx.globalAlpha = 1; }
+    // 5차: 합쳐서 선이 올라가면 선 위로 초록 ▲ 셋이 0.45초 동안 올라간다(합치기 = 선을 민다는 것을 눈으로)
+    if (live && st.liftT && now - st.liftT < 450) { const u = (now - st.liftT) / 450; cx.fillStyle = '#9fe8b4'; for (const ax of [W * 0.25, W * 0.5, W * 0.75]) { const ay = DZ - 8 - u * 16; cx.globalAlpha = 1 - u; cx.beginPath(); cx.moveTo(ax - 6, ay); cx.lineTo(ax + 6, ay); cx.lineTo(ax, ay - 7); cx.closePath(); cx.fill(); } cx.globalAlpha = 1; }
     if (live && warn <= 0) { // 4차: 초읽기 중에는 판 위 선 글씨를 끈다(점수줄이 말한다 · 행성에 반쯤 가려 「다」만 보였다)
       cx.textAlign = 'right'; cx.textBaseline = 'bottom'; cx.font = '700 12px "Pretendard Variable", Pretendard, sans-serif'; cx.fillStyle = `rgba(255,120,128,${0.75 + 0.25 * alarm})`;
       cx.fillText(st.offenders && st.offenders.length ? '넘칠 것 같아' : falling ? '선이 내려온다' : alarm > 0 ? '꽉 차 간다' : '이 선 넘으면 끝', W - WALL - 8, DZ - 5);
@@ -781,7 +806,8 @@
   // ── 끝 ──
   function finish(reason) {
     if (st.over) return;
-    st.over = true; st.reason = reason; st.endT = performance.now(); st.down = false;
+    st.over = true; st.reason = reason; st.endT = NOW(); st.down = false;
+    if (!SIM) window.dwkT?.gameEnd('merge', { score: st.score, why: reason, at: `t${st.maxTier + 1}·d${st.drops}` }); // 방문 기록: 넘친 때 최고 단계·떨어뜨린 수
     // 3차: 넘친 순간엔 「뚝」 멈춤만(흔들림·붉은 번짐 없음). 「넘쳤어!」 소리·진동은 STOP_MS 뒤 선언 때(frame)
     st.shake = 0; st.flash = 0; st.banner = null; st.msg = null; SND.stop(); DC.buzz(30);
     removeEventListener('keydown', onKey); removeEventListener('resize', fit);
@@ -843,6 +869,58 @@
     x.globalAlpha = 1; x.fillStyle = '#f4f1ea'; x.font = '800 42px "Pretendard Variable", Pretendard, sans-serif'; x.fillText(`@${D.site.handle}${seat ? ` · 좌석 ${seat}` : ''}`, Wc / 2, 1295);
   }
   async function share() { await DC.shareCanvas($('#card'), `돈워너노우_행성합치기_${st.score}점.png`, `행성 합치기 ${st.score}점! 너는? @${D.site.handle}`); }
+
+  // ── 5차: 모의 실험(?sim=1) — window.__mergeSim(봇, 판 수, 떨어뜨리는 간격ms, 조정값) → 판마다 {버틴 초·점수·합친 수·떨어뜨린 수·최고 단계} ──
+  //   봇: random = 아무 데나 · smart = 같은 행성 위·옆(없으면 낮은 곳)에 놓음 · mid = 반반. 같은 물리·같은 선 규칙·같은 행성 순서 규칙(실제 코드 그대로)
+  function landHit(x, cr) {
+    let y = H - cr - 2, hit = null;
+    for (const b of bodies) { const rb = TIERS[b.plugin.tier].r, R = cr + rb, dx = Math.abs(b.position.x - x); if (dx < R) { const cy = b.position.y - Math.sqrt(R * R - dx * dx); if (cy < y) { y = cy; hit = b; } } }
+    return [y, hit];
+  }
+  function bestX(r) {
+    const cr = TIERS[st.cur].r; let best = W / 2, bs = -1e9;
+    for (let i = 0; i <= 32; i++) {
+      const x = clampX(WALL + cr + (W - 2 * WALL - 2 * cr) * i / 32), [y, hit] = landHit(x, cr);
+      let sc = y / H * 30;
+      if (hit) { const ht = hit.plugin.tier; if (ht === st.cur) sc += 100 + ht * 8; else if (ht < st.cur) sc -= 25 + (st.cur - ht) * 4; else sc -= (ht - st.cur) * 2; }
+      for (const b of bodies) if (b !== hit && b.plugin.tier === st.cur && Math.hypot(b.position.x - x, b.position.y - y) < cr + TIERS[b.plugin.tier].r + 8) sc += 50;
+      if (y - cr < st.dz + 30) sc -= 80;
+      sc += r() * 4;
+      if (sc > bs) { bs = sc; best = x; }
+    }
+    return best;
+  }
+  const BOTS = {
+    random: (r) => { const cr = TIERS[st.cur].r; return WALL + cr + r() * (W - 2 * WALL - 2 * cr); },
+    smart: (r) => bestX(r),
+    mid: (r) => r() < 0.5 ? bestX(r) : BOTS.random(r),
+  };
+  function simGame(bot, seed, gap) {
+    SIM = true; VT = 1000;
+    const br = DC.rng(seed * 7919 + 17);
+    begin(false, DC.rng(seed));
+    let acc = 0, nextAt = VT + 600, n = 0;
+    while (!st.over && n++ < 60 * 600) {
+      VT += STEP; frame(STEP);
+      if (!st.over) { if (st.freeze > 0) st.freeze -= STEP; else { acc += STEP * (st.slow > 0 ? 0.35 : 1); while (acc >= STEP) { step(STEP); acc -= STEP; } } }
+      if (!st.over && st.canDrop && VT >= nextAt) { st.x = clampX(BOTS[bot](br)); drop(); nextAt = VT + gap * (0.75 + 0.5 * br()); }
+    }
+    return { bot, seed, sec: +(st.el / 1000).toFixed(1), score: st.score, merges: st.merges, drops: st.drops, top: st.maxTier + 1, gal: st.galaxies, lifted: Math.round(st.lifted || 0), over: st.over };
+  }
+  window.__mergeSim = async (bot, n = 20, gap = 900, tune = null, seed0 = 1) => {
+    const keep = { ...TUNE }; if (tune) Object.assign(TUNE, tune);
+    const out = [];
+    for (let i = 0; i < n; i++) { out.push(simGame(bot, seed0 + i, gap)); await new Promise((r) => setTimeout(r, 0)); }
+    Object.assign(TUNE, keep); SIM = false;
+    return out;
+  };
+  if (SIMN) {
+    // 저장·진동·소리·보상 기록을 이 페이지에서만 끈다(모의 실험이 내 기록을 건드리지 않게)
+    DC.store = { get: (k, d) => d, set: () => {} }; DC.buzz = () => {}; DC.sfx = Object.assign(() => {}, { on: () => false });
+    DC.endings = { add: () => false, got: () => [] }; DC.rewards = { add: () => {} };
+    $('#stage').replaceChildren(el('div', { class: 'gx-state' }, el('p', { id: 'simstate' }, '모의 실험 모드 — window.__mergeSim(봇, 판 수, 간격)')));
+    return;
+  }
 
   if (!M) { $('#stage').replaceChildren(el('div', { class: 'gx-state', role: 'alert' }, el('p', {}, '게임 엔진을 불러오지 못했어. 인터넷 연결을 확인하고 다시 열어 줘.'), el('button', { class: 'gx-btn', type: 'button', onclick: () => location.reload() }, '다시 불러오기'), el('a', { class: 'gx-txt', href: 'arcade.html' }, '다른 게임 하기'))); return; }
   DI.sound($('#snd'));
