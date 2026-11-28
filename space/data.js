@@ -135,7 +135,7 @@ window.DWK = {
   //   openAt: 이 인원이 타면 우주선 광장이 열린다(대표 「1만 명에 먼저 열기」) · seats: 좌석 수 = 다 타면 출발(대표 「100,000명으로」)
   //   wall: 좌석 벽에 새겨 보여 주는 견본 아이디(시연용 · 실제 팔로워 아님 · 벽에 「견본」 표시가 붙는다). 1번은 우리 계정.
   ship: {
-    boarded: 5869, asOf: '11-28 21시', sources: { instagram: 2929, youtube: 2940 }, seats: 100000, openAt: 30000, // openAt 11-28 대표 「팔로우 3만되면 열거니까 접속 안되게」(구 10000 = 「1만 명에 먼저 열기」 대체됨)
+    boarded: 5891, asOf: '11-28 22시', sources: { instagram: 2941, youtube: 2950 }, seats: 100000, openAt: 30000, // openAt 11-28 대표 「팔로우 3만되면 열거니까 접속 안되게」(구 10000 = 「1만 명에 먼저 열기」 대체됨)
     wall: [
       { no: 1, id: 'dontwannaknow.kr' },
       { no: 2, id: 'sample_bukang' },

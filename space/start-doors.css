@@ -153,3 +153,45 @@ body.gate .dch-new { background: var(--fg); color: #000; box-shadow: none; borde
 @media (prefers-reduced-motion: reduce) { .note.pop { animation: none; } }
 /* 01 행성 신청 — 넓은 화면에선 네 단계를 칸 가운데 높이로(옛 행성 4개 자리) */
 @media (min-width: 900px) { .flow { margin: auto 0; padding: 0; } .flow b { font-size: 17px; } .flow span { font-size: 13px; } }
+
+/* ── 폰: 세 칸이 첫 화면에 다 들어오게(11-28 대표 「픽세는 핸드폰으로 접속하면 한눈에 3개 페이지가 보이게 … 수정해」) ──
+   픽세 실측(pixe-official.pages.dev · 390×844 · 11-28 22시): 문서 높이 = 화면 높이(스크롤 0), 칸마다 화면을 정확히 3등분,
+   칸 안에는 배경 그림 · 큰 제목 · 한 줄 설명 · 단추 하나만. 우리 v2는 칸 안에 4단계 목록·탑승 현황·게임 목록까지 넣어 1,183px(화면의 1.4배)였다.
+   그래서 폰에선 세 칸 = (화면 높이 − 머리 줄 − 새 편 줄) ÷ 3, 칸 안은 「번호 · 제목 · 한 줄 · 단추」만 남긴다. 자세한 건 누른 뒤 화면에 있다.
+   새 편 줄(.live)은 남긴다(NASA 「지금 일어난 일」). 컴퓨터(900px 이상)는 그대로. */
+@media (max-width: 899px) {
+  .tri { height: 100svh; min-height: 480px; } /* 머리 줄 56px는 .tri 위 여백(padding-top)에 들어 있다 */
+  .live:not([hidden]) + .tri { padding-top: 0; height: calc(100svh - 56px - env(safe-area-inset-top) - var(--livebar, 47px)); min-height: 420px; }
+  .panel { flex: 1 1 0; min-height: 0; padding: 14px 20px 14px; justify-content: flex-end; }
+  .cap { gap: 5px; }
+  .panel h2 { font-size: 26px; line-height: 1.15; }
+  .sub { font-size: 13px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+  .acts { margin-top: 4px; gap: 6px 14px; }
+  .btn { height: 40px; padding: 0 16px; }
+  /* 칸 안의 칸은 뺀다 — 보조 링크 · 대기열 · 게임 목록 · 탑승 막대 */
+  .txt, .queue, .games, .board-bar, .board-src { display: none !important; }
+  /* 01 신청 — 네 단계는 지우지 않고 한 줄로(규칙을 칸 위에 그대로 · 픽세처럼 「?」 뒤에 숨기지 않는다) */
+  .flow { order: 0; margin: 0; padding: 0; display: flex; flex-wrap: nowrap; gap: 0; max-width: none; }
+  .flow li { display: flex; align-items: baseline; padding: 0; border: 0; gap: 0; }
+  .flow li::before, .flow span, .flow em { display: none; }
+  .flow b { font: 600 12px/1 var(--sans); color: var(--fg2); }
+  .flow li + li::before { display: inline; content: '→'; margin: 0 6px; font: 400 11px/1 var(--sans); letter-spacing: 0; color: var(--fg3); }
+  .p-apply { flex-direction: column; justify-content: flex-end; }
+  .p-apply .flow { position: absolute; top: 16px; left: 20px; right: 20px; }
+  /* 02 탑승 — 영상을 칸 전체 배경으로(따로 떼면 칸이 길어진다). 착지한 캐릭터가 글 위쪽에 오게 위로 올린다 */
+  .p-plaza { min-height: 0; padding-top: 14px; }
+  .p-plaza .bg { inset: -24% 0 auto 0; height: 100%; object-position: 50% 50%; } /* 가로 영상이라 위아래 잘림이 없다 → 칸째 위로 24% 올려 착지 캐릭터가 제목 위에 오게(11-28 대표 「폰에서 캐릭터 안 가리게」 유지) */
+  .p-plaza::before { inset: 0; height: auto; background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, .2) 38%, rgba(0, 0, 0, .88) 62%, #000 72%); } /* 올린 영상의 아래 끝(76%)이 선으로 안 보이게 72%에서 완전히 검게 */
+  .board { margin-top: 0; }
+  .board-n { font-size: 12px; justify-content: flex-start; }
+  .p-plaza .sub { display: none; } /* 탑승 숫자(「5,891명 탑승 · 30,000명이면 열림」)가 한 줄 설명을 대신한다 */
+  .p-plaza .board[hidden] ~ .acts { margin-top: 4px; }
+  .foot { padding-top: 18px; }
+}
+/* 작은 폰(아이폰 SE 667px 등): 번호 줄을 빼고 단추를 줄인다 */
+@media (max-width: 899px) and (max-height: 720px) {
+  .eyebrow { display: none; }
+  .panel h2 { font-size: 22px; }
+  .btn { height: 36px; font-size: 12px; }
+  .panel { padding-bottom: 10px; }
+}
