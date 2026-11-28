@@ -90,7 +90,7 @@
     const kind = () => (vid.clientWidth > vid.clientHeight * 1.1 ? 'l' : 'p'); // 영상 상자 모양으로 고른다: 넓은 상자(폰) = 가로판 · 키 큰 상자(컴퓨터 세로 칸) = 세로판
     const reduce = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
     let cur = '';
-    const pick = () => { const k = kind(); if (k === cur) return; cur = k; vid.poster = `media/launch_${k}_poster.jpg`; if (!reduce) { vid.src = `media/launch_${k}.mp4`; vid.loop = true; vid.load(); } };
+    const pick = () => { const k = kind(); if (k === cur) return; cur = k; vid.poster = `media/launch_${k}_poster.jpg`; if (!reduce) { vid.src = `media/launch_${k}.mp4?v=2`; vid.loop = true; vid.load(); } };
     const fallback = () => { const img = h('img', { class: 'bg', src: `media/launch_${cur || 'p'}_poster.jpg`, alt: '', decoding: 'async' }); vid.replaceWith(img); };
     vid.addEventListener('error', fallback);
     const play = () => { if (reduce) return; try { vid.currentTime = 0; } catch (e) { /* 처음부터 못 돌려도 이어서 재생 */ } const p = vid.play(); if (p && p.catch) p.catch(() => { vid.poster = `media/launch_${cur}_poster.jpg`; }); };
